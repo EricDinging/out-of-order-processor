@@ -364,4 +364,49 @@ typedef struct packed {
  * No WB output packet as it would be more cumbersome than useful
  */
 
+/**
+ * RS Packet:
+ * Data exchanged between decoder and reservation stations
+ * Also includes the ROBN, RAT check result
+ */
+typedef union {
+    DATA value;
+    PRN  prn;
+} OP_FIELD;
+
+typedef struct packed {
+    INST     inst; // Opcode & Immediate
+    logic    valid;
+    ADDR     PC;
+    logic    op1_ready, op2_ready;
+    OP_FIELD op1,       op2;
+    PRN      dest_prn;
+    ROBN     robn;
+} RS_ENTRY;
+
+typedef struct packed {
+    RS_ENTRY [`N-1:0] entries;
+} RS_IS_PACKET;
+
+/**
+ * FU Packet:
+ * Data exchanged between reservation stations and the FU
+ */
+typedef struct packed {
+    INST inst;
+    DATA op1, op2;
+    PRN  dest_prn;
+    ROBN robn;
+} FU_PACKET;
+
+/**
+ * CDB Packet:
+ * Data exchanged between CDB and RS
+ */
+typedef struct packed {
+    logic valid;
+    PRN   dest_prn;
+    DATA  value;
+} CDB_PACKET;
+
 `endif // __SYS_DEFS_SVH__
