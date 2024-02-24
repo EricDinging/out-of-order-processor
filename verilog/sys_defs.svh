@@ -26,7 +26,7 @@
 
 // sizes
 `define ROB_SZ xx
-`define RS_SZ xx
+`define RS_SZ 16
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
@@ -57,6 +57,9 @@
 typedef logic [31:0] ADDR;
 typedef logic [31:0] DATA;
 typedef logic [4:0] REG_IDX;
+
+typedef logic [$clog2(PHYS_REG_SZ_R10K)-1:0] PRN;
+typedef logic [$clog2(ROB_SZ)-1:0]           ROBN;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
@@ -408,5 +411,34 @@ typedef struct packed {
     PRN   dest_prn;
     DATA  value;
 } CDB_PACKET;
+
+/**
+ * ROB Packet:
+ * Data exchanged between decoder and the ROB
+ */
+typedef struct packed {
+    logic    executed;
+    logic    success;
+    logic    is_store;
+    logic    is_branch;
+    PRN      dest_prn;
+    REG_IDX  dest_arn;
+    ADDR     PC;
+} ROB_ENTRY;
+
+typedef struct packed {
+    logic valid;
+    ROB_ENTRY [`N-1:0] entries;
+} ROB_IS_PACKET;
+
+typedef struct packed {
+    ROBN     robn;
+    logic    executed;
+    logic    branch_taken;
+} FU_ROB_PACKET;
+
+typedef struct packed {
+    ROB_ENTRY [`N-1:0] entries;
+} ROB_CT_PACKET;
 
 `endif // __SYS_DEFS_SVH__
