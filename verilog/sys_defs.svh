@@ -421,7 +421,7 @@ typedef struct packed {
     logic    success;
     logic    is_store;
     logic    is_branch;
-    PRN      dest_prn;
+    PRN      dest_prn; // debug only
     REG_IDX  dest_arn;
     ADDR     PC;
     ADDR     NPC; // branch target for branches, jalr/ jar target for jalr/ jar
@@ -441,5 +441,48 @@ typedef struct packed {
 typedef struct packed {
     ROB_ENTRY [`N-1:0] entries;
 } ROB_CT_PACKET;
+
+/**
+ * RAT Packet:
+ * Data for the register alias table
+ */
+
+typedef struct packed {
+    typedef struct packed {
+        REG_IDX dest_arn; 
+        REG_IDX op1_arn, op2_arn;
+    } RAT_INPUT_ENTRY;
+    RAT_INPUT_ENTRY [`N-1:0] entries;
+} RAT_IS_INPUT;
+
+typedef struct packed {
+    typedef struct packed {
+        PRN     dest_prn;
+        PRN     op1_prn, op2_prn;
+    } RAT_OUTPUT_ENTRY;
+    RAT_OUTPUT_ENTRY [`N-1:0] entries;
+} RAT_IS_OUTPUT;
+
+/**
+ * RRAT Packet:
+ * Data for the RRAT
+ */
+
+typedef struct packed {
+    logic   [`N-1:0] success;
+    REG_IDX [`N-1:0] arns;
+} RRAT_CT_INPUT;
+
+typedef struct packed {
+    typedef struct packed {
+        PRN   prn;
+        logic valid;
+    } ENTRY;
+    ENTRY [31:0] entries;
+    logic success;
+
+    PRN   head, tail;
+    PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;
+} RRAT_CT_OUTPUT;
 
 `endif // __SYS_DEFS_SVH__
