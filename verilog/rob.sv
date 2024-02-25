@@ -17,7 +17,7 @@ module rob #(
     output ROB_CT_PACKET rob_ct_packet, 
     output ROBN tail
 );
-    //TODO break out FIFO module
+    // TODO break out FIFO module
     FIFO#(.SIZE=`ROB_SZ, .WIDTH=, .ALERT_DEPTH=`N) rob_fifo;
  
     always_comb begin

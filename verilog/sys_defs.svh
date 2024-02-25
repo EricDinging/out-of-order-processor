@@ -424,6 +424,7 @@ typedef struct packed {
     PRN      dest_prn;
     REG_IDX  dest_arn;
     ADDR     PC;
+    ADDR     NPC; // branch target for branches, jalr/ jar target for jalr/ jar
 } ROB_ENTRY;
 
 typedef struct packed {
@@ -432,9 +433,9 @@ typedef struct packed {
 } ROB_IS_PACKET;
 
 typedef struct packed {
-    ROBN     robn;
-    logic    executed;
-    logic    branch_taken;
+    ROBN  robn;
+    logic executed;
+    logic branch_taken;
 } FU_ROB_PACKET;
 
 typedef struct packed {
