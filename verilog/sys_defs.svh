@@ -419,10 +419,11 @@ typedef struct packed {
  * Data exchanged between reservation stations and the FU
  */
 typedef struct packed {
-    INST inst;
-    DATA op1, op2;
-    PRN  dest_prn;
-    ROBN robn;
+    INST    inst;
+    FU_FUNC func;
+    DATA    op1, op2;
+    PRN     dest_prn;
+    ROBN    robn;
 } FU_PACKET;
 
 /**
