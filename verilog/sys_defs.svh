@@ -22,6 +22,7 @@
 
 // superscalar width
 `define N 1
+`define LOGN $clog2(`N)
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
@@ -116,6 +117,14 @@ typedef enum logic [1:0] {
     MEM_LOAD   = 2'h1,
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
+
+typedef enum logic [2:0] {
+    MEM_BYTE  = 2'h0,
+    MEM_HALF  = 2'h1,
+    MEM_WORD  = 2'h2,
+    MEM_BYTEU = 2'h4,
+    MEM_HALFU = 2'h5
+} MEM_FUNC;
 
 ///////////////////////////////
 // ---- Exception Codes ---- //
@@ -372,15 +381,29 @@ typedef struct packed {
  * Data exchanged between decoder and reservation stations
  * Also includes the ROBN, RAT check result
  */
-typedef union {
+typedef union packed {
     DATA value;
     PRN  prn;
 } OP_FIELD;
+
+typedef enum logic [1:0] { 
+    FU_ALU,
+    FU_MULT,
+    FU_LOAD,
+    FU_STORE
+} FU_TYPE;
+
+typedef union packed {
+    ALU_FUNC  alu;
+    MULT_FUNC mult;
+} FU_FUNC;
 
 typedef struct packed {
     INST     inst; // Opcode & Immediate
     logic    valid;
     ADDR     PC;
+    FU_TYPE  fu;
+    FU_FUNC  func;
     logic    op1_ready, op2_ready;
     OP_FIELD op1,       op2;
     PRN      dest_prn;
