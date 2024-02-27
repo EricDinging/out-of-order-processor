@@ -44,7 +44,7 @@ module rs #(
     wire [`NUM_FU_LOAD-1:0][SIZE-1:0]  load_gnt_bus;
     wire [`NUM_FU_STORE-1:0][SIZE-1:0] store_gnt_bus;
 
-    wor  [SIZE-1:0] select;
+    // wor  [SIZE-1:0] select;
     wire [SIZE-1:0][`NUM_FU_ALU-1:0]   alu_sel;
     wire [SIZE-1:0][`NUM_FU_MULT-1:0]  mult_sel;
     wire [SIZE-1:0][`NUM_FU_LOAD-1:0]  load_sel;
@@ -128,6 +128,8 @@ module rs #(
                         .op2  = entries[i].op2;
                         .robn = robn;
                     };
+                    next_entries[i].valid = `FALSE;
+                    next_counter--;
                 end 
             end
 
@@ -140,6 +142,8 @@ module rs #(
                         .op2  = entries[i].op2;
                         .robn = robn;
                     };
+                    next_entries[i].valid = `FALSE;
+                    next_counter--;
                 end 
             end
 
@@ -152,7 +156,8 @@ module rs #(
                         .op2  = entries[i].op2;
                         .robn = robn;
                     };
-
+                    next_entries[i].valid = `FALSE;
+                    next_counter--;
                 end 
             end
 
@@ -165,15 +170,14 @@ module rs #(
                         .op2  = entries[i].op2;
                         .robn = robn;
                     };
-                    
+                    next_entries[i].valid = `FALSE;
+                    next_counter--;
                 end 
             end
 
-            // TODO other FU
-
-            if (select[i]) begin
-                next_entries[i].valid = `FALSE;
-            end
+            // if (select[i]) begin
+            //     next_entries[i].valid = `FALSE;
+            // end
         end
 
         
@@ -211,21 +215,21 @@ module rs #(
         end
     end
 
-    genvar j;
-    generate
-        for (j = 0; j < `NUM_FU_ALU; ++j) begin
-            assign select = alu_gnt_bus[j] & {(SIZE){fu_alu_avail[j]}};
-        end
-        for (j = 0; j < `NUM_FU_MULT; ++j) begin
-            assign select = mult_gnt_bus[j] & {(SIZE){fu_mult_avail[j]}};
-        end
-        for (j = 0; j < `NUM_FU_LOAD; ++j) begin
-            assign select = load_gnt_bus[j] & {(SIZE){fu_load_avail[j]}};
-        end
-        for (j = 0; j < `NUM_FU_STORE; ++j) begin
-            assign select = store_gnt_bus[j] & {(SIZE){fu_store_avail[j]}};
-        end
-    endgenerate
+    // genvar j;
+    // generate
+    //     for (j = 0; j < `NUM_FU_ALU; ++j) begin
+    //         assign select = alu_gnt_bus[j] & {(SIZE){fu_alu_avail[j]}};
+    //     end
+    //     for (j = 0; j < `NUM_FU_MULT; ++j) begin
+    //         assign select = mult_gnt_bus[j] & {(SIZE){fu_mult_avail[j]}};
+    //     end
+    //     for (j = 0; j < `NUM_FU_LOAD; ++j) begin
+    //         assign select = load_gnt_bus[j] & {(SIZE){fu_load_avail[j]}};
+    //     end
+    //     for (j = 0; j < `NUM_FU_STORE; ++j) begin
+    //         assign select = store_gnt_bus[j] & {(SIZE){fu_store_avail[j]}};
+    //     end
+    // endgenerate
 
 
     assign almost_full = (counter > SIZE - ALERT_DEPTH);
