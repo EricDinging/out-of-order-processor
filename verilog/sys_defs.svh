@@ -120,11 +120,11 @@ typedef enum logic [1:0] {
 } MEM_COMMAND;
 
 typedef enum logic [2:0] {
-    MEM_BYTE  = 2'h0,
-    MEM_HALF  = 2'h1,
-    MEM_WORD  = 2'h2,
-    MEM_BYTEU = 2'h4,
-    MEM_HALFU = 2'h5
+    MEM_BYTE  = 3'h0,
+    MEM_HALF  = 3'h1,
+    MEM_WORD  = 3'h2,
+    MEM_BYTEU = 3'h4,
+    MEM_HALFU = 3'h5
 } MEM_FUNC;
 
 ///////////////////////////////
@@ -473,18 +473,20 @@ typedef struct packed {
  */
 
 typedef struct packed {
-    typedef struct packed {
-        REG_IDX dest_arn; 
-        REG_IDX op1_arn, op2_arn;
-    } RAT_INPUT_ENTRY;
+    REG_IDX dest_arn; 
+    REG_IDX op1_arn, op2_arn;
+} RAT_INPUT_ENTRY;
+
+typedef struct packed {
+    PRN     dest_prn;
+    PRN     op1_prn, op2_prn;
+} RAT_OUTPUT_ENTRY;
+
+typedef struct packed {
     RAT_INPUT_ENTRY [`N-1:0] entries;
 } RAT_IS_INPUT;
 
 typedef struct packed {
-    typedef struct packed {
-        PRN     dest_prn;
-        PRN     op1_prn, op2_prn;
-    } RAT_OUTPUT_ENTRY;
     RAT_OUTPUT_ENTRY [`N-1:0] entries;
 } RAT_IS_OUTPUT;
 
@@ -499,13 +501,13 @@ typedef struct packed {
 } RRAT_CT_INPUT;
 
 typedef struct packed {
-    typedef struct packed {
-        PRN   prn;
-        logic valid;
-    } ENTRY;
+    PRN   prn;
+    logic valid;
+} ENTRY;
+    
+typedef struct packed {
     ENTRY [31:0] entries;
     logic success;
-
     PRN   head, tail;
     PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;
 } RRAT_CT_OUTPUT;
