@@ -48,10 +48,10 @@ module rs #(
     wire [`NUM_FU_STORE-1:0][SIZE-1:0] store_gnt_bus;
 
     // wor  [SIZE-1:0] select;
-    wire [SIZE-1:0][`NUM_FU_ALU-1:0]   alu_sel;
-    wire [SIZE-1:0][`NUM_FU_MULT-1:0]  mult_sel;
-    wire [SIZE-1:0][`NUM_FU_LOAD-1:0]  load_sel;
-    wire [SIZE-1:0][`NUM_FU_STORE-1:0] store_sel;
+    logic [SIZE-1:0][`NUM_FU_ALU-1:0]   alu_sel;
+    logic [SIZE-1:0][`NUM_FU_MULT-1:0]  mult_sel;
+    logic [SIZE-1:0][`NUM_FU_LOAD-1:0]  load_sel;
+    logic [SIZE-1:0][`NUM_FU_STORE-1:0] store_sel;
 
     psel_gen #(
         .WIDTH(SIZE),
@@ -109,13 +109,13 @@ module rs #(
             // Check CDB value
             for (int cdb_idx = 0; cdb_idx < `N; ++cdb_idx) begin
                 if (cdb_packet[cdb_idx].valid) begin
-                    PRN  dest_prn = cdb_packet[cdb_idx].dest_prn;
-                    DATA value    = cdb_packet[cdb_idx].value;
-                    if (~next_entries[i].op1_ready && dest_prn == next_entries[i].op1) begin
-                        next_entries[i].op1 = value;
+                    // PRN  dest_prn = cdb_packet[cdb_idx].dest_prn;
+                    // DATA value    = cdb_packet[cdb_idx].value;
+                    if (~next_entries[i].op1_ready && cdb_packet[cdb_idx].dest_prn == next_entries[i].op1) begin
+                        next_entries[i].op1 = cdb_packet[cdb_idx].value;
                     end
-                    if (~next_entries[i].op2_ready && dest_prn == next_entries[i].op2) begin
-                        next_entries[i].op2 = value;
+                    if (~next_entries[i].op2_ready && cdb_packet[cdb_idx].dest_prn == next_entries[i].op2) begin
+                        next_entries[i].op2 = cdb_packet[cdb_idx].value;
                     end
                 end
             end
@@ -244,13 +244,13 @@ module rs #(
                 entries[i] <= {
                     `NOP,    // inst
                     `FALSE,  // valid
-                    0,       // PC
+                    32'b0,       // PC
                     FU_ALU,  // fu
                     ALU_ADD, // func.alu
                     `FALSE,  // op1_ready
                     `FALSE,  // op2_ready
-                    0,       // op1.prn
-                    0,       // op2.prn
+                    $clog2(`PHYS_REG_SZ_R10K)'h0, // dest_prn
+                    $clog2(`ROB_SZ)'0             // dest_rob
                     0,       // dest_prn
                     0        // robn
                 };

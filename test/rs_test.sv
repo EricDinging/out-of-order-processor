@@ -59,24 +59,24 @@ module testbench;
 
         rs_is_packet = {
             {(`N){
-                `NOP,
-                `FALSE,
-                0,
-                FU_ALU,
-                ALU_ADD,
-                `FALSE,
-                `FALSE,
-                0,
-                0,
-                0,
-                0
+                `NOP,                         // inst
+                `FALSE,                       // valid
+                32'h0,                        // PC
+                FU_ALU,                       // fu_type
+                ALU_ADD,                      // fu_func
+                `FALSE,                       // op1_ready
+                `FALSE,                       // op2_ready
+                32'h0,                        // op1
+                32'h0,                        // op2
+                $clog2(`PHYS_REG_SZ_R10K)'h0, // dest_prn
+                $clog2(`ROB_SZ)'0             // dest_rob
             }}
         };
 
         cdb_packet = {
             `FALSE,
-            0,
-            0
+            $clog2(`PHYS_REG_SZ_R10K)'h0, // dest_prn
+            32'h0                         // value
         };
 
         fu_alu_avail   = {`NUM_FU_ALU   {`FALSE}};

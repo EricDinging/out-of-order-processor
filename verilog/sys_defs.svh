@@ -382,7 +382,7 @@ typedef struct packed {
  * Data exchanged between decoder and reservation stations
  * Also includes the ROBN, RAT check result
  */
-typedef union packed {
+typedef union {
     DATA value;
     PRN  prn;
 } OP_FIELD;
@@ -394,7 +394,7 @@ typedef enum logic [1:0] {
     FU_STORE
 } FU_TYPE;
 
-typedef union packed {
+typedef union {
     ALU_FUNC  alu;
     MULT_FUNC mult;
 } FU_FUNC;
