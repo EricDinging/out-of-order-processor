@@ -54,8 +54,8 @@ module rs #(
     wire [SIZE-1:0][`NUM_FU_STORE-1:0] store_sel;
 
     psel_gen #(
-        .WIDTH = SIZE,
-        .REQS = `NUM_FU_ALU
+        .WIDTH(SIZE),
+        .REQS(`NUM_FU_ALU)
     ) alu_sel (
         .req(alu_wake_ups),
         .gnt(),
@@ -64,8 +64,8 @@ module rs #(
     );
 
     psel_gen #(
-        .WIDTH = SIZE,
-        .REQS = `NUM_FU_MULT
+        .WIDTH(SIZE),
+        .REQS(`NUM_FU_MULT)
     ) mult_sel (
         .req(mult_wake_ups),
         .gnt(),
@@ -74,8 +74,8 @@ module rs #(
     );
 
     psel_gen #(
-        .WIDTH = SIZE,
-        .REQS = `NUM_FU_LOAD
+        .WIDTH(SIZE),
+        .REQS(`NUM_FU_LOAD)
     ) load_sel (
         .req(load_wake_ups),
         .gnt(),
@@ -84,8 +84,8 @@ module rs #(
     );
 
     psel_gen #(
-        .WIDTH = SIZE,
-        .REQS = `NUM_FU_STORE
+        .WIDTH(SIZE),
+        .REQS(`NUM_FU_STORE)
     ) store_sel (
         .req(store_wake_ups),
         .gnt(),
@@ -125,11 +125,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 if (alu_sel[i][j]) begin
                     fu_alu_packet[j] = {
-                        .inst = entries[i].inst;
-                        .func = entries[i].func;
-                        .op1  = entries[i].op1;
-                        .op2  = entries[i].op2;
-                        .robn = robn;
+                        .inst : entries[i].inst;
+                        .func : entries[i].func;
+                        .op1  : entries[i].op1;
+                        .op2  : entries[i].op2;
+                        .robn : robn;
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;

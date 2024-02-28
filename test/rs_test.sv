@@ -54,8 +54,8 @@ module testbench;
         reset  = 1;
         failed = 0;
 
-        rs_is_packet = {
-            .entries : {`N{
+        for (int i = 0; i < `N; ++i) begin
+            rs_is_packet.entries[i] = '{
                 .inst      : `NOP,
                 .valid     : `FALSE,
                 .PC        : 0,
@@ -67,14 +67,8 @@ module testbench;
                 .op2.prn   : 0,
                 .dest_prn  : 0,
                 .robn      : 0
-            }}
-        };
-        
-        cdb_packet = {
-            .valid    : `FALSE,
-            .dest_prn : 0,
-            .value    : 0
-        };
+            };
+        end
 
         fu_alu_avail   = {`NUM_FU_ALU   {`FALSE}};
         fu_mult_avail  = {`NUM_FU_MULT  {`FALSE}};
@@ -110,38 +104,38 @@ module testbench;
         end
     endtask
 
-    task concurrent_enter_cdb;
-        begin
-            rs_is_packet = {
-                .entries : {`N{
-                    .inst      : `NOP,
-                    .valid     : `TRUE,
-                    .PC        : 0,
-                    .fu        : FU_ALU,
-                    .func.alu  : ALU_ADD,
-                    .op1_ready : `FALSE,
-                    .op2_ready : `FALSE,
-                    .op1.prn   : 1,
-                    .op2.prn   : 2,
-                    .dest_prn  : 3,
-                    .robn      : 0
-                }}
-            };
-            fu_alu_packet = {`NUM_FU_ALU   {`TRUE}};
-            cdb_packet = {2{
-                {
-                    .valid    : `TRUE,
-                    .dest_prn : 1,
-                    .value    : 5
-                }},
-                {
-                    .valid    : `TRUE,
-                    .dest_prn : 2,
-                    .value    : 3
-                }
-            };
-        end
-    endtask
+    // task concurrent_enter_cdb;
+    //     begin
+    //         rs_is_packet = {
+    //             .entries : {`N{
+    //                 .inst      : `NOP,
+    //                 .valid     : `TRUE,
+    //                 .PC        : 0,
+    //                 .fu        : FU_ALU,
+    //                 .func.alu  : ALU_ADD,
+    //                 .op1_ready : `FALSE,
+    //                 .op2_ready : `FALSE,
+    //                 .op1.prn   : 1,
+    //                 .op2.prn   : 2,
+    //                 .dest_prn  : 3,
+    //                 .robn      : 0
+    //             }}
+    //         };
+    //         fu_alu_packet = {`NUM_FU_ALU   {`TRUE}};
+    //         cdb_packet = {2{
+    //             {
+    //                 .valid    : `TRUE,
+    //                 .dest_prn : 1,
+    //                 .value    : 5
+    //             }},
+    //             {
+    //                 .valid    : `TRUE,
+    //                 .dest_prn : 2,
+    //                 .value    : 3
+    //             }
+    //         };
+    //     end
+    // endtask
 
     always_ff @(negedge clock) begin
         if( failed ) begin
