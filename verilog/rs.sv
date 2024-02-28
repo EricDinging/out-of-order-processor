@@ -15,10 +15,10 @@ module rs #(
     input logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
     input logic [`NUM_FU_STORE-1:0] fu_store_avail,
     
-    output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
-    output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
-    output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
-    output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
+    output FU_PACKET fu_alu_packet [`NUM_FU_ALU-1:0],
+    output FU_PACKET fu_mult_packet [`NUM_FU_MULT-1:0],
+    output FU_PACKET fu_load_packet [`NUM_FU_LOAD-1:0],
+    output FU_PACKET fu_store_packet [`NUM_FU_STORE-1:0],
     output logic almost_full
     `ifdef DEBUG_OUT
     , output RS_ENTRY [SIZE-1:0]      entries_out
@@ -249,10 +249,10 @@ module rs #(
                     ALU_ADD, // func.alu
                     `FALSE,  // op1_ready
                     `FALSE,  // op2_ready
-                    $clog2(`PHYS_REG_SZ_R10K)'h0, // dest_prn
-                    $clog2(`ROB_SZ)'0             // dest_rob
-                    0,       // dest_prn
-                    0        // robn
+                    32'h0,                        // op1
+                    32'h0,                        // op2
+                    {`PRN_WIDTH{1'h0}}, // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}}             // dest_rob
                 };
             end
         end else begin

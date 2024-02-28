@@ -31,6 +31,8 @@
 `define RS_CNT_WIDTH $clog2(`RS_SZ)
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
+`define PRN_WIDTH $clog2(`PHYS_REG_SZ_R10K)
+`define ROB_CNT_WIDTH $clog2(`ROB_SZ)
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
@@ -60,8 +62,8 @@ typedef logic [31:0] ADDR;
 typedef logic [31:0] DATA;
 typedef logic [4:0] REG_IDX;
 
-typedef logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] PRN;
-typedef logic [$clog2(`ROB_SZ)-1:0]           ROBN;
+typedef logic [`PRN_WIDTH-1:0]           PRN;
+typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
@@ -278,7 +280,7 @@ typedef enum logic [3:0] {
 
 // MULT funct3 code
 // we don't include division or rem options
-typedef enum logic [2:0] {
+typedef enum logic [3:0] {
     M_MUL,
     M_MULH,
     M_MULHSU,
@@ -382,9 +384,11 @@ typedef struct packed {
  * Data exchanged between decoder and reservation stations
  * Also includes the ROBN, RAT check result
  */
-typedef union {
+
+// TODO change data padding
+typedef union packed {
     DATA value;
-    PRN  prn;
+    DATA prn;
 } OP_FIELD;
 
 typedef enum logic [1:0] { 
@@ -394,7 +398,8 @@ typedef enum logic [1:0] {
     FU_STORE
 } FU_TYPE;
 
-typedef union {
+// TODO
+typedef union packed {
     ALU_FUNC  alu;
     MULT_FUNC mult;
 } FU_FUNC;
