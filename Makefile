@@ -160,7 +160,7 @@ GREP = grep -E --color=auto
 # This is mostly so you can know that your module builds and runs on the ag
 # Your actual milestone 1 grade will be done manually
 
-MS_1_MODULE = ...
+MS_1_MODULE = rs
 
 autograder_milestone_1_simulation: $(MS_1_MODULE).out ;
 autograder_milestone_1_synthesis: $(MS_1_MODULE).syn.out ;
@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs
+MODULES = cpu mult rob rs rrat rat psel_gen prf free_list
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)

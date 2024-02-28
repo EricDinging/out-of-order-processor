@@ -19,18 +19,21 @@ module rs #(
     output [`NUM_FU_MULT-1:0]  FU_PACKET fu_mult_packet,
     output [`NUM_FU_LOAD-1:0]  FU_PACKET fu_load_packet,
     output [`NUM_FU_STORE-1:0] FU_PACKET fu_store_packet,
-
     output logic almost_full
+    `ifdef DEBUG_OUT
+    , output [SIZE-1:0]         RS_ENTRY entries_out
+    , output [RS_CNT_WIDTH-1:0] logic counter_out
+    `endif
 );
-
-    parameter CNT_WIDTH = $clog2(SIZE);
-
     // State
-    logic [CNT_WIDTH-1:0] counter;
+    logic [RS_CNT_WIDTH-1:0] counter;
     RS_ENTRY [SIZE-1:0]   entries;
 
+    assign entries_out = entries;
+    assign counter_out = counter;
+    
     // Next state
-    logic [CNT_WIDTH-1:0] next_counter;
+    logic [RS_CNT_WIDTH-1:0] next_counter;
     RS_ENTRY [SIZE-1:0]   next_entries;
 
     wire [SIZE-1:0] wake_ups;
@@ -98,7 +101,7 @@ module rs #(
         int inst_cnt = 0;
         for (int i = 0; i < SIZE; ++i) begin
             // Input new value
-            if (~entries[i].valid && inst_cnt < `N) begin
+            if (~entries[i].valid && inst_cnt < `N && ~almost_full) begin
                 next_entries[i] = rs_is_packet.entries[inst_cnt];
                 ++inst_cnt;
                 ++next_counter;
