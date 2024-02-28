@@ -56,19 +56,25 @@ module testbench;
 
         for (int i = 0; i < `N; ++i) begin
             rs_is_packet.entries[i] = '{
-                .inst      : `NOP,
-                .valid     : `FALSE,
-                .PC        : 0,
-                .fu        : FU_ALU,
-                .func.alu  : ALU_ADD,
-                .op1_ready : `FALSE,
-                .op2_ready : `FALSE,
-                .op1.prn   : 0,
-                .op2.prn   : 0,
-                .dest_prn  : 0,
-                .robn      : 0
+                `NOP,
+                `FALSE,
+                0,
+                FU_ALU,
+                ALU_ADD,
+                `FALSE,
+                `FALSE,
+                0,
+                0,
+                0,
+                0
             };
         end
+
+        cdb_packet = {
+            `FALSE,
+            0,
+            0
+        };
 
         fu_alu_avail   = {`NUM_FU_ALU   {`FALSE}};
         fu_mult_avail  = {`NUM_FU_MULT  {`FALSE}};
@@ -107,18 +113,18 @@ module testbench;
     // task concurrent_enter_cdb;
     //     begin
     //         rs_is_packet = {
-    //             .entries : {`N{
-    //                 .inst      : `NOP,
-    //                 .valid     : `TRUE,
-    //                 .PC        : 0,
-    //                 .fu        : FU_ALU,
-    //                 .func.alu  : ALU_ADD,
-    //                 .op1_ready : `FALSE,
-    //                 .op2_ready : `FALSE,
-    //                 .op1.prn   : 1,
-    //                 .op2.prn   : 2,
-    //                 .dest_prn  : 3,
-    //                 .robn      : 0
+    //             {`N{
+    //                 `NOP,
+    //                 `TRUE,
+    //                 0,
+    //                 FU_ALU,
+    //                 ALU_ADD,
+    //                 `FALSE,
+    //                 `FALSE,
+    //                 1,
+    //                 2,
+    //                 3,
+    //                 0
     //             }}
     //         };
     //         fu_alu_packet = {`NUM_FU_ALU   {`TRUE}};
