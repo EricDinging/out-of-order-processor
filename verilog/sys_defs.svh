@@ -26,21 +26,21 @@
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
-`define ROB_SZ xx
+`define ROB_SZ 16
 `define RS_SZ 16
 `define RS_CNT_WIDTH $clog2(`RS_SZ)
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
 // worry about these later
-`define BRANCH_PRED_SZ xx
-`define LSQ_SZ xx
+`define BRANCH_PRED_SZ 4
+`define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
-`define NUM_FU_ALU xx
-`define NUM_FU_MULT xx
-`define NUM_FU_LOAD xx
-`define NUM_FU_STORE xx
+`define NUM_FU_ALU 2
+`define NUM_FU_MULT 2
+`define NUM_FU_LOAD 2
+`define NUM_FU_STORE 2
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4

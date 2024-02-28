@@ -22,8 +22,8 @@ module testbench;
 
     logic almost_full;
     
-    RS_ENTRY [SIZE-1:0]         entries_out;
-    logic    [RS_CNT_WIDTH-1:0] counter_out;
+    RS_ENTRY [`RS_SZ-1:0]         entries_out;
+    logic    [`RS_CNT_WIDTH-1:0] counter_out;
 
     rs dut(
         // input
@@ -55,25 +55,25 @@ module testbench;
         failed = 0;
 
         rs_is_packet = {
-            .entries = {`N{
-                .inst      = `NOP,
-                .valid     = `FALSE,
-                .PC        = 0,
-                .fu        = FU_ALU,
-                .func.alu  = ALU_ADD,
-                .op1_ready = `FALSE,
-                .op2_ready = `FALSE,
-                .op1.prn   = 0,
-                .op2.prn   = 0,
-                .dest_prn  = 0,
-                .robn      = 0
+            .entries : {`N{
+                .inst      : `NOP,
+                .valid     : `FALSE,
+                .PC        : 0,
+                .fu        : FU_ALU,
+                .func.alu  : ALU_ADD,
+                .op1_ready : `FALSE,
+                .op2_ready : `FALSE,
+                .op1.prn   : 0,
+                .op2.prn   : 0,
+                .dest_prn  : 0,
+                .robn      : 0
             }}
         };
         
         cdb_packet = {
-            .valid    = `FALSE,
-            .dest_prn = 0,
-            .value    = 0
+            .valid    : `FALSE,
+            .dest_prn : 0,
+            .value    : 0
         };
 
         fu_alu_avail   = {`NUM_FU_ALU   {`FALSE}};
@@ -113,31 +113,31 @@ module testbench;
     task concurrent_enter_cdb;
         begin
             rs_is_packet = {
-                .entries = {`N{
-                    .inst      = `NOP,
-                    .valid     = `TRUE,
-                    .PC        = 0,
-                    .fu        = FU_ALU,
-                    .func.alu  = ALU_ADD,
-                    .op1_ready = `FALSE,
-                    .op2_ready = `FALSE,
-                    .op1.prn   = 1,
-                    .op2.prn   = 2,
-                    .dest_prn  = 3,
-                    .robn      = 0
+                .entries : {`N{
+                    .inst      : `NOP,
+                    .valid     : `TRUE,
+                    .PC        : 0,
+                    .fu        : FU_ALU,
+                    .func.alu  : ALU_ADD,
+                    .op1_ready : `FALSE,
+                    .op2_ready : `FALSE,
+                    .op1.prn   : 1,
+                    .op2.prn   : 2,
+                    .dest_prn  : 3,
+                    .robn      : 0
                 }}
             };
             fu_alu_packet = {`NUM_FU_ALU   {`TRUE}};
             cdb_packet = {2{
                 {
-                    .valid    = `TRUE,
-                    .dest_prn = 1,
-                    .value    = 5
+                    .valid    : `TRUE,
+                    .dest_prn : 1,
+                    .value    : 5
                 }},
                 {
-                    .valid    = `TRUE,
-                    .dest_prn = 2,
-                    .value    = 3
+                    .valid    : `TRUE,
+                    .dest_prn : 2,
+                    .value    : 3
                 }
             };
         end
