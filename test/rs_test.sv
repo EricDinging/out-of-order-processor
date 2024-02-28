@@ -54,8 +54,9 @@ module testbench;
         reset  = 1;
         failed = 0;
 
-        for (int i = 0; i < `N; ++i) begin
-            rs_is_packet.entries[i] = '{
+
+        rs_is_packet = {
+            {(`N){
                 `NOP,
                 `FALSE,
                 0,
@@ -67,8 +68,8 @@ module testbench;
                 0,
                 0,
                 0
-            };
-        end
+            }}
+        };
 
         cdb_packet = {
             `FALSE,
@@ -155,8 +156,8 @@ module testbench;
 
         init;
 
-        fmt = "@@@ Time:%4.0f clock:%b counter:%b, almost_full:%b\n entries_out:%b\n, rs_is_packet:%b\n, 
-                fu_alu_packet:%b\n, fu_mult_packet:%b\n, fu_load_packet:%b\n, 
+        fmt = "@@@ Time:%4.0f clock:%b counter:%b, almost_full:%b\n entries_out:%b\n, rs_is_packet:%b\n, \
+                fu_alu_packet:%b\n, fu_mult_packet:%b\n, fu_load_packet:%b\n, \
                 fu_store_packet:%b\n, cdb_packet:%b\n";
         
         test_almost_full;
