@@ -60,8 +60,8 @@ typedef logic [31:0] ADDR;
 typedef logic [31:0] DATA;
 typedef logic [4:0] REG_IDX;
 
-typedef logic [$clog2(PHYS_REG_SZ_R10K)-1:0] PRN;
-typedef logic [$clog2(ROB_SZ)-1:0]           ROBN;
+typedef logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] PRN;
+typedef logic [$clog2(`ROB_SZ)-1:0]           ROBN;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
