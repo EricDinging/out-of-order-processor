@@ -124,11 +124,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 if (alu_sel[i][j]) begin
                     fu_alu_packet[j] = {
-                        entries[i].inst; // .inst
-                        entries[i].func; // .func
-                        entries[i].op1; // .op1 
-                        entries[i].op2; // .op2 
-                        robn; // .robn
+                        entries[i].inst, // .inst
+                        entries[i].func, // .func
+                        entries[i].op1, // .op1 
+                        entries[i].op2, // .op2 
+                        robn // .robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -138,11 +138,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
                 if (mult_sel[i][j]) begin
                     fu_mult_packet[j] = {
-                        entries[i].inst; // .inst
-                        entries[i].func; // .func
-                        entries[i].op1; // .op1 
-                        entries[i].op2; // .op2 
-                        robn; // .robn
+                        entries[i].inst, // .inst
+                        entries[i].func, // .func
+                        entries[i].op1, // .op1 
+                        entries[i].op2, // .op2 
+                        robn // .robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -152,11 +152,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
                 if (load_sel[i][j]) begin
                     fu_load_packet[j] = {
-                        entries[i].inst; // inst
-                        entries[i].func; // func
-                        entries[i].op1; // op1 
-                        entries[i].op2; // op2 
-                        robn; // robn
+                        entries[i].inst, // inst
+                        entries[i].func, // func
+                        entries[i].op1,  // op1 
+                        entries[i].op2,  // op2 
+                        robn // robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -166,11 +166,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
                 if (store_sel[i][j]) begin
                     fu_store_packet[j] = {
-                        entries[i].inst; // inst
-                        entries[i].func; // func
-                        entries[i].op1;  // op1 
-                        entries[i].op2;  // op2 
-                        robn; // robn
+                        entries[i].inst, // inst
+                        entries[i].func, // func
+                        entries[i].op1,  // op1 
+                        entries[i].op2,  // op2 
+                        robn // robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
