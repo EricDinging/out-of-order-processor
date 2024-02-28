@@ -128,7 +128,7 @@ module rs #(
                         entries[i].func, // .func
                         entries[i].op1, // .op1 
                         entries[i].op2, // .op2 
-                        robn // .robn
+                        entries[i].robn // .robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -142,7 +142,7 @@ module rs #(
                         entries[i].func, // .func
                         entries[i].op1, // .op1 
                         entries[i].op2, // .op2 
-                        robn // .robn
+                        entries[i].robn // .robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -156,7 +156,7 @@ module rs #(
                         entries[i].func, // func
                         entries[i].op1,  // op1 
                         entries[i].op2,  // op2 
-                        robn // robn
+                        entries[i].robn // robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -170,7 +170,7 @@ module rs #(
                         entries[i].func, // func
                         entries[i].op1,  // op1 
                         entries[i].op2,  // op2 
-                        robn // robn
+                        entries[i].robn // robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
