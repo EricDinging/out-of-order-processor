@@ -8,21 +8,21 @@ module rs #(
     
     input RS_IS_PACKET rs_is_packet,
 
-    input [`N-1:0] CDB_PACKET cdb_packet,
+    input CDB_PACKET [`N-1:0] cdb_packet,
     
-    input [`NUM_FU_ALU-1:0]   logic fu_alu_avail,
-    input [`NUM_FU_MULT-1:0]  logic fu_mult_avail,
-    input [`NUM_FU_LOAD-1:0]  logic fu_load_avail,
-    input [`NUM_FU_STORE-1:0] logic fu_store_avail,
+    input logic [`NUM_FU_ALU-1:0]   fu_alu_avail,
+    input logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
+    input logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
+    input logic [`NUM_FU_STORE-1:0] fu_store_avail,
     
-    output [`NUM_FU_ALU-1:0]   FU_PACKET fu_alu_packet,
-    output [`NUM_FU_MULT-1:0]  FU_PACKET fu_mult_packet,
-    output [`NUM_FU_LOAD-1:0]  FU_PACKET fu_load_packet,
-    output [`NUM_FU_STORE-1:0] FU_PACKET fu_store_packet,
+    output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
+    output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
+    output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
+    output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
     output logic almost_full
     `ifdef DEBUG_OUT
-    , output [SIZE-1:0]         RS_ENTRY entries_out
-    , output [RS_CNT_WIDTH-1:0] logic counter_out
+    , output RS_ENTRY [SIZE-1:0]      entries_out
+    , output logic [RS_CNT_WIDTH-1:0] counter_out
     `endif
 );
     // State
@@ -125,11 +125,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 if (alu_sel[i][j]) begin
                     fu_alu_packet[j] = {
-                        .inst : entries[i].inst;
-                        .func : entries[i].func;
-                        .op1  : entries[i].op1;
-                        .op2  : entries[i].op2;
-                        .robn : robn;
+                        entries[i].inst; // .inst
+                        entries[i].func; // .func
+                        entries[i].op1; // .op1 
+                        entries[i].op2; // .op2 
+                        robn; // .robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -139,11 +139,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
                 if (mult_sel[i][j]) begin
                     fu_mult_packet[j] = {
-                        .inst = entries[i].inst;
-                        .func = entries[i].func;
-                        .op1  = entries[i].op1;
-                        .op2  = entries[i].op2;
-                        .robn = robn;
+                        entries[i].inst; // .inst
+                        entries[i].func; // .func
+                        entries[i].op1; // .op1 
+                        entries[i].op2; // .op2 
+                        robn; // .robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -153,11 +153,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
                 if (load_sel[i][j]) begin
                     fu_load_packet[j] = {
-                        .inst = entries[i].inst;
-                        .func = entries[i].func;
-                        .op1  = entries[i].op1;
-                        .op2  = entries[i].op2;
-                        .robn = robn;
+                        entries[i].inst; // inst
+                        entries[i].func; // func
+                        entries[i].op1; // op1 
+                        entries[i].op2; // op2 
+                        robn; // robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -167,11 +167,11 @@ module rs #(
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
                 if (store_sel[i][j]) begin
                     fu_store_packet[j] = {
-                        .inst = entries[i].inst;
-                        .func = entries[i].func;
-                        .op1  = entries[i].op1;
-                        .op2  = entries[i].op2;
-                        .robn = robn;
+                        entries[i].inst; // inst
+                        entries[i].func; // func
+                        entries[i].op1;  // op1 
+                        entries[i].op2;  // op2 
+                        robn; // robn
                     };
                     next_entries[i].valid = `FALSE;
                     next_counter--;
@@ -243,17 +243,17 @@ module rs #(
             counter <= 0;
             for (int i = 0; i < SIZE; ++i) begin
                 entries[i] <= {
-                    .inst      = `NOP,
-                    .valid     = `FALSE,
-                    .PC        = 0,
-                    .fu        = FU_ALU,
-                    .func.alu  = ALU_ADD,
-                    .op1_ready = `FALSE,
-                    .op2_ready = `FALSE,
-                    .op1.prn   = 0,
-                    .op2.prn   = 0,
-                    .dest_prn  = 0,
-                    .robn      = 0
+                    `NOP,    // inst
+                    `FALSE,  // valid
+                    0,       // PC
+                    FU_ALU,  // fu
+                    ALU_ADD, // func.alu
+                    `FALSE,  // op1_ready
+                    `FALSE,  // op2_ready
+                    0,       // op1.prn
+                    0,       // op2.prn
+                    0,       // dest_prn
+                    0        // robn
                 };
             end
         end else begin

@@ -9,6 +9,8 @@ module testbench;
     
     RS_IS_PACKET rs_is_packet;
     CDB_PACKET   cdb_packet;
+
+    string fmt;
     
     logic [`NUM_FU_ALU-1:0]   fu_alu_avail;
     logic [`NUM_FU_MULT-1:0]  fu_mult_avail;
