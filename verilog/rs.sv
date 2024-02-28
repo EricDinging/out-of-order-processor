@@ -22,18 +22,18 @@ module rs #(
     output logic almost_full
     `ifdef DEBUG_OUT
     , output RS_ENTRY [SIZE-1:0]      entries_out
-    , output logic [RS_CNT_WIDTH-1:0] counter_out
+    , output logic [`RS_CNT_WIDTH-1:0] counter_out
     `endif
 );
     // State
-    logic [RS_CNT_WIDTH-1:0] counter;
+    logic [`RS_CNT_WIDTH-1:0] counter;
     RS_ENTRY [SIZE-1:0]   entries;
 
     assign entries_out = entries;
     assign counter_out = counter;
     
     // Next state
-    logic [RS_CNT_WIDTH-1:0] next_counter;
+    logic [`RS_CNT_WIDTH-1:0] next_counter;
     RS_ENTRY [SIZE-1:0]   next_entries;
 
     wire [SIZE-1:0] wake_ups;
@@ -56,7 +56,7 @@ module rs #(
     psel_gen #(
         .WIDTH(SIZE),
         .REQS(`NUM_FU_ALU)
-    ) alu_sel (
+    ) alu_selector (
         .req(alu_wake_ups),
         .gnt(),
         .gnt_bus(alu_gnt_bus),
@@ -66,7 +66,7 @@ module rs #(
     psel_gen #(
         .WIDTH(SIZE),
         .REQS(`NUM_FU_MULT)
-    ) mult_sel (
+    ) mult_selector (
         .req(mult_wake_ups),
         .gnt(),
         .gnt_bus(mult_gnt_bus),
@@ -76,7 +76,7 @@ module rs #(
     psel_gen #(
         .WIDTH(SIZE),
         .REQS(`NUM_FU_LOAD)
-    ) load_sel (
+    ) load_selector (
         .req(load_wake_ups),
         .gnt(),
         .gnt_bus(load_gnt_bus),
@@ -86,7 +86,7 @@ module rs #(
     psel_gen #(
         .WIDTH(SIZE),
         .REQS(`NUM_FU_STORE)
-    ) store_sel (
+    ) store_selector (
         .req(store_wake_ups),
         .gnt(),
         .gnt_bus(store_gnt_bus),
@@ -98,8 +98,7 @@ module rs #(
         next_counter = counter;
         next_entries = entries;
 
-        int inst_cnt = 0;
-        for (int i = 0; i < SIZE; ++i) begin
+        for (int i = 0, inst_cnt = 0; i < SIZE; ++i) begin
             // Input new value
             if (~entries[i].valid && inst_cnt < `N && ~almost_full) begin
                 next_entries[i] = rs_is_packet.entries[inst_cnt];
