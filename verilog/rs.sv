@@ -244,15 +244,15 @@ module rs #(
                 entries[i] <= {
                     `NOP,    // inst
                     `FALSE,  // valid
-                    32'b0,       // PC
+                    32'b0,   // PC
                     FU_ALU,  // fu
                     ALU_ADD, // func.alu
                     `FALSE,  // op1_ready
                     `FALSE,  // op2_ready
-                    32'h0,                        // op1
-                    32'h0,                        // op2
-                    {`PRN_WIDTH{1'h0}}, // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}}             // dest_rob
+                    32'h0,   // op1
+                    32'h0,   // op2
+                    {`PRN_WIDTH{1'h0}},    // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
                 };
             end
         end else begin

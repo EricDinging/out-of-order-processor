@@ -221,7 +221,7 @@ synth/mult.vg: $(MULT_FILES)
 # TODO: add any files required for the RS here (besides test/rs_test.sv and verilog/rs.sv)
 RS_FILES = verilog/sys_defs.svh verilog/psel_gen.sv
 build/rs.simv: $(RS_FILES)
-build/rs.cov: $(RS_FILES)
+build/rs.cov.simv: $(RS_FILES)
 synth/rs.vg: $(RS_FILES)
 
 # TODO: add any files required for the ROB here (besides test/rob_test.sv and verilog/rob.sv)
@@ -353,8 +353,8 @@ build/%.cov.simv.vdb: build/%.cov.simv.out ;
 # Use urg to generate human-readable reports in text mode (alternative is html)
 $(MODULES:%=cov_report_%): cov_report_%: build/%.cov.simv.vdb
 	@$(call PRINT_COLOR, 5, outputting coverage report in $@)
-	module load vcs  # not sure why this is necessary for 'urg'
-	cd build && urg -format text -dir $*.cov.simv.vdb -report ../$@
+	# module load vcs  # not sure why this is necessary for 'urg'
+	module load vcs && cd build && urg -format text -dir $*.cov.simv.vdb -report ../$@
 	@$(call PRINT_COLOR, 2, coverage report is in $@)
 
 # view the coverage hierarchy report

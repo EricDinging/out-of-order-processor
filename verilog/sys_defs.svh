@@ -21,18 +21,18 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 1
+`define N 2
 `define LOGN $clog2(`N)
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
 `define ROB_SZ 16
 `define RS_SZ 16
-`define RS_CNT_WIDTH $clog2(`RS_SZ)
+`define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 `define PRN_WIDTH $clog2(`PHYS_REG_SZ_R10K)
-`define ROB_CNT_WIDTH $clog2(`ROB_SZ)
+`define ROB_CNT_WIDTH $clog2(`ROB_SZ + 1)
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
@@ -508,10 +508,10 @@ typedef struct packed {
 typedef struct packed {
     PRN   prn;
     logic valid;
-} ENTRY;
+} RRAT_CT_OUTPUT_ENTRY;
     
 typedef struct packed {
-    ENTRY [31:0] entries;
+    RRAT_CT_OUTPUT_ENTRY [31:0] entries;
     logic success;
     PRN   head, tail;
     PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;

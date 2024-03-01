@@ -25,7 +25,7 @@ module testbench;
     logic almost_full;
     
     RS_ENTRY [`RS_SZ-1:0]         entries_out;
-    logic    [`RS_CNT_WIDTH-1:0] counter_out;
+    logic    [`RS_CNT_WIDTH-1:0]  counter_out, correct_counter;
 
     rs dut(
         // input
@@ -55,6 +55,7 @@ module testbench;
     task init;
         reset  = 1;
         failed = 0;
+        correct_counter = 0;
 
 
         rs_is_packet = {
@@ -83,12 +84,15 @@ module testbench;
         fu_mult_avail  = {`NUM_FU_MULT  {`FALSE}};
         fu_load_avail  = {`NUM_FU_LOAD  {`FALSE}};
         fu_store_avail = {`NUM_FU_STORE {`FALSE}};
+
+        @(negedge clock);
+        reset = 0;
+
     endtask // end init
 
-    task test_almost_full;
+    task test_almost_full_counter;
         parameter ITER = `RS_SZ / `N;
 
-        @(negedge clock) init;
         @(negedge clock);
 
         for (int i = 0; i < `N; ++i) begin
@@ -96,18 +100,25 @@ module testbench;
         end
 
         for (int i = 1; i < ITER; ++i) begin
-            failed = almost_full;
+            $display("iteration:%d clock:%b counter:%b, almost_full:%b\n", i, clock, counter_out, almost_full);
+            
+            correct_counter = correct_counter + `N;
+            failed = almost_full | (correct_counter != counter_out);
+
             @(negedge clock);
         end
 
-        failed = ~almost_full;
+        @(negedge clock);
+        failed = ~almost_full | (`RS_SZ != counter_out);
+        $display("@@@ Passed: test_almost_full_counter");
     endtask
     
     task exit_on_error;
         begin
             $display("@@@ Incorrect at time %4.0f", $time);
-            $display(fmt, $time, clock, counter_out, almost_full, entries_out, rs_is_packet, 
-                     fu_alu_packet, fu_mult_packet, fu_load_packet, fu_store_packet, cdb_packet);
+            $display("Time:%4.0f clock:%b counter:%b, almost_full:%b\n", $time, clock, counter_out, almost_full);
+            // $display(fmt, $time, clock, counter_out, almost_full, entries_out, rs_is_packet, 
+            //          fu_alu_packet, fu_mult_packet, fu_load_packet, fu_store_packet, cdb_packet);
             $display("@@@ Failed ENDING TESTBENCH : ERROR !");
             $finish;
         end
@@ -147,7 +158,7 @@ module testbench;
     // endtask
 
     always_ff @(negedge clock) begin
-        if( failed ) begin
+        if (failed) begin
             exit_on_error();
         end
     end
@@ -156,17 +167,14 @@ module testbench;
     initial begin
         clock  = 0;
 
-        init;
 
         fmt = "@@@ Time:%4.0f clock:%b counter:%b, almost_full:%b\n entries_out:%b\n, rs_is_packet:%b\n, \
                 fu_alu_packet:%b\n, fu_mult_packet:%b\n, fu_load_packet:%b\n, \
                 fu_store_packet:%b\n, cdb_packet:%b\n";
         
-        test_almost_full;
+        init;
+        test_almost_full_counter;
         
-        @(negedge clock);
-        @(negedge clock);
-        reset  = 0;
-        @(negedge clock);
+        $finish;
     end
 endmodule
