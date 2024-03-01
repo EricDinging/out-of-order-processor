@@ -6,9 +6,10 @@ module testbench;
     `define DEBUG_OUT 1
     
     logic clock, reset, failed;
+    wor failed_wor;
     
     RS_IS_PACKET rs_is_packet;
-    CDB_PACKET   cdb_packet;
+    CDB_PACKET [`N-1:0]   cdb_packet;
 
     string fmt;
     
@@ -57,28 +58,27 @@ module testbench;
         failed = 0;
         correct_counter = 0;
 
-
-        rs_is_packet = {
-            {(`N){
-                `NOP,                         // inst
-                `FALSE,                       // valid
-                32'h0,                        // PC
-                FU_ALU,                       // fu_type
-                ALU_ADD,                      // fu_func
-                `FALSE,                       // op1_ready
-                `FALSE,                       // op2_ready
-                32'h0,                        // op1
-                32'h0,                        // op2
-                {`PRN_WIDTH{1'h0}},           // dest_prn
-                {`ROB_CNT_WIDTH{1'h0}}        // dest_rob
-            }}
-        };
-
-        cdb_packet = {
-            `FALSE,
-            {`PRN_WIDTH{1'h0}}, // dest_prn
-            32'h0                         // value
-        };
+        for (int i = 0; i < `N; ++i) begin
+            rs_is_packet.entries[i] = '{
+                `NOP,                  // inst
+                `FALSE,                // valid
+                32'h0,                 // PC
+                FU_ALU,                // fu_type
+                ALU_ADD,               // fu_func
+                `FALSE,                // op1_ready
+                `FALSE,                // op2_ready
+                32'h0,                 // op1
+                32'h0,                 // op2
+                {`PRN_WIDTH{1'h0}},    // dest_prn
+                {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+            };
+            
+            cdb_packet[i] = '{
+                `FALSE,
+                {`PRN_WIDTH{1'h0}}, // dest_prn
+                32'h0               // value
+            };
+        end
 
         fu_alu_avail   = {`NUM_FU_ALU   {`FALSE}};
         fu_mult_avail  = {`NUM_FU_MULT  {`FALSE}};
@@ -92,7 +92,7 @@ module testbench;
 
     task test_almost_full_counter;
         parameter ITER = `RS_SZ / `N;
-
+        init;
         @(negedge clock);
 
         for (int i = 0; i < `N; ++i) begin
@@ -100,16 +100,29 @@ module testbench;
         end
 
         for (int i = 1; i < ITER; ++i) begin
-            $display("iteration:%d clock:%b counter:%b, almost_full:%b\n", i, clock, counter_out, almost_full);
+            $display("time: %4.0f, iteration:%d clock:%b counter:%b, almost_full:%b, valid:%b\n", $time, i, clock, counter_out, almost_full, entries_out[i*`N-`N].valid);
             
-            correct_counter = correct_counter + `N;
             failed = almost_full | (correct_counter != counter_out);
+            correct_counter = correct_counter + `N;
 
             @(negedge clock);
         end
+        
+        $display("time: %4.0f, iteration:%d clock:%b counter:%b, almost_full:%b, valid:%b\n", $time, ITER, clock, counter_out, almost_full,entries_out[3].valid);
 
         @(negedge clock);
         failed = ~almost_full | (`RS_SZ != counter_out);
+
+        @(negedge clock);
+
+        $display("Check entries valid bits");
+        for (int i = 0; i < `RS_SZ; ++i) begin
+            failed = failed || !entries_out[i].valid;
+            $display("time: %4.0f, iteration: %h, valid: %b", $time, i, entries_out[i].valid);
+        end
+
+        @(negedge clock);
+        @(negedge clock);
         $display("@@@ Passed: test_almost_full_counter");
     endtask
     
@@ -124,38 +137,50 @@ module testbench;
         end
     endtask
 
-    // task concurrent_enter_cdb;
-    //     begin
-    //         rs_is_packet = {
-    //             {`N{
-    //                 `NOP,
-    //                 `TRUE,
-    //                 0,
-    //                 FU_ALU,
-    //                 ALU_ADD,
-    //                 `FALSE,
-    //                 `FALSE,
-    //                 1,
-    //                 2,
-    //                 3,
-    //                 0
-    //             }}
-    //         };
-    //         fu_alu_packet = {`NUM_FU_ALU   {`TRUE}};
-    //         cdb_packet = {2{
-    //             {
-    //                 .valid    : `TRUE,
-    //                 .dest_prn : 1,
-    //                 .value    : 5
-    //             }},
-    //             {
-    //                 .valid    : `TRUE,
-    //                 .dest_prn : 2,
-    //                 .value    : 3
-    //             }
-    //         };
-    //     end
-    // endtask
+    task test_concurrent_enter_cdb;
+        begin
+            init;
+            for (int i = 0; i < `N; ++i) begin
+                rs_is_packet.entries[i] = '{
+                    `NOP,  // unused
+                    `TRUE, // valid
+                    32'h0, // PC
+                    FU_ALU,
+                    ALU_ADD,
+                    `FALSE, // op1_ready
+                    `FALSE, // op2_ready
+                    32'h1,  // op1
+                    32'h2,  // op2
+                    32'h3,  // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // robn
+                };
+            end
+            // fu_alu_avail = {`NUM_FU_ALU   {`TRUE}};
+            
+            cdb_packet[0] = '{
+                `TRUE,
+                32'h1,
+                32'h5
+            };
+
+            @(negedge clock);
+
+            for (int i = 0; i < `N; ++i) begin
+                $display("input_valid:%b, cdb_valid:%b\n", rs_is_packet.entries[i].valid, cdb_packet[i].valid);
+            end
+            
+            for (int i = 0; i < `N; ++i) begin
+                $display("time: %4.0f, inst:%d valid: %b op1_ready: %b, op1_value: %h\n", $time, i, entries_out[i].valid, entries_out[i].op1_ready, entries_out[i].op1);
+                failed = failed || !entries_out[i].op1_ready; // || entries_out[i].op1 != 32'h5;
+            end
+
+            @(negedge clock);
+            @(negedge clock);
+
+            $display("@@@ Passed: test_concurrent_enter_cdb");
+            
+        end
+    endtask
 
     always_ff @(negedge clock) begin
         if (failed) begin
@@ -172,8 +197,9 @@ module testbench;
                 fu_alu_packet:%b\n, fu_mult_packet:%b\n, fu_load_packet:%b\n, \
                 fu_store_packet:%b\n, cdb_packet:%b\n";
         
-        init;
         test_almost_full_counter;
+
+        test_concurrent_enter_cdb;
         
         $finish;
     end

@@ -425,6 +425,7 @@ typedef struct packed {
  * Data exchanged between reservation stations and the FU
  */
 typedef struct packed {
+    logic   valid;
     INST    inst;
     FU_FUNC func;
     DATA    op1, op2;
