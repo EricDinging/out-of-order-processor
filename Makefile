@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat rat psel_gen prf free_list
+MODULES = cpu mult rob rs rrat rat prf free_list
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)

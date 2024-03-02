@@ -47,6 +47,11 @@ module rs #(
     wire [`NUM_FU_LOAD-1:0][SIZE-1:0]  load_gnt_bus;
     wire [`NUM_FU_STORE-1:0][SIZE-1:0] store_gnt_bus;
 
+    FU_PACKET [`NUM_FU_ALU-1:0]   next_fu_alu_packet;
+    FU_PACKET [`NUM_FU_MULT-1:0]  next_fu_mult_packet;
+    FU_PACKET [`NUM_FU_LOAD-1:0]  next_fu_load_packet;
+    FU_PACKET [`NUM_FU_STORE-1:0] next_fu_store_packet;
+
     // wor  [SIZE-1:0] select;
     logic [SIZE-1:0][`NUM_FU_ALU-1:0]   alu_sel;
     logic [SIZE-1:0][`NUM_FU_MULT-1:0]  mult_sel;
@@ -97,21 +102,25 @@ module rs #(
     always_comb begin
         next_counter = counter;
         next_entries = entries;
+        next_fu_alu_packet   = fu_alu_packet;
+        next_fu_mult_packet  = fu_mult_packet;
+        next_fu_load_packet  = fu_load_packet;
+        next_fu_store_packet = fu_store_avail;
 
         for (int j = 0; j < `NUM_FU_ALU; j++) begin
-            fu_alu_packet[j].valid = 1'b0;
+            next_fu_alu_packet[j].valid = 1'b0;
         end
 
         for (int j = 0; j < `NUM_FU_MULT; j++) begin
-            fu_mult_packet[j].valid = 1'b0;
+            next_fu_mult_packet[j].valid = 1'b0;
         end
 
         for (int j = 0; j < `NUM_FU_LOAD; j++) begin
-            fu_load_packet[j].valid = 1'b0;
+            next_fu_load_packet[j].valid = 1'b0;
         end
 
         for (int j = 0; j < `NUM_FU_STORE; j++) begin
-            fu_store_packet[j].valid = 1'b0;
+            next_fu_store_packet[j].valid = 1'b0;
         end
 
         for (int i = 0, inst_cnt = 0; i < SIZE; ++i) begin
@@ -143,7 +152,7 @@ module rs #(
             // Output
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 if (alu_sel[i][j]) begin
-                    fu_alu_packet[j] = '{
+                    next_fu_alu_packet[j] = '{
                         `TRUE,           // .valid
                         entries[i].inst, // .inst
                         entries[i].func, // .func
@@ -159,7 +168,7 @@ module rs #(
 
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
                 if (mult_sel[i][j]) begin
-                    fu_mult_packet[j] = '{
+                    next_fu_mult_packet[j] = '{
                         `TRUE,
                         entries[i].inst, // .inst
                         entries[i].func, // .func
@@ -175,7 +184,7 @@ module rs #(
 
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
                 if (load_sel[i][j]) begin
-                    fu_load_packet[j] = '{
+                    next_fu_load_packet[j] = '{
                         `TRUE,
                         entries[i].inst, // inst
                         entries[i].func, // func
@@ -191,7 +200,7 @@ module rs #(
 
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
                 if (store_sel[i][j]) begin
-                    fu_store_packet[j] = '{
+                    next_fu_store_packet[j] = '{
                         `TRUE,
                         entries[i].inst, // inst
                         entries[i].func, // func
@@ -277,9 +286,57 @@ module rs #(
                     {`ROB_CNT_WIDTH{1'h0}} // dest_rob
                 };
             end
+            for (int j = 0; j < `NUM_FU_ALU; j++) begin
+                fu_alu_packet[j] <= '{
+                    `FALSE, // valid
+                    `NOP,   // inst
+                    ALU_ADD,   // func
+                    32'h0,  // op1
+                    32'h0,  // op2
+                    {`PRN_WIDTH{1'h0}},    // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                };
+            end
+            for (int j = 0; j < `NUM_FU_MULT; j++) begin
+                fu_mult_packet[j] <= '{
+                    `FALSE, // valid
+                    `NOP,   // inst
+                    ALU_ADD,   // func
+                    32'h0,  // op1
+                    32'h0,  // op2
+                    {`PRN_WIDTH{1'h0}},    // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                };
+            end
+            for (int j = 0; j < `NUM_FU_LOAD; j++) begin
+                fu_load_packet[j] <= '{
+                    `FALSE, // valid
+                    `NOP,   // inst
+                    ALU_ADD,   // func
+                    32'h0,  // op1
+                    32'h0,  // op2
+                    {`PRN_WIDTH{1'h0}},    // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                };
+            end
+            for (int j = 0; j < `NUM_FU_STORE; j++) begin
+                fu_store_packet[j] <= '{
+                    `FALSE, // valid
+                    `NOP,   // inst
+                    ALU_ADD,   // func
+                    32'h0,  // op1
+                    32'h0,  // op2
+                    {`PRN_WIDTH{1'h0}},    // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                };
+            end
         end else begin
             counter <= next_counter;
             entries <= next_entries;
+            fu_alu_packet   <= next_fu_alu_packet;
+            fu_mult_packet  <= next_fu_mult_packet;
+            fu_load_packet  <= next_fu_load_packet;
+            fu_store_packet <= next_fu_store_packet;
         end
     end
 

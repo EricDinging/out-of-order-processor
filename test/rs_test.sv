@@ -31,7 +31,15 @@ module testbench;
     // testing parameters
     logic [`N-1:0] inst_idx;
     logic [`N-1:0] cdb_packet_idx;
-    logic [31:0]          cdb_packet_valid_cycle;
+    logic [31:0]   cdb_packet_valid_cycle;
+
+    // execute testing parameters
+    logic [3:0][`RS_CNT_WIDTH-1:0] wakeup_cnt;
+    logic [3:0][`RS_CNT_WIDTH-1:0] fu_avail_cnt;
+    logic [3:0][`RS_CNT_WIDTH-1:0] output_valid_cnt;
+
+    // helper function
+    let min(a,b) = (a > b) ? b : a;
 
     rs dut(
         // input
@@ -62,6 +70,10 @@ module testbench;
         reset  = 1;
         failed = 0;
         correct_counter = 0;
+
+        wakeup_cnt = 0;
+        fu_avail_cnt = 0;
+        output_valid_cnt = 0;
 
         for (int i = 0; i < `N; ++i) begin
             rs_is_packet.entries[i] = '{
@@ -268,7 +280,7 @@ module testbench;
         end
     endtask
     
-    task test_execute;
+    task test_dummy_execute;
         begin
             init;
             rs_is_packet.entries[0] = '{
@@ -286,19 +298,142 @@ module testbench;
                 };
 
             check_fu_output_invalid;
-            fu_alu_avail[0] = `TRUE;  
+
             @(negedge clock);
+            fu_alu_avail[0] = `TRUE;  
             rs_is_packet.entries[0].valid = `FALSE;
 
+            @(negedge clock);
+            fu_alu_avail[0] = `FALSE;  
             $display("time: %4.0f, fu_alu_packet[0].valid:%b", $time, fu_alu_packet[0].valid);
-            failed = (counter_out != 1) || (fu_alu_packet[0].valid == `FALSE);
+            failed = (counter_out != 0) || (fu_alu_packet[0].valid == `FALSE);
 
             @(negedge clock)
-            failed = (counter_out != 0);
             @(negedge clock)
 
-            $display("@@@ Passed: test_execute");
+            $display("@@@ Passed: test_dummy_execute");
         end
+    endtask
+
+    task test_execute;
+        init;
+        for (int j = 0; j < `RS_SZ/`N; ++j) begin
+            for (int i = 0; i < `N; ++i) begin
+                rs_is_packet.entries[i] = '{
+                    `NOP,  // unused
+                    `TRUE, // valid
+                    32'h0, // PC
+                    FU_ALU,
+                    ALU_ADD,
+                    `TRUE, // op1_ready
+                    `TRUE, // op2_ready
+                    32'h1,  // op1
+                    32'h2,  // op2
+                    32'h3,  // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}} // robn
+                };
+                case (($urandom) % 4)
+                    0: begin
+                        rs_is_packet.entries[i].fu = FU_ALU;
+                        wakeup_cnt[0]++;
+                    end
+                    1: begin
+                        rs_is_packet.entries[i].fu = FU_MULT;
+                        wakeup_cnt[1]++;
+                    end
+                    2: begin
+                        rs_is_packet.entries[i].fu = FU_LOAD;
+                        wakeup_cnt[2]++;
+                    end
+                    3: begin
+                        rs_is_packet.entries[i].fu = FU_STORE;
+                        wakeup_cnt[3]++;
+                    end
+                endcase
+            end
+
+            @(negedge clock);
+        end
+
+        $display("time: %4.0f, counter: %d, almost_full: %d", $time, counter_out, almost_full);
+
+        for (int i = 0; i < `RS_SZ; ++i) begin
+            $display("Entries: %d, FU: %h", i, entries_out[i].fu);
+        end
+
+        $display("time: %4.0f, wakeup_cnt:%d %d %d %d", $time, wakeup_cnt[0], wakeup_cnt[1], wakeup_cnt[2], wakeup_cnt[3]);
+
+        for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+            if (($urandom) % 2) begin
+                fu_alu_avail[i] = `TRUE;
+                fu_avail_cnt[0] += 1;
+            end
+        end
+        for (int i = 0; i < `NUM_FU_MULT; ++i) begin
+            if (($urandom) % 2) begin
+                fu_mult_avail[i] = `TRUE;
+                fu_avail_cnt[1] += 1;
+            end
+        end
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            if (($urandom) % 2) begin
+                fu_load_avail[i] = `TRUE;
+                fu_avail_cnt[2] += 1;
+            end
+        end
+        for (int i = 0; i < `NUM_FU_STORE; ++i) begin
+            if (($urandom) % 2) begin
+                fu_store_avail[i] = `TRUE;
+                fu_avail_cnt[3] += 1;
+            end
+        end
+
+        for (int i = 0; i < `N; ++i) begin
+            rs_is_packet.entries[i].valid = `FALSE;
+        end
+
+        failed = (counter_out != `RS_SZ);
+
+        $display("time: %4.0f, fu_avail_cnt:%d %d %d %d", $time, fu_avail_cnt[0], fu_avail_cnt[1], fu_avail_cnt[2], fu_avail_cnt[3]);
+
+        @(negedge clock);
+        for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+            fu_alu_avail[i] = `FALSE;
+        end
+        for (int i = 0; i < `NUM_FU_MULT; ++i) begin
+            fu_mult_avail[i] = `FALSE;
+        end
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            fu_load_avail[i] = `FALSE;
+        end
+        for (int i = 0; i < `NUM_FU_STORE; ++i) begin
+            fu_store_avail[i] = `FALSE;
+        end
+
+        for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+            output_valid_cnt[0] += fu_alu_packet[i].valid;
+        end
+        for (int i = 0; i < `NUM_FU_MULT; ++i) begin
+            output_valid_cnt[1] += fu_mult_packet[i].valid;
+        end
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            output_valid_cnt[2] += fu_load_packet[i].valid;
+        end
+        for (int i = 0; i < `NUM_FU_STORE; ++i) begin
+            output_valid_cnt[3] += fu_store_packet[i].valid;
+        end
+
+        $display("time: %4.0f, output_valid_cnt:%d %d %d %d", $time, output_valid_cnt[0], output_valid_cnt[1], output_valid_cnt[2], output_valid_cnt[3]);
+        for (int i=0; i < 4; i++) begin
+            failed = failed || (output_valid_cnt[i] > min(wakeup_cnt[i], fu_avail_cnt[i]));
+        end
+
+
+        failed = failed || (counter_out != `RS_SZ - output_valid_cnt[0] - output_valid_cnt[1] - output_valid_cnt[2] - output_valid_cnt[3]);
+        @(negedge clock)
+        @(negedge clock)
+
+        $display("@@@ Passed: test_execute");
     endtask
 
     
@@ -329,12 +464,15 @@ module testbench;
                 fu_alu_packet:%b\n, fu_mult_packet:%b\n, fu_load_packet:%b\n, \
                 fu_store_packet:%b\n, cdb_packet:%b\n";
         
-        // test_almost_full_counter;
-        // test_concurrent_enter_cdb;
-        // for (int i = 0; i < 10; ++i) begin
-        //     test_random_cdb;
-        // end
-        test_execute;
+        test_almost_full_counter;
+        test_concurrent_enter_cdb;
+        for (int i = 0; i < 10; ++i) begin
+            test_random_cdb;
+        end
+        test_dummy_execute;
+        for (int i = 0; i < 10; ++i) begin
+            test_execute;
+        end
         
         $finish;
     end
