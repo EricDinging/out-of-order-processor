@@ -9,16 +9,16 @@ module rs #(
     input RS_IS_PACKET rs_is_packet,
 
     input CDB_PACKET [`N-1:0] cdb_packet,
-    
+
     input logic [`NUM_FU_ALU-1:0]   fu_alu_avail,
     input logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
     input logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
     input logic [`NUM_FU_STORE-1:0] fu_store_avail,
     
-    output FU_PACKET fu_alu_packet   [`NUM_FU_ALU-1:0],
-    output FU_PACKET fu_mult_packet  [`NUM_FU_MULT-1:0],
-    output FU_PACKET fu_load_packet  [`NUM_FU_LOAD-1:0],
-    output FU_PACKET fu_store_packet [`NUM_FU_STORE-1:0],
+    output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
+    output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
+    output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
+    output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
     output logic almost_full
     `ifdef DEBUG_OUT
     , output RS_ENTRY [SIZE-1:0]      entries_out
@@ -118,7 +118,6 @@ module rs #(
             // Input new value
             if (~entries[i].valid & inst_cnt < `N & ~almost_full 
                 & rs_is_packet.entries[inst_cnt].valid) begin
-                    
                 next_entries[i] = rs_is_packet.entries[inst_cnt];
                 ++inst_cnt;
                 ++next_counter;
