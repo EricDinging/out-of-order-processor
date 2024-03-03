@@ -99,6 +99,21 @@ module rs #(
         .empty()
     );
 
+    function FU_PACKET rs_entry_to_packet;
+        input RS_ENTRY entry;
+        begin
+            rs_entry_to_packet = '{
+                entry.valid,    // .valid
+                entry.inst,     // .inst
+                entry.func,     // .func
+                entry.op1,      // .op1
+                entry.op2,      // .op2
+                entry.dest_prn, // .dest_prn
+                entry.robn      // .robn
+            };
+        end
+    endfunction
+
     // Combinational
     always_comb begin
         next_counter = counter;
@@ -136,8 +151,6 @@ module rs #(
             // Check CDB value
             for (int cdb_idx = 0; cdb_idx < `N; ++cdb_idx) begin
                 if (cdb_packet[cdb_idx].valid) begin
-                    // PRN  dest_prn = cdb_packet[cdb_idx].dest_prn;
-                    // DATA value    = cdb_packet[cdb_idx].value;
                     if (~next_entries[i].op1_ready && cdb_packet[cdb_idx].dest_prn == next_entries[i].op1) begin
                         next_entries[i].op1_ready = `TRUE;
                         next_entries[i].op1       = cdb_packet[cdb_idx].value;
@@ -153,15 +166,7 @@ module rs #(
             // Output
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 if (alu_sel[i][j]) begin
-                    next_fu_alu_packet[j] = '{
-                        `TRUE,           // .valid
-                        entries[i].inst, // .inst
-                        entries[i].func, // .func
-                        entries[i].op1, // .op1 
-                        entries[i].op2, // .op2
-                        entries[i].dest_prn, // .dest_prn
-                        entries[i].robn // .robn
-                    };
+                    next_fu_alu_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
                 end  
@@ -169,15 +174,7 @@ module rs #(
 
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
                 if (mult_sel[i][j]) begin
-                    next_fu_mult_packet[j] = '{
-                        `TRUE,
-                        entries[i].inst, // .inst
-                        entries[i].func, // .func
-                        entries[i].op1, // .op1 
-                        entries[i].op2, // .op2 
-                        entries[i].dest_prn, // dest_prn
-                        entries[i].robn // .robn
-                    };
+                    next_fu_mult_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
                 end 
@@ -185,15 +182,7 @@ module rs #(
 
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
                 if (load_sel[i][j]) begin
-                    next_fu_load_packet[j] = '{
-                        `TRUE,
-                        entries[i].inst, // inst
-                        entries[i].func, // func
-                        entries[i].op1,  // op1 
-                        entries[i].op2,  // op2 
-                        entries[i].dest_prn, // dest_prn
-                        entries[i].robn // robn
-                    };
+                    next_fu_load_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
                 end 
@@ -201,15 +190,7 @@ module rs #(
 
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
                 if (store_sel[i][j]) begin
-                    next_fu_store_packet[j] = '{
-                        `TRUE,
-                        entries[i].inst, // inst
-                        entries[i].func, // func
-                        entries[i].op1,  // op1 
-                        entries[i].op2,  // op2 
-                        entries[i].dest_prn, // dest_prn
-                        entries[i].robn // robn
-                    };
+                    next_fu_store_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
                 end 
@@ -249,23 +230,6 @@ module rs #(
         end
     end
 
-    // genvar j;
-    // generate
-    //     for (j = 0; j < `NUM_FU_ALU; ++j) begin
-    //         assign select = alu_gnt_bus[j] & {(SIZE){fu_alu_avail[j]}};
-    //     end
-    //     for (j = 0; j < `NUM_FU_MULT; ++j) begin
-    //         assign select = mult_gnt_bus[j] & {(SIZE){fu_mult_avail[j]}};
-    //     end
-    //     for (j = 0; j < `NUM_FU_LOAD; ++j) begin
-    //         assign select = load_gnt_bus[j] & {(SIZE){fu_load_avail[j]}};
-    //     end
-    //     for (j = 0; j < `NUM_FU_STORE; ++j) begin
-    //         assign select = store_gnt_bus[j] & {(SIZE){fu_store_avail[j]}};
-    //     end
-    // endgenerate
-
-
     assign almost_full = (counter > SIZE - ALERT_DEPTH);
 
     // Sequential
@@ -289,44 +253,44 @@ module rs #(
             end
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 fu_alu_packet[j] <= '{
-                    `FALSE, // valid
-                    `NOP,   // inst
-                    ALU_ADD,   // func
-                    32'h0,  // op1
-                    32'h0,  // op2
+                    `FALSE,  // valid
+                    `NOP,    // inst
+                    ALU_ADD, // func
+                    32'h0,   // op1
+                    32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}} // dest_rob
                 };
             end
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
                 fu_mult_packet[j] <= '{
-                    `FALSE, // valid
-                    `NOP,   // inst
-                    ALU_ADD,   // func
-                    32'h0,  // op1
-                    32'h0,  // op2
+                    `FALSE,  // valid
+                    `NOP,    // inst
+                    ALU_ADD, // func
+                    32'h0,   // op1
+                    32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}} // dest_rob
                 };
             end
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
                 fu_load_packet[j] <= '{
-                    `FALSE, // valid
-                    `NOP,   // inst
-                    ALU_ADD,   // func
-                    32'h0,  // op1
-                    32'h0,  // op2
+                    `FALSE,  // valid
+                    `NOP,    // inst
+                    ALU_ADD, // func
+                    32'h0,   // op1
+                    32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}} // dest_rob
                 };
             end
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
                 fu_store_packet[j] <= '{
-                    `FALSE, // valid
-                    `NOP,   // inst
-                    ALU_ADD,   // func
-                    32'h0,  // op1
-                    32'h0,  // op2
+                    `FALSE,  // valid
+                    `NOP,    // inst
+                    ALU_ADD, // func
+                    32'h0,   // op1
+                    32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}} // dest_rob
                 };
@@ -343,3 +307,6 @@ module rs #(
 
 endmodule
 
+class func_unit;
+    bit [SIZE-1:0] alu_wake_ups;
+endclass //func_unit

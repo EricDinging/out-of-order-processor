@@ -320,13 +320,13 @@ module testbench;
                 rs_is_packet.entries[i] = '{
                     `NOP,  // unused
                     `TRUE, // valid
-                    32'h0, // PC
+                    $random, // PC
                     FU_ALU,
                     ALU_ADD,
                     `TRUE, // op1_ready
                     `TRUE, // op2_ready
-                    32'h1,  // op1
-                    32'h2,  // op2
+                    $random,  // op1
+                    $random,  // op2
                     32'h3,  // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}} // robn
                 };
