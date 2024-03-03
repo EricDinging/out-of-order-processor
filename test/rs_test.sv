@@ -3,8 +3,6 @@
 
 module testbench;
 
-    `define DEBUG_OUT 1
-    
     logic clock, reset, failed;
     wor failed_wor;
     
@@ -470,7 +468,7 @@ module testbench;
             test_random_cdb;
         end
         test_dummy_execute;
-        for (int i = 0; i < 100; ++i) begin
+        for (int i = 0; i < 1000; ++i) begin
             test_execute;
         end
         
