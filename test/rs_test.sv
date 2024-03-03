@@ -446,9 +446,9 @@ module testbench;
                         FU_ALU,
                         ALU_ADD,
                         `FALSE, // op1_ready
-                        `TRUE, // op2_ready
+                        `FALSE, // op2_ready
                         32'h1,  // op1
-                        $random,  // op2
+                        32'h1,  // op2
                         32'h3,  // dest_prn
                         {`ROB_CNT_WIDTH{1'h0}} // robn
                     };
@@ -471,6 +471,55 @@ module testbench;
             cdb_packet[0] = '{
                 `TRUE,
                 32'h1,
+                $random
+            };
+            for (int i = 0; i < `RS_SZ/`N; i++) begin
+                @(negedge clock);
+                cdb_packet[0].valid = `FALSE;
+                failed = (counter_out != `RS_SZ - min(`N, `NUM_FU_ALU) * i);
+            end
+            @(negedge clock);
+            $display("@@@ Passed: test_integrate");
+        end
+    endtask
+
+    task test_integrate_op1;
+        begin
+            init;
+            for (int j = 0; j < `RS_SZ/`N; ++j) begin
+                for (int i = 0; i < `N; ++i) begin
+                    rs_is_packet.entries[i] = '{
+                        $random,  // unused
+                        `TRUE, // valid
+                        $random, // PC
+                        FU_ALU,
+                        ALU_ADD,
+                        `FALSE, // op1_ready
+                        `FALSE, // op2_ready
+                        32'h2,  // op1
+                        $random,  // op2
+                        32'h3,  // dest_prn
+                        {`ROB_CNT_WIDTH{1'h0}} // robn
+                    };
+                end
+                @(negedge clock);
+            end
+
+            failed = (counter_out != `RS_SZ);
+            for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+                fu_alu_avail[i] = `TRUE;
+            end
+            @(negedge clock);
+
+            for (int i = 0; i <`N ; ++i) begin
+                rs_is_packet.entries[i].valid = `FALSE;
+            end
+
+            failed = (counter_out != `RS_SZ);
+
+            cdb_packet[0] = '{
+                `TRUE,
+                32'h2,
                 $random
             };
             for (int i = 0; i < `RS_SZ/`N; i++) begin
@@ -521,6 +570,7 @@ module testbench;
             test_execute;
         end
         test_integrate;
+        test_integrate_op1;
         
         $finish;
     end
