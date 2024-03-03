@@ -466,11 +466,11 @@ module testbench;
         
         test_almost_full_counter;
         test_concurrent_enter_cdb;
-        for (int i = 0; i < 10; ++i) begin
+        for (int i = 0; i < 100; ++i) begin
             test_random_cdb;
         end
         test_dummy_execute;
-        for (int i = 0; i < 10; ++i) begin
+        for (int i = 0; i < 100; ++i) begin
             test_execute;
         end
         
