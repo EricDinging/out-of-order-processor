@@ -140,8 +140,10 @@ module rs #(
 
         for (int i = 0, inst_cnt = 0; i < SIZE; ++i) begin
             // Input new value
-            if (~entries[i].valid & inst_cnt < `N & ~almost_full 
-                & rs_is_packet.entries[inst_cnt].valid) begin
+            if (~entries[i].valid & 
+                inst_cnt < `N &
+                ~almost_full & 
+                rs_is_packet.entries[inst_cnt].valid) begin
                 next_entries[i] = rs_is_packet.entries[inst_cnt];
                 ++inst_cnt;
                 ++next_counter;
