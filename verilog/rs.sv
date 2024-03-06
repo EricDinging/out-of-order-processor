@@ -53,7 +53,6 @@ module rs #(
     FU_PACKET [`NUM_FU_LOAD-1:0]  next_fu_load_packet;
     FU_PACKET [`NUM_FU_STORE-1:0] next_fu_store_packet;
 
-    // wor  [SIZE-1:0] select;
     logic [SIZE-1:0][`NUM_FU_ALU-1:0]   alu_sel;
     logic [SIZE-1:0][`NUM_FU_MULT-1:0]  mult_sel;
     logic [SIZE-1:0][`NUM_FU_LOAD-1:0]  load_sel;
@@ -113,7 +112,6 @@ module rs #(
             };
         end
     endfunction
-
 
     // Combinational
     always_comb begin
@@ -305,50 +303,4 @@ module rs #(
             fu_store_packet <= next_fu_store_packet;
         end
     end
-
 endmodule
-
-class func_unit #(int SIZE = `RS_SZ, int NUM = 1);
-
-    logic [SIZE-1:0]          wake_ups;
-    logic [NUM-1:0][SIZE-1:0] gnt_bus;
-    logic [SIZE-1:0][NUM-1:0] sel;
-    FU_PACKET [NUM-1:0]       next_packet;
-
-    static function FU_PACKET rs_entry_to_packet;
-        input RS_ENTRY entry;
-        begin
-            rs_entry_to_packet = '{
-                entry.valid,    // .valid
-                entry.inst,     // .inst
-                entry.func,     // .func
-                entry.op1,      // .op1
-                entry.op2,      // .op2
-                entry.dest_prn, // .dest_prn
-                entry.robn      // .robn
-            };
-        end
-    endfunction
-
-    task init_next(ref FU_PACKET [NUM-1:0] packet);
-        next_packet = packet;
-        for (int i = 0; i < NUM; ++i) begin
-            next_packet[i].valid = 1'b0;
-        end
-    endtask
-
-    // task update(
-    //     const int offset,
-    //     const ref RS_ENTRY [SIZE-1:0] entries,
-    //     ref RS_ENTRY [SIZE-1:0] next_entries
-    // );
-    //     for (int i = 0; i < NUM; ++i) begin
-    //         if (sel[offset][i]) begin
-    //             next_packet[i] = rs_entry_to_packet(entries[offset]);
-    //             next_entries[offset].valid = `FALSE;
-    //             --next_counter;
-    //         end  
-    //     end
-    // endtask
-
-endclass //func_unit
