@@ -114,6 +114,7 @@ module rs #(
         end
     endfunction
 
+
     // Combinational
     always_comb begin
         next_counter = counter;

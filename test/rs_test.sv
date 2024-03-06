@@ -495,7 +495,7 @@ module testbench;
                         FU_ALU,
                         ALU_ADD,
                         `FALSE, // op1_ready
-                        `FALSE, // op2_ready
+                        `TRUE, // op2_ready
                         32'h2,  // op1
                         $random,  // op2
                         32'h3,  // dest_prn
@@ -528,7 +528,7 @@ module testbench;
                 failed = (counter_out != `RS_SZ - min(`N, `NUM_FU_ALU) * i);
             end
             @(negedge clock);
-            $display("@@@ Passed: test_integrate");
+            $display("@@@ Passed: test_integrate_op1");
         end
     endtask
 
