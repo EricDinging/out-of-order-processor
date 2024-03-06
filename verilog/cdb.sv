@@ -5,7 +5,7 @@ module cdb #(
 )(
     input clock, reset,
 
-    input CDB_PACKET cdb_input
+    input CDB_PACKET cdb_input,
 
     output CDB_PACKET cdb_output
 );
