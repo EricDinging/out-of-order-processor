@@ -12,6 +12,7 @@ module testbench;
     logic         almost_full;
     ROB_CT_PACKET rob_ct_packet;
     ROBN [`N-1:0] tail_entries;
+    logic         squash, correct_squash;
 
     // debug output
     ROB_ENTRY [`ROB_SZ-1:0]        entries_out;
@@ -33,7 +34,8 @@ module testbench;
         .entries_out(entries_out),
         .counter_out(counter_out),
         .head_out(head_out),
-        .tail_out(tail_out)
+        .tail_out(tail_out),
+        .squash(squash)
     );
 
     always begin
@@ -57,7 +59,7 @@ module testbench;
     end
 
     task print_entries_out;
-        $display("time: %4.0f, counter: %d, almost_full: %b, head: %d, tail: %d\n", $time, counter_out, almost_full, head_out, tail_out);
+        $display("time: %4.0f, counter: %d, almost_full: %b, head: %d, tail: %d, squash: %d\n", $time, counter_out, almost_full, head_out, tail_out, squash);
         for (int i = 0; i < `ROB_SZ; ++i) begin
             $display("idx %d: PC %d, executed %d\n", i, entries_out[i].PC, entries_out[i].executed);
         end
@@ -69,20 +71,26 @@ module testbench;
         correct_counter = 0;
         correct_head    = 0;
         correct_tail    = 0;
+        correct_squash  = 0;
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] = '{
-                0,   // executed;
-                0,   // success;
-                0,   // is_store;
-                0,   // is_branch;
-                0,   // dest_prn;
-                0,   // dest_arn;
-                0,   // PC;
-                0,   // NPC;
-                0,   // halt;
-                0,   // illegal;
-                0   // csr_op; 
+            rob_is_packet.entries[i] <= '{
+                0, // executed;
+                0, // success;
+                0, // is_store;
+                0, // cond_branch;
+                0, // uncond_branch;
+                0, // resolve_taken;
+                0, // predict_taken;
+                0, // predict_target;
+                0, // resolve_target;
+                0, // dest_prn;
+                0, // dest_arn;
+                0, // PC;
+                0, // NPC;
+                0, // halt;
+                0, // illegal;
+                0 // csr_op; 
             };
             rob_is_packet.valid[i] = `FALSE;
         end
@@ -107,18 +115,23 @@ module testbench;
         correct = almost_full == `FALSE;
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] = '{
-                0,             // executed;
-                $random % 2,   // success;
-                $random % 2,   // is_store;
-                $random % 2,   // is_branch;
-                $random,       // dest_prn;
-                $random,       // dest_arn;
-                i * 4,         // PC;
-                i * 4 + 4,     // NPC;
-                $random % 2,   // halt;
-                $random % 2,   // illegal;
-                0              // csr_op; 
+            rob_is_packet.entries[i] <= '{
+                0,           // executed;
+                $random % 2, // success;
+                $random % 2, // is_store;
+                $random % 2, // cond_branch;
+                $random % 2, // uncond_branch;
+                $random % 2, // resolve_taken;
+                $random % 2, // predict_taken;
+                $random,     // predict_target;
+                $random,     // resolve_target;
+                $random,     // dest_prn;
+                $random,     // dest_arn;
+                i * 4,       // PC;
+                i * 4 + 4,   // NPC;
+                $random % 2, // halt;
+                $random % 2, // illegal;
+                0            // csr_op; 
             };
             rob_is_packet.valid[i] = `TRUE;
         end
@@ -127,16 +140,17 @@ module testbench;
             @(negedge clock);
             correct_counter += `N;
             correct_tail    += `N;
-            correct = correct && counter_out == correct_counter && !almost_full && head_out == correct_head && tail_out == correct_tail;
+            correct = correct && counter_out == correct_counter && !almost_full && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
             $display("time: %4.0f, iteration: %d\n", $time, i);
             print_entries_out();
         end
         @(negedge clock);
         correct_counter += `N;
         correct_tail    += `N;
-        correct = correct && counter_out == correct_counter && almost_full && head_out == correct_head && tail_out == correct_tail;
-        $display("@@@ Passed: test_almost_full_counter");
+        correct = correct && counter_out == correct_counter 
+            && almost_full && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
         print_entries_out();
+        $display("@@@ Passed: test_almost_full_counter");
     endtask
 
     
@@ -144,7 +158,7 @@ module testbench;
         clock = 0;
 
         test_almost_full_counter();
-        $display("@@@ PASSED");
+        $display("@@@ Passed");
         $finish;
     end
     

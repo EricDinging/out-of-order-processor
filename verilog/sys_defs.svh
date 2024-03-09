@@ -453,13 +453,18 @@ typedef struct packed {
  */
 typedef struct packed {
     logic    executed;
-    logic    success; // branch_taken prediction success, the prediction of branch_taken in Issue, the actual success in commit
+    logic    success; // branch_taken prediction success
     logic    is_store;
-    logic    is_branch;
+    logic    cond_branch;
+    logic    uncond_branch;
+    logic    resolve_taken;
+    logic    predict_taken;
+    ADDR     predict_target;
+    ADDR     resolve_target;
     PRN      dest_prn; // debug only
     REG_IDX  dest_arn;
     ADDR     PC;
-    ADDR     NPC;     // branch target for branches, jalr/ jar target for jalr/ jar
+    ADDR     NPC;     // PC + 4
     logic    halt;    // Is this a halt?
     logic    illegal; // Is this instruction illegal?
     logic    csr_op;  // Is this a CSR operation? (we only used this as a cheap way to get return code)
