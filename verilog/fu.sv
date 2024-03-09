@@ -72,10 +72,8 @@ module alu_cond (
     assign valid = fu_alu_packet.valid;
     assign dest_prn = fu_alu_packet.dest_prn;
     assign robn = fu_alu_packet.robn;
-    assign take_branch = fu_alu_packet.uncond_branch || (fu_alu_packet.cond_branch && take_conditional);
 
     DATA opa_mux_out, opb_mux_out;
-    logic take_conditional;
     // ALU opA mux
     always_comb begin
         case (fu_alu_packet.opa_select)
@@ -116,13 +114,14 @@ module alu_cond (
         .rs2(fu_alu_packet.op2),
 
         // Output
-        .take(take_conditional)
+        .take(take_branch)
     );
 
 endmodule
 
 module mult (
     input FU_PACKET fu_mult_packet,
+    input logic avail, // tell the multiplier stage to stall if unavail
     output logic valid,
     output DATA mult_result,
     output PRN dest_prn,
@@ -130,6 +129,8 @@ module mult (
 );
     
 endmodule
+
+
 
 /*
 typedef struct packed {
@@ -142,12 +143,9 @@ typedef struct packed {
     ROBN    robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
-    logic    cond_branch;   // Is inst a conditional branch?
-    logic    uncond_branch; // Is inst an unconditional branch?
 } FU_PACKET
 
 typedef struct packed {
-    logic valid;
     PRN   dest_prn;
     DATA  value;
 } CDB_PACKET;

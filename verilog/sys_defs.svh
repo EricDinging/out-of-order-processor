@@ -416,8 +416,6 @@ typedef struct packed {
     ROBN     robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
-    logic    cond_branch;   // Is inst a conditional branch?
-    logic    uncond_branch; // Is inst an unconditional branch?
 } RS_ENTRY;
 
 typedef struct packed {
@@ -438,8 +436,6 @@ typedef struct packed {
     ROBN    robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
-    logic    cond_branch;   // Is inst a conditional branch?
-    logic    uncond_branch; // Is inst an unconditional branch?
 } FU_PACKET;
 
 /**
@@ -447,7 +443,6 @@ typedef struct packed {
  * Data exchanged between CDB and RS
  */
 typedef struct packed {
-    logic valid;
     PRN   dest_prn;
     DATA  value;
 } CDB_PACKET;

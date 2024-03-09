@@ -111,9 +111,7 @@ module rs #(
                 entry.dest_prn, // .dest_prn
                 entry.robn,     // .robn
                 entry.opa_select,
-                entry.opb_select,
-                entry.cond_branch,
-                entry.uncond_branch
+                entry.opb_select
             };
         end
     endfunction
@@ -156,7 +154,7 @@ module rs #(
 
             // Check CDB value
             for (int cdb_idx = 0; cdb_idx < `N; ++cdb_idx) begin
-                if (cdb_packet[cdb_idx].valid) begin
+                if (cdb_packet[cdb_idx].dest_prn != 0) begin
                     if (~next_entries[i].op1_ready && cdb_packet[cdb_idx].dest_prn == next_entries[i].op1) begin
                         next_entries[i].op1_ready = `TRUE;
                         next_entries[i].op1       = cdb_packet[cdb_idx].value;
@@ -256,9 +254,7 @@ module rs #(
                     {`PRN_WIDTH{1'h0}},     // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
                     2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
+                    4'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
@@ -272,9 +268,7 @@ module rs #(
                     {`PRN_WIDTH{1'h0}},     // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
                     2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
+                    4'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
@@ -288,9 +282,7 @@ module rs #(
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
                     2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
+                    4'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
@@ -304,9 +296,7 @@ module rs #(
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
                     2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
+                    4'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
@@ -320,9 +310,7 @@ module rs #(
                     {`PRN_WIDTH{1'h0}},    // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}},// dest_rob
                     2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
+                    4'b0
                 };
             end
         end else begin
