@@ -230,6 +230,12 @@ build/rob.simv: $(ROB_FILES)
 build/rob.cov: $(ROB_FILES)
 synth/rob.vg: $(ROB_FILES)
 
+# PRF
+PRF_FILES = verilog/sys_defs.svh
+build/prf.simv: $(PRF_FILES)
+build/prf.cov: $(PRF_FILES)
+synth/prf.vg: $(PRF_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################

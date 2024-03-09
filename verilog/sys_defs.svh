@@ -518,4 +518,14 @@ typedef struct packed {
     PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;
 } RRAT_CT_OUTPUT;
 
+typedef struct packed {
+    logic valid;
+    DATA  value;
+} PRF_ENTRY;
+
+typedef struct packed {
+    DATA value;
+    PRN  prn;
+} PRF_WRITE;
+
 `endif // __SYS_DEFS_SVH__

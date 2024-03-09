@@ -4,8 +4,7 @@
 module testbench;
 
     logic clock, reset, failed;
-    wor failed_wor;
-    
+
     RS_IS_PACKET rs_is_packet;
     CDB_PACKET [`N-1:0]   cdb_packet;
 
