@@ -414,6 +414,10 @@ typedef struct packed {
     OP_FIELD op1,       op2;
     PRN      dest_prn;
     ROBN     robn;
+    ALU_OPA_SELECT opa_select; // used for select signal in FU
+    ALU_OPB_SELECT opb_select; // same as above
+    logic    cond_branch;   // Is inst a conditional branch?
+    logic    uncond_branch; // Is inst an unconditional branch?
 } RS_ENTRY;
 
 typedef struct packed {
@@ -432,6 +436,10 @@ typedef struct packed {
     DATA    op1, op2;
     PRN     dest_prn;
     ROBN    robn;
+    ALU_OPA_SELECT opa_select; // used for select signal in FU
+    ALU_OPB_SELECT opb_select; // same as above
+    logic    cond_branch;   // Is inst a conditional branch?
+    logic    uncond_branch; // Is inst an unconditional branch?
 } FU_PACKET;
 
 /**
@@ -457,6 +465,9 @@ typedef struct packed {
     REG_IDX  dest_arn;
     ADDR     PC;
     ADDR     NPC; // branch target for branches, jalr/ jar target for jalr/ jar
+    logic    halt;          // Is this a halt?
+    logic    illegal;       // Is this instruction illegal?
+    logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
 } ROB_ENTRY;
 
 typedef struct packed {
