@@ -67,12 +67,12 @@ module prf #(
         `ifdef DEBUG_OUT
             next_counter = counter;
             for (int i = 0; i < `N; i++) begin
-                if (write_valid[i]) begin
+                if (write_valid[i] && !entries[write_data[i].prn].valid) begin
                     next_counter += 1;
                 end
-                if (prn_invalid[i] != 0) begin
+                if (prn_invalid[i] != 0 && entries[prn_invalid[i]].valid) begin
                     next_counter -= 1;
-                end
+                end 
             end
         `endif
 

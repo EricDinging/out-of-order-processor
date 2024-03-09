@@ -57,7 +57,7 @@ module testbench;
         end
 
         prn_invalid[i] = prn;
-        $display("setting %d invalid", prn);
+        $display("setting 0x%02x invalid", prn);
     endtask
 
     task check_table_match;
@@ -94,16 +94,14 @@ module testbench;
     task init;
         reset = 1;
         correct = 1;
-        entries[0].valid = 0;
+        entries[0].valid = `TRUE;
         entries[0].value = 0;
-        for (int i = 0; i < `N; i++) begin
-            prn_invalid[i] = 0;
-            write_data[i].prn = 0;
-        end
-        for (int i = 0; i < `PHYS_REG_SZ_R10K; i++) begin
+        prn_invalid = 0;
+        write_data = 0;
+        for (int i = 1; i < `PHYS_REG_SZ_R10K; i++) begin
             entries[i].valid = `FALSE;
-            counter = 0;
         end
+        counter = 0;
         
         @(negedge clock);
         @(negedge clock);
@@ -116,7 +114,7 @@ module testbench;
     task set_full;
         for (int i = 0; i < `PHYS_REG_SZ_R10K/`N; i++) begin 
             for (int j = 0; j < `N; j++) begin
-                write(j, i*`N + j, '{`TRUE, $random});
+                write(j, i * `N + j, '{`TRUE, $random});
             end
             @(negedge clock);
             check_table_match;
@@ -129,14 +127,9 @@ module testbench;
     task set_invalid;
         for (int i = 0; i < 10; i++) begin
             for (int j = 0; j < `N; j++) begin
-                temp = $random;
-                $display("random = %d", temp);
-                temp %= `PHYS_REG_SZ_R10K;
-                $display("actually setting %d invalid\n", temp);
-                write_invalid(j, temp);
+                write_invalid(j, $urandom % `PHYS_REG_SZ_R10K);
             end
             @(negedge clock);
-            // @(posedge clock);
             check_table_match;
         end
         @(negedge clock);
@@ -160,7 +153,7 @@ module testbench;
         begin
             $display("@@@ Incorrect at time %4.0f, clock %b\n", $time, clock);
             for (int i = 0; i < `PHYS_REG_SZ_R10K; i++) begin
-                $display("prn %02x: value 0x%08X, valid %b, true_value 0x%08X, true_valid %b\n", i, entries_out[i].value, entries_out[i].valid, entries[i].value, entries[i].valid);
+                $display("prn %02x: value 0x%08x, valid %b, true_value 0x%08x, true_valid %b\n", i, entries_out[i].value, entries_out[i].valid, entries[i].value, entries[i].valid);
             end
             $display("counter:%d, true_counter: %d", counter_out, counter);
             $display("@@@ Failed PRF test!");
@@ -177,7 +170,6 @@ module testbench;
     initial begin
         $display("PRF size %d\n", `PHYS_REG_SZ_R10K);
         clock = 0;
-        tr
         init; 
         set_full;
         set_invalid;
