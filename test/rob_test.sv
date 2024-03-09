@@ -14,7 +14,7 @@ module testbench;
     ROBN [`N-1:0] tail_entries;
 
     // debug output
-    ROB_ENTRY [`ROB_SZ-1:0]           entries_out;
+    ROB_ENTRY [`ROB_SZ-1:0]        entries_out;
     logic     [`ROB_CNT_WIDTH-1:0] counter_out, correct_counter;
     logic     [`ROB_CNT_WIDTH-1:0] head_out, tail_out, correct_tail, correct_head;
 
@@ -108,7 +108,7 @@ module testbench;
 
         for (int i = 0; i < `N; ++i) begin
             rob_is_packet.entries[i] = '{
-                $random % 2,   // executed;
+                0,             // executed;
                 $random % 2,   // success;
                 $random % 2,   // is_store;
                 $random % 2,   // is_branch;
