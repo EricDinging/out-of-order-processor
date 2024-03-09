@@ -427,6 +427,7 @@ typedef struct packed {
 typedef struct packed {
     logic   valid;
     INST    inst;
+    ADDR    PC;
     FU_FUNC func;
     DATA    op1, op2;
     PRN     dest_prn;
@@ -466,8 +467,14 @@ typedef struct packed {
 typedef struct packed {
     ROBN  robn;
     logic executed;
-    logic branch_taken;
 } FU_ROB_PACKET;
+
+typedef struct packed {
+    ROBN  robn;
+    logic executed;
+    logic branch_taken;
+    ADDR target_addr;
+} FU_ROB_ALU_PACKET;
 
 typedef struct packed {
     ROB_ENTRY [`N-1:0] entries;
@@ -526,5 +533,7 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
+
+
 
 `endif // __SYS_DEFS_SVH__
