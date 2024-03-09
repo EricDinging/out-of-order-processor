@@ -478,14 +478,9 @@ typedef struct packed {
 typedef struct packed {
     ROBN  robn;
     logic executed;
-} FU_ROB_PACKET;
-
-typedef struct packed {
-    ROBN  robn;
-    logic executed;
     logic branch_taken;
     ADDR target_addr;
-} FU_ROB_ALU_PACKET;
+} FU_ROB_PACKET;
 
 typedef struct packed {
     ROB_ENTRY [`N-1:0] entries;

@@ -8,10 +8,7 @@ module rob #(
     
     input ROB_IS_PACKET rob_is_packet,
 
-    input [`NUM_FU_ALU-1:0]   FU_ROB_PACKET fu_alu_packet,
-    input [`NUM_FU_MULT-1:0]  FU_ROB_PACKET fu_mult_packet,
-    input [`NUM_FU_LOAD-1:0]  FU_ROB_PACKET fu_load_packet,
-    input [`NUM_FU_STORE-1:0] FU_ROB_PACKET fu_store_packet,
+    input FU_ROB_PACKET [`CDB_SZ-1:0] fu_rob_packet,
 
     output almost_full,
     output ROB_CT_PACKET rob_ct_packet, 

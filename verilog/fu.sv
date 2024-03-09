@@ -157,7 +157,7 @@ typedef struct packed {
     logic executed;
     logic branch_taken;
     ADDR target_addr;
-} FU_ROB_ALU_PACKET;
+} FU_ROB_PACKET;
 */
 
 
@@ -173,10 +173,7 @@ module fu #(
     output logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
     output logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
     output logic [`NUM_FU_STORE-1:0] fu_store_avail,
-    output FU_ROB_ALU_PACKET [`NUM_FU_ALU-1:0]  fu_rob_alu_packet,
-    output FU_ROB_PACKET [`NUM_FU_MULT-1:0] fu_rob_mult_packet,
-    output FU_ROB_PACKET [`NUM_FU_LOAD-1:0] fu_rob_load_packet,
-    output FU_ROB_PACKET [`NUM_FU_STORE-1:0] fu_rob_store_packet,
+    output FU_ROB_PACKET [`CDB_SZ-1:0] fu_rob_packet,
     output CDB_PACKET [`CDB_SZ-1:0] cdb_packet
 );
 
