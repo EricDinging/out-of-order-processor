@@ -215,7 +215,7 @@ ALL_HEADERS = $(CPU_HEADERS)
 
 MULT_FILES = verilog/sys_defs.svh
 build/mult.simv: $(MULT_FILES)
-build/mult.cov: $(MULT_FILES)
+build/mult.cov.simv: $(MULT_FILES)
 synth/mult.vg: $(MULT_FILES)
 
 # TODO: add any files required for the RS here (besides test/rs_test.sv and verilog/rs.sv)
@@ -227,13 +227,13 @@ synth/rs.vg: $(RS_FILES)
 # TODO: add any files required for the ROB here (besides test/rob_test.sv and verilog/rob.sv)
 ROB_FILES = verilog/sys_defs.svh
 build/rob.simv: $(ROB_FILES)
-build/rob.cov: $(ROB_FILES)
+build/rob.cov.simv: $(ROB_FILES)
 synth/rob.vg: $(ROB_FILES)
 
 # PRF
 PRF_FILES = verilog/sys_defs.svh
 build/prf.simv: $(PRF_FILES)
-build/prf.cov: $(PRF_FILES)
+build/prf.cov.simv: $(PRF_FILES)
 synth/prf.vg: $(PRF_FILES)
 
 #################################

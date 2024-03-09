@@ -458,20 +458,20 @@ typedef struct packed {
  */
 typedef struct packed {
     logic    executed;
-    logic    success;
+    logic    success; // branch_taken prediction success, the prediction of branch_taken in Issue, the actual success in commit
     logic    is_store;
     logic    is_branch;
     PRN      dest_prn; // debug only
     REG_IDX  dest_arn;
     ADDR     PC;
-    ADDR     NPC; // branch target for branches, jalr/ jar target for jalr/ jar
-    logic    halt;          // Is this a halt?
-    logic    illegal;       // Is this instruction illegal?
-    logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+    ADDR     NPC;     // branch target for branches, jalr/ jar target for jalr/ jar
+    logic    halt;    // Is this a halt?
+    logic    illegal; // Is this instruction illegal?
+    logic    csr_op;  // Is this a CSR operation? (we only used this as a cheap way to get return code)
 } ROB_ENTRY;
 
 typedef struct packed {
-    logic valid;
+    logic     [`N-1:0] valid; // all valid entries are in the front of the packet
     ROB_ENTRY [`N-1:0] entries;
 } ROB_IS_PACKET;
 
@@ -479,7 +479,7 @@ typedef struct packed {
     ROBN  robn;
     logic executed;
     logic branch_taken;
-    ADDR target_addr;
+    ADDR  target_addr;
 } FU_ROB_PACKET;
 
 typedef struct packed {
