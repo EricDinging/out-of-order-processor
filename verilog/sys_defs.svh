@@ -498,7 +498,6 @@ typedef struct packed {
 
 /**
  * RRAT Packet:
- * Data for the RRAT
  */
 
 typedef struct packed {
