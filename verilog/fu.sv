@@ -63,10 +63,103 @@ endmodule // conditional_branch
 
 module alu_cond (
     input FU_PACKET fu_alu_packet,
-    output logic take,
-    // TODO: 
+    output logic valid
+    output logic take_branch,
+    output DATA alu_result,
+    output PRN dest_prn,
+    output ROBN robn
 );
+    assign valid = fu_alu_packet.valid;
+    assign dest_prn = fu_alu_packet.dest_prn;
+    assign robn = fu_alu_packet.robn;
+    assign take_branch = fu_alu_packet.uncond_branch || (fu_alu_packet.cond_branch && take_conditional);
+
+    DATA opa_mux_out, opb_mux_out;
+    logic take_conditional;
+    // ALU opA mux
+    always_comb begin
+        case (fu_alu_packet.opa_select)
+            OPA_IS_RS1:  opa_mux_out = fu_alu_packet.op1;
+            OPA_IS_PC:   opa_mux_out = fu_alu_packet.PC;
+            OPA_IS_ZERO: opa_mux_out = 0;
+            default:     opa_mux_out = 32'hdeadface; // dead face
+        endcase
+    end
+
+    // ALU opB mux
+    always_comb begin
+        case (fu_alu_packet.opb_select)
+            OPB_IS_RS2:   opb_mux_out = fu_alu_packet.op2;
+            OPB_IS_I_IMM: opb_mux_out = `RV32_signext_Iimm(fu_alu_packet.inst);
+            OPB_IS_S_IMM: opb_mux_out = `RV32_signext_Simm(fu_alu_packet.inst);
+            OPB_IS_B_IMM: opb_mux_out = `RV32_signext_Bimm(fu_alu_packet.inst);
+            OPB_IS_U_IMM: opb_mux_out = `RV32_signext_Uimm(fu_alu_packet.inst);
+            OPB_IS_J_IMM: opb_mux_out = `RV32_signext_Jimm(fu_alu_packet.inst);
+            default:      opb_mux_out = 32'hfacefeed; // face feed
+        endcase
+    end
+
+    alu alu_0 (
+        // Inputs
+        .opa(opa_mux_out),
+        .opb(opb_mux_out),
+        .func(fu_alu_packet.func),
+
+        // Output
+        .result(alu_result)
+    );
+
+    conditional_branch conditional_branch_0 (
+        // Inputs
+        .func(fu_alu_packet.inst.b.funct3),
+        .rs1(fu_alu_packet.op1),
+        .rs2(fu_alu_packet.op2),
+
+        // Output
+        .take(take_conditional)
+    );
+
 endmodule
+
+module mult (
+    input FU_PACKET fu_mult_packet,
+    output logic valid,
+    output DATA mult_result,
+    output PRN dest_prn,
+    output ROBN robn
+);
+    
+endmodule
+
+/*
+typedef struct packed {
+    logic   valid;
+    INST    inst;
+    ADDR    PC;
+    FU_FUNC func;
+    DATA    op1, op2;
+    PRN     dest_prn;
+    ROBN    robn;
+    ALU_OPA_SELECT opa_select; // used for select signal in FU
+    ALU_OPB_SELECT opb_select; // same as above
+    logic    cond_branch;   // Is inst a conditional branch?
+    logic    uncond_branch; // Is inst an unconditional branch?
+} FU_PACKET
+
+typedef struct packed {
+    logic valid;
+    PRN   dest_prn;
+    DATA  value;
+} CDB_PACKET;
+
+typedef struct packed {
+    ROBN  robn;
+    logic executed;
+    logic branch_taken;
+    ADDR target_addr;
+} FU_ROB_ALU_PACKET;
+*/
+
 
 module fu #(
 
