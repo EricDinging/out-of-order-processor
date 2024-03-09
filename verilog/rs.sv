@@ -104,11 +104,16 @@ module rs #(
             rs_entry_to_packet = '{
                 entry.valid,    // .valid
                 entry.inst,     // .inst
+                entry.PC,       // .PC
                 entry.func,     // .func
                 entry.op1,      // .op1
                 entry.op2,      // .op2
                 entry.dest_prn, // .dest_prn
-                entry.robn      // .robn
+                entry.robn,     // .robn
+                entry.opa_select,
+                entry.opb_select,
+                entry.cond_branch,
+                entry.uncond_branch
             };
         end
     endfunction
@@ -248,52 +253,76 @@ module rs #(
                     `FALSE,  // op2_ready
                     32'h0,   // op1
                     32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                    {`PRN_WIDTH{1'h0}},     // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
+                    2'b0,
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 fu_alu_packet[j] <= '{
                     `FALSE,  // valid
                     `NOP,    // inst
+                    32'b0,
                     ALU_ADD, // func
                     32'h0,   // op1
                     32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                    {`PRN_WIDTH{1'h0}},     // dest_prn
+                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
+                    2'b0,
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
                 fu_mult_packet[j] <= '{
                     `FALSE,  // valid
                     `NOP,    // inst
+                    32'b0,
                     ALU_ADD, // func
                     32'h0,   // op1
                     32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
+                    2'b0,
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
                 fu_load_packet[j] <= '{
                     `FALSE,  // valid
                     `NOP,    // inst
+                    32'b0,
                     ALU_ADD, // func
                     32'h0,   // op1
                     32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
+                    2'b0,
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
                 fu_store_packet[j] <= '{
                     `FALSE,  // valid
                     `NOP,    // inst
+                    32'b0,
                     ALU_ADD, // func
                     32'h0,   // op1
                     32'h0,   // op2
                     {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}} // dest_rob
+                    {`ROB_CNT_WIDTH{1'h0}},// dest_rob
+                    2'b0,
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
         end else begin

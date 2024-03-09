@@ -414,8 +414,8 @@ typedef struct packed {
     OP_FIELD op1,       op2;
     PRN      dest_prn;
     ROBN     robn;
-    ALU_OPA_SELECT opa_select; // used for select signal in FU
-    ALU_OPB_SELECT opb_select; // same as above
+    ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
+    ALU_OPB_SELECT opb_select; // same as above, 4 bits
     logic    cond_branch;   // Is inst a conditional branch?
     logic    uncond_branch; // Is inst an unconditional branch?
 } RS_ENTRY;
