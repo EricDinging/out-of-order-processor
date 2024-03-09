@@ -154,7 +154,7 @@ module rs #(
 
             // Check CDB value
             for (int cdb_idx = 0; cdb_idx < `N; ++cdb_idx) begin
-                if (cdb_packet[cdb_idx].valid) begin
+                if (cdb_packet[cdb_idx].dest_prn != 0) begin
                     if (~next_entries[i].op1_ready && cdb_packet[cdb_idx].dest_prn == next_entries[i].op1) begin
                         next_entries[i].op1_ready = `TRUE;
                         next_entries[i].op1       = cdb_packet[cdb_idx].value;

@@ -143,7 +143,6 @@ typedef struct packed {
 } FU_PACKET
 
 typedef struct packed {
-    logic valid;
     PRN   dest_prn;
     DATA  value;
 } CDB_PACKET;

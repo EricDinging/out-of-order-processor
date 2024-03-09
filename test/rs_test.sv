@@ -90,7 +90,6 @@ module testbench;
             };
             
             cdb_packet[i] = '{
-                `FALSE,
                 {`PRN_WIDTH{1'h0}}, // dest_prn
                 32'h0               // value
             };
@@ -185,7 +184,6 @@ module testbench;
             // fu_alu_avail = {`NUM_FU_ALU   {`TRUE}};
             
             cdb_packet[0] = '{
-                `TRUE,
                 32'h1,
                 32'h5
             };
@@ -193,7 +191,7 @@ module testbench;
             @(negedge clock);
 
             for (int i = 0; i < `N; ++i) begin
-                $display("input_valid:%b, cdb_valid:%b\n", rs_is_packet.entries[i].valid, cdb_packet[i].valid);
+                $display("input_valid:%b, cdb_valid:%b\n", rs_is_packet.entries[i].valid, cdb_packet[i].dest_prn != 0);
             end
             
             for (int i = 0; i < `N; ++i) begin
@@ -256,7 +254,6 @@ module testbench;
             end
 
             cdb_packet[cdb_packet_idx] = '{
-                `TRUE,
                 32'h1,
                 32'h5
             };
@@ -480,13 +477,12 @@ module testbench;
             failed = (counter_out != `RS_SZ/`N * `N);
 
             cdb_packet[0] = '{
-                `TRUE,
                 32'h1,
                 $random
             };
             for (int i = 0; i < `RS_SZ/`N; i++) begin
                 @(negedge clock);
-                cdb_packet[0].valid = `FALSE;
+                cdb_packet[0].dest_prn = 0;
                 failed = (counter_out != `RS_SZ/`N * `N - min(`N, `NUM_FU_ALU) * i);
             end
             @(negedge clock);
@@ -531,13 +527,12 @@ module testbench;
             failed = (counter_out != `RS_SZ/`N * `N);
 
             cdb_packet[0] = '{
-                `TRUE,
                 32'h2,
                 $random
             };
             for (int i = 0; i < `RS_SZ/`N; i++) begin
                 @(negedge clock);
-                cdb_packet[0].valid = `FALSE;
+                cdb_packet[0].dest_prn = 0;
                 failed = (counter_out != `RS_SZ/`N * `N - min(`N, `NUM_FU_ALU) * i);
             end
             @(negedge clock);

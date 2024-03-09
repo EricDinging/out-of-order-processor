@@ -443,7 +443,6 @@ typedef struct packed {
  * Data exchanged between CDB and RS
  */
 typedef struct packed {
-    logic valid;
     PRN   dest_prn;
     DATA  value;
 } CDB_PACKET;
