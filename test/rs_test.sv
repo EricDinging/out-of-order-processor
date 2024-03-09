@@ -144,12 +144,12 @@ module testbench;
         $display("time: %4.0f, iteration:%d clock:%b counter:%b, almost_full:%b, valid:%b\n", $time, ITER, clock, counter_out, almost_full,entries_out[3].valid);
 
         @(negedge clock);
-        failed = ~almost_full | (`RS_SZ != counter_out);
+        failed = ~almost_full | (ITER * `N != counter_out);
 
         @(negedge clock);
 
         $display("Check entries valid bits");
-        for (int i = 0; i < `RS_SZ; ++i) begin
+        for (int i = 0; i < ITER * `N ; ++i) begin
             failed = failed || !entries_out[i].valid;
             $display("time: %4.0f, iteration: %h, valid: %b", $time, i, entries_out[i].valid);
         end
@@ -389,7 +389,7 @@ module testbench;
             rs_is_packet.entries[i].valid = `FALSE;
         end
 
-        failed = (counter_out != `RS_SZ);
+        failed = (counter_out != `RS_SZ/`N * `N);
 
         $display("time: %4.0f, fu_avail_cnt:%d %d %d %d", $time, fu_avail_cnt[0], fu_avail_cnt[1], fu_avail_cnt[2], fu_avail_cnt[3]);
 
@@ -426,7 +426,7 @@ module testbench;
         end
 
 
-        failed = failed || (counter_out != `RS_SZ - output_valid_cnt[0] - output_valid_cnt[1] - output_valid_cnt[2] - output_valid_cnt[3]);
+        failed = failed || (counter_out !=  `RS_SZ/`N * `N - output_valid_cnt[0] - output_valid_cnt[1] - output_valid_cnt[2] - output_valid_cnt[3]);
         @(negedge clock)
         @(negedge clock)
 
@@ -455,7 +455,7 @@ module testbench;
                 @(negedge clock);
             end
 
-            failed = (counter_out != `RS_SZ);
+            failed = (counter_out != `RS_SZ/`N * `N);
             for (int i = 0; i < `NUM_FU_ALU; ++i) begin
                 fu_alu_avail[i] = `TRUE;
             end
@@ -465,7 +465,7 @@ module testbench;
                 rs_is_packet.entries[i].valid = `FALSE;
             end
 
-            failed = (counter_out != `RS_SZ);
+            failed = (counter_out != `RS_SZ/`N * `N);
 
             cdb_packet[0] = '{
                 `TRUE,
@@ -475,7 +475,7 @@ module testbench;
             for (int i = 0; i < `RS_SZ/`N; i++) begin
                 @(negedge clock);
                 cdb_packet[0].valid = `FALSE;
-                failed = (counter_out != `RS_SZ - min(`N, `NUM_FU_ALU) * i);
+                failed = (counter_out != `RS_SZ/`N * `N - min(`N, `NUM_FU_ALU) * i);
             end
             @(negedge clock);
             $display("@@@ Passed: test_integrate");
@@ -504,7 +504,7 @@ module testbench;
                 @(negedge clock);
             end
 
-            failed = (counter_out != `RS_SZ);
+            failed = (counter_out != `RS_SZ/`N * `N);
             for (int i = 0; i < `NUM_FU_ALU; ++i) begin
                 fu_alu_avail[i] = `TRUE;
             end
@@ -514,7 +514,7 @@ module testbench;
                 rs_is_packet.entries[i].valid = `FALSE;
             end
 
-            failed = (counter_out != `RS_SZ);
+            failed = (counter_out != `RS_SZ/`N * `N);
 
             cdb_packet[0] = '{
                 `TRUE,
@@ -524,7 +524,7 @@ module testbench;
             for (int i = 0; i < `RS_SZ/`N; i++) begin
                 @(negedge clock);
                 cdb_packet[0].valid = `FALSE;
-                failed = (counter_out != `RS_SZ - min(`N, `NUM_FU_ALU) * i);
+                failed = (counter_out != `RS_SZ/`N * `N - min(`N, `NUM_FU_ALU) * i);
             end
             @(negedge clock);
             $display("@@@ Passed: test_integrate_op1");
