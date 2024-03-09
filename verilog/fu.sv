@@ -121,6 +121,7 @@ endmodule
 
 module mult (
     input FU_PACKET fu_mult_packet,
+    input logic avail, // tell the multiplier stage to stall if unavail
     output logic valid,
     output DATA mult_result,
     output PRN dest_prn,
@@ -128,6 +129,8 @@ module mult (
 );
     
 endmodule
+
+
 
 /*
 typedef struct packed {
