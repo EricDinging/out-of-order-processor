@@ -46,8 +46,9 @@ module testbench;
     task exit_on_error;
         begin
             $display("@@@ Incorrect at time %4.0f", $time);
-            $display("Time:%4.0f clock:%b counter:%b, almost_full:%b\n", $time, clock, counter_out, almost_full);
             $display("@@@ Failed ENDING TESTBENCH : ERROR !");
+            $display("Time:%4.0f clock:%b counter:%b, almost_full:%b\n", $time, clock, counter_out, almost_full);
+            print_entries_out();
             $finish;
         end
     endtask
@@ -117,7 +118,7 @@ module testbench;
         for (int i = 0; i < `N; ++i) begin
             rob_is_packet.entries[i] <= '{
                 0,           // executed;
-                $random % 2, // success;
+                0,           // success;
                 $random % 2, // is_store;
                 $random % 2, // cond_branch;
                 $random % 2, // uncond_branch;
@@ -144,20 +145,101 @@ module testbench;
             $display("time: %4.0f, iteration: %d\n", $time, i);
             print_entries_out();
         end
+
         @(negedge clock);
         correct_counter += `N;
-        correct_tail    += `N;
+        correct_tail    = (correct_tail + `N) % `ROB_SZ;
         correct = correct && counter_out == correct_counter 
-            && almost_full && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+               && almost_full && head_out == correct_head 
+               && tail_out == correct_tail && squash == correct_squash;
+                    
+        for (int i = 0; i < ITER; ++i) begin
+            @(negedge clock);
+            correct = correct && counter_out == correct_counter 
+               && almost_full && head_out == correct_head 
+               && tail_out == correct_tail && squash == correct_squash;
+        end
+
         print_entries_out();
         $display("@@@ Passed: test_almost_full_counter");
     endtask
 
+    task test_dummy_commit;
+        parameter ITER = `ROB_SZ / `N;
+        init();
+
+        for (int i = 0; i < `N; ++i) begin
+            rob_is_packet.entries[i] <= '{
+                1,           // executed;
+                1,           // success;
+                $random % 2, // is_store;
+                $random % 2, // cond_branch;
+                $random % 2, // uncond_branch;
+                $random % 2, // resolve_taken;
+                $random % 2, // predict_taken;
+                $random,     // predict_target;
+                $random,     // resolve_target;
+                $random,     // dest_prn;
+                $random,     // dest_arn;
+                i * 4,       // PC;
+                i * 4 + 4,   // NPC;
+                $random % 2, // halt;
+                $random % 2, // illegal;
+                0            // csr_op; 
+            };
+            rob_is_packet.valid[i] = `TRUE;
+        end
+
+        @(negedge clock);
+        correct_counter = `N;
+        correct_tail    += `N;
+        correct_head    = 0;
+        correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+        $display("time: %4.0f\n", $time);
+        print_entries_out();
+
+
+        for (int i = 0; i < ITER - 1; ++i) begin
+            @(negedge clock);
+            correct_counter = `N;
+            correct_tail = (correct_tail + `N) % `ROB_SZ;
+            correct_head = (correct_head + `N) % `ROB_SZ;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            $display("time: %4.0f, iteration: %d\n", $time, i);
+            print_entries_out();
+        end
+
+        rob_is_packet.entries[0].executed = 0;
+
+        @(negedge clock);
+        correct_counter = `N;
+        correct_tail = (correct_tail + `N) % `ROB_SZ;
+        correct_head = (correct_head + `N) % `ROB_SZ;
+        correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+        $display("time: %4.0f\n", $time);
+        print_entries_out();
+
+        for (int i = 0; i < ITER - 1; ++i) begin
+            @(negedge clock);
+            correct_counter += `N;
+            correct_tail = (correct_tail + `N) % `ROB_SZ;
+            correct_head = correct_head;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            $display("time: %4.0f, iteration: %d\n", $time, i);
+            print_entries_out();
+        end
+
+        correct = correct && almost_full;
+
+        @(negedge clock);
+        $display("@@@ Passed: test_dummy_commit");
+    endtask
     
     initial begin
         clock = 0;
 
         test_almost_full_counter();
+        // test_dummy_commit();
         $display("@@@ Passed");
         $finish;
     end

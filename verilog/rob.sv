@@ -29,6 +29,9 @@ module rob #(
 
     ROB_ENTRY [SIZE-1:0] rob_entries, next_rob_entries;
 
+    // commit control logic
+    logic is_block;
+
     always_comb begin
         next_head = head;
         next_tail = tail;
@@ -36,9 +39,15 @@ module rob #(
         next_rob_entries = rob_entries;
         squash = 0;
 
+        is_block = `FALSE;
+
+        for (int i = 0; i < `N; ++i) begin
+            rob_ct_packet.entries[i] = 0;
+        end
+
         // Commit
         for (int i = 0; i < `N; ++i) begin
-            if (next_counter > 0 && rob_entries[next_head].executed) begin
+            if (~is_block && next_counter > 0 && rob_entries[next_head].executed) begin
                 if (rob_entries[next_head].success) begin
                     rob_ct_packet.entries[i] = rob_entries[next_head];
                     next_head = (next_head + 1) % SIZE;
@@ -48,10 +57,9 @@ module rob #(
                     next_head = 0;
                     next_tail = 0;
                     next_counter = 0;
-                    break;
                 end
             end else begin
-                rob_ct_packet.entries[i] = 0;
+                is_block = `TRUE;
             end
         end
 
