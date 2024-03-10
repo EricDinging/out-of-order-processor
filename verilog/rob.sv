@@ -103,10 +103,6 @@ module rob #(
                 end
             end
         end
-
-        // Tail entries
-        for (int i = 0; i < `N; ++i) begin
-        end
     end
 
     assign almost_full = (counter > SIZE - ALERT_DEPTH);
@@ -115,6 +111,13 @@ module rob #(
     assign counter_out = counter;
     assign head_out = head;
     assign tail_out = tail;
+
+    genvar i;
+    generate
+        for (i = 0; i < `N; ++i) begin
+            assign tail_entries[i] = (tail + i) % SIZE;
+        end
+    endgenerate
 
 
     always_ff @(posedge clock) begin

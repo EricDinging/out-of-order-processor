@@ -63,7 +63,7 @@ module testbench;
     task print_entries_out;
         $display("time: %4.0f, counter: %d, almost_full: %b, head: %d, tail: %d, squash: %d\n", $time, counter_out, almost_full, head_out, tail_out, squash);
         for (int i = 0; i < `ROB_SZ; ++i) begin
-            $display("idx %d: PC %d, executed %d\n", i, entries_out[i].PC, entries_out[i].executed);
+            $display("idx %d: PC %d, executed %d, success %d\n", i, entries_out[i].PC, entries_out[i].executed, entries_out[i].success);
         end
     endtask
 
@@ -348,6 +348,9 @@ module testbench;
             correct_tail = (correct_tail + `N) % `ROB_SZ;
             correct_head = 0;
             correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            for (int j = 0; j < `N; j++) begin
+                correct = correct && tail_entries[j] == (tail_out + j) % `ROB_SZ;
+            end
         end
 
         // full
@@ -377,6 +380,9 @@ module testbench;
             end
             for (int j = (i + 1) * `N; j < ITER * `N; j++) begin
                 correct = correct && entries_out[j].executed == 0;
+            end
+            for (int j = 0; j < `N; j++) begin
+                correct = correct && tail_entries[j] == (tail_out + j) % `ROB_SZ;
             end
             print_ct_out();
             print_entries_out();
@@ -431,7 +437,7 @@ module testbench;
             rob_is_packet.valid[i] = `FALSE;
         end
         
-        rob_idx = ($urandom) % `ROB_SZ;
+        rob_idx = ($urandom) % (ITER * `N);
         
         for (int i = 0; i < ITER; ++i) begin
             for (int j = 0; j < `N; ++j) begin
@@ -458,16 +464,115 @@ module testbench;
         @(negedge clock);
         $display("@@@ Passed: test_cdb_random_blocking");
     endtask
+
+    task test_random_squash;
+        parameter ITER = `ROB_SZ / `N;
+        init();
+
+        for (int i = 0; i < `N; ++i) begin
+            rob_is_packet.entries[i] <= '{
+                0,           // executed;
+                1,           // success;
+                $random % 2, // is_store;
+                1,           // cond_branch;
+                0,           // uncond_branch;
+                0,           // resolve_taken;
+                1,           // predict_taken;
+                1,           // predict_target;
+                1,           // resolve_target;
+                $random,     // dest_prn;
+                $random,     // dest_arn;
+                i * 4,       // PC;
+                i * 4 + 4,   // NPC;
+                $random % 2, // halt;
+                $random % 2, // illegal;
+                0            // csr_op; 
+            };
+            rob_is_packet.valid[i] = `TRUE;
+        end
+
+
+        for (int i = 0; i < ITER; ++i) begin
+            @(negedge clock);
+            correct_counter += `N;
+            correct_tail = (correct_tail + `N) % `ROB_SZ;
+            correct_head = 0;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+        end
+
+        // full
+        for (int i = 0; i < `N; ++i) begin
+            rob_is_packet.valid[i] = `FALSE;
+        end
+
+        rob_idx = $urandom % (ITER * `N);
+        for (int i = 0; i < ITER; ++i) begin
+            for (int j = 0; j < `N; ++j) begin
+                fu_rob_packet[j] = '{
+                    i * `N + j,   // robn
+                    1,            // executed
+                    1,            // branch_taken
+                    1             // target_addr
+                };
+                if (i * `N + j == rob_idx) begin
+                    fu_rob_packet[j].branch_taken = 0;
+                end
+            end
+
+            @(negedge clock);
+            if (i == rob_idx / `N) begin
+                $display("time: %4.0f, rob_idx: %d\n", $time, rob_idx);
+                correct_squash  = 1;
+                correct = correct && squash == correct_squash;
+                for (int j = 0; j < `N; j++) begin
+                    correct = correct && tail_entries[j] == (tail_out + j) % `ROB_SZ;
+                end
+                @(negedge clock);
+                print_ct_out();
+                print_entries_out();
+                correct_counter = 0;
+                correct_head    = 0;
+                correct_tail    = 0;
+                correct_squash  = 0;
+                correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+                for (int j = 0; j < `N; j++) begin
+                    correct = correct && tail_entries[j] == j;
+                end
+                break;
+            end
+            correct_counter = ITER * `N - i * `N;
+            correct_tail = correct_tail;
+            correct_head = i * `N;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            for (int j = 0; j < `N; j++) begin
+                correct = correct && rob_ct_packet.entries[j].executed == 1;
+            end
+            for (int j = i * `N; j < (i + 1) * `N; ++j) begin
+                correct = correct && entries_out[j].executed == 1;
+            end
+            for (int j = (i + 1) * `N; j < ITER * `N; j++) begin
+                correct = correct && entries_out[j].executed == 0;
+            end
+            // print_ct_out();
+            // print_entries_out();
+        end
+
+        @(negedge clock);
+        $display("@@@ Passed: test_random_squash");
+    endtask
     
     initial begin
         clock = 0;
 
-        // test_almost_full_counter();
-        // test_dummy_commit();
-        // test_naive_cdb_commit();
-        // test_cdb_full();
+        test_almost_full_counter();
+        test_dummy_commit();
+        test_naive_cdb_commit();
+        test_cdb_full();
         for (int i = 0; i < 10; ++i) begin
             test_cdb_random_blocking();
+        end
+        for (int i = 0; i < 10; ++i) begin
+            test_random_squash();
         end
         $display("@@@ Passed");
         $finish;
