@@ -79,14 +79,16 @@ module rob #(
             if (fu_rob_packet[i].executed) begin
                 next_rob_entries[fu_rob_packet[i].robn].executed = 1;
                 next_rob_entries[fu_rob_packet[i].robn].resolve_taken = fu_rob_packet[i].branch_taken;
-                next_rob_entries[fu_rob_packet[i].robn].success = next_rob_entries[fu_rob_packet[i].robn].resolve_taken == next_rob_entries[fu_rob_packet[i].robn].predict_taken;
-                next_rob_entries[fu_rob_packet[i].robn].NPC = fu_rob_packet[i].target_addr;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].target_addr;
+                if (rob_entries[fu_rob_packet[i].robn].cond_branch || rob_entries[fu_rob_packet[i].robn].uncond_branch) begin
+                    next_rob_entries[fu_rob_packet[i].robn].success = (next_rob_entries[fu_rob_packet[i].robn].resolve_taken  == next_rob_entries[fu_rob_packet[i].robn].predict_taken)
+                                                                   && (next_rob_entries[fu_rob_packet[i].robn].resolve_target == next_rob_entries[fu_rob_packet[i].robn].predict_target);
+                end
             end
         end
 
         // Tail entries
         for (int i = 0; i < `N; ++i) begin
-            tail_entries[i] = (next_tail + i) % SIZE;
         end
     end
 
@@ -106,7 +108,7 @@ module rob #(
             for (int i = 0; i < SIZE; ++i) begin
                 rob_entries[i] <= '{
                     0, // executed;
-                    0, // success;
+                    1, // success;
                     0, // is_store;
                     0, // cond_branch;
                     0, // uncond_branch;
