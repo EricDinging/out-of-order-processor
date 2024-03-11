@@ -17,7 +17,7 @@ module testbench;
     // debug output
     ROB_ENTRY [`ROB_SZ-1:0]        entries_out;
     logic     [`ROB_CNT_WIDTH-1:0] counter_out, correct_counter;
-    logic     [`ROB_CNT_WIDTH-1:0] head_out, tail_out, correct_tail, correct_head;
+    logic     [`ROB_PTR_WIDTH-1:0] head_out, tail_out, correct_tail, correct_head;
 
     // testing parameters
     string fmt;

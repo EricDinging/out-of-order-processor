@@ -23,6 +23,7 @@
 // superscalar width
 `define N 2
 `define LOGN $clog2(`N)
+`define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
@@ -32,7 +33,11 @@
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 `define PRN_WIDTH $clog2(`PHYS_REG_SZ_R10K)
+`define FREE_LIST_CTR_WIDTH $clog2(`PHYS_REG_SZ_R10K+1)
+`define FREE_LIST_PTR_WIDTH $clog2(`PHYS_REG_SZ_R10K)
+
 `define ROB_CNT_WIDTH $clog2(`ROB_SZ + 1)
+`define ROB_PTR_WIDTH $clog2(`ROB_SZ)
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
@@ -539,6 +544,11 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
+
+typedef struct packed {
+    logic valid;
+    PRN   prn;
+} FREE_LIST_PACkET;
 
 
 

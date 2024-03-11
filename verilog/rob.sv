@@ -18,14 +18,14 @@ module rob #(
     `ifdef DEBUG_OUT
     , output ROB_ENTRY [SIZE-1:0]           entries_out
     , output logic     [`RS_CNT_WIDTH-1:0]  counter_out
-    , output logic     [`ROB_CNT_WIDTH-1:0] head_out
-    , output logic     [`ROB_CNT_WIDTH-1:0] tail_out
+    , output logic     [`ROB_PTR_WIDTH-1:0] head_out
+    , output logic     [`ROB_PTR_WIDTH-1:0] tail_out
     `endif
 );
 
     logic [`ROB_CNT_WIDTH-1:0] counter, next_counter;
-    logic [`ROB_CNT_WIDTH-1:0] head, next_head;
-    logic [`ROB_CNT_WIDTH-1:0] tail, next_tail;
+    logic [`ROB_PTR_WIDTH-1:0] head, next_head;
+    logic [`ROB_PTR_WIDTH-1:0] tail, next_tail;
 
     ROB_ENTRY [SIZE-1:0] rob_entries, next_rob_entries;
 
@@ -67,7 +67,7 @@ module rob #(
             if (~is_block && next_counter > 0 && rob_entries[next_head].executed) begin
                 if (rob_entries[next_head].success) begin
                     rob_ct_packet.entries[i] = rob_entries[next_head];
-                    next_head = (next_head + 1) % SIZE;
+                    next_head = next_head + 1;
                     next_counter = next_counter - 1;
                 end else begin
                     squash = 1;
@@ -85,7 +85,7 @@ module rob #(
             for (int i = 0; i < `N; ++i) begin
                 if (rob_is_packet.valid[i]) begin
                     next_rob_entries[next_tail] = rob_is_packet.entries[i];
-                    next_tail = (next_tail + 1) % SIZE;
+                    next_tail = next_tail + 1;
                     next_counter = next_counter + 1;
                 end
             end
