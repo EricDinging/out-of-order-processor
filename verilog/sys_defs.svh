@@ -548,7 +548,7 @@ typedef struct packed {
 typedef struct packed {
     logic valid;
     PRN   prn;
-} FREE_LIST_PACkET;
+} FREE_LIST_PACKET;
 
 
 

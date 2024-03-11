@@ -12,23 +12,30 @@ module free_list #(
 
     output FREE_LIST_PACKET [`N-1:0]           pop_packet,
     output PRN              [SIZE-1:0]         output_free_list
+    `ifdef DEBUG_OUT
+    , output logic [`FREE_LIST_PTR_WIDTH-1:0] head_out
+    , output logic [`FREE_LIST_PTR_WIDTH-1:0] tail_out
+    , output logic [`FREE_LIST_CTR_WIDTH-1:0] counter_out
+    `endif
 );
 
 
-    PRN [SIZE-1:0] free_list_entries, next_free_list_entries;
+    PRN   [SIZE-1:0] free_list_entries, next_free_list_entries;
     logic [`FREE_LIST_CTR_WIDTH-1:0] counter, next_counter;
     logic [`FREE_LIST_PTR_WIDTH-1:0] head, next_head, tail, next_tail;
+    FREE_LIST_PACKET        [`N-1:0] next_pop_packet;
+
     
     
     always_comb begin
-        next_head = head;
-        next_tail = tail;
-        next_counter = counter;
+        next_head              = head;
+        next_tail              = tail;
+        next_counter           = counter;
         next_free_list_entries = free_list_entries;
         
         for (int i = 0; i < `N; ++i) begin
-            pop_packet[i].prn   = 0;
-            pop_packet[i].valid = `FALSE;
+            next_pop_packet[i].prn   = 0;
+            next_pop_packet[i].valid = `FALSE;
         end 
 
         if (rat_squash) begin
@@ -37,8 +44,8 @@ module free_list #(
             // pop
             for (int i = 0; i < `N; ++i) begin
                 if (pop_en[i]) begin
-                    pop_packet[i].prn   = next_free_list_entries[next_head];
-                    pop_packet[i].valid = `TRUE;
+                    next_pop_packet[i].prn   = free_list_entries[next_head];
+                    next_pop_packet[i].valid = `TRUE;
                     next_head++;
                     next_counter--;
                 end
@@ -56,20 +63,31 @@ module free_list #(
     end
     
     assign output_free_list = free_list_entries;
+
+    `ifdef DEBUG_OUT
+        assign head_out    = head;
+        assign tail_out    = tail;
+        assign counter_out = counter;
+    `endif
     
-    always_ff (@posedge clock) begin
+    always_ff @(posedge clock) begin
         if (reset) begin
-            counter <= 0;
+            counter <= SIZE;
             head    <= 0;
             tail    <= 0;
             for (int i = 0; i < SIZE; i++) begin
                 free_list_entries[i] = i;
+            end
+            for (int i = 0; i< `N; ++i) begin
+                pop_packet[i].valid = `FALSE;
+                pop_packet[i].prn   = 0;
             end
         end else begin
             free_list_entries <= next_free_list_entries;
             counter           <= next_counter;
             head              <= next_head;
             tail              <= next_tail;
+            pop_packet        <= next_pop_packet;
         end
     end
 
@@ -104,7 +122,7 @@ module rat_free_list #(
         `else
         , .output_free_list(output_free_list)
         `endif
-    )
+    );
 
 endmodule
 
@@ -132,6 +150,6 @@ module rrat_free_list #(
         .rat_squash(`FALSE),
         .pop_packet(pop_packet),
         .output_free_list(output_free_list)
-    )
+    );
 
 endmodule

@@ -236,6 +236,12 @@ build/prf.simv: $(PRF_FILES)
 build/prf.cov.simv: $(PRF_FILES)
 synth/prf.vg: $(PRF_FILES)
 
+# FREE_LIST
+FREE_LIST_FILES = verilog/sys_defs.svh
+build/prf.simv: $(FREE_LIST_FILES)
+build/prf.cov.simv: $(FREE_LIST_FILES)
+synth/prf.vg: $(FREE_LIST_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################

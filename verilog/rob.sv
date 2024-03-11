@@ -107,10 +107,12 @@ module rob #(
 
     assign almost_full = (counter > SIZE - ALERT_DEPTH);
     
+    `ifdef DEBUG_OUT
     assign entries_out = rob_entries;
     assign counter_out = counter;
     assign head_out = head;
     assign tail_out = tail;
+    `endif
 
     genvar i;
     generate
