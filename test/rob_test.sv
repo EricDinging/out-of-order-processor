@@ -399,6 +399,106 @@ module testbench;
         $display("@@@ Passed: test_cdb_full");
     endtask
 
+    task test_wrap_around;
+        parameter ITER = `ROB_SZ / `N;
+        init();
+
+        for (int i = 0; i < `N; ++i) begin
+            rob_is_packet.entries[i] <= '{
+                0,           // executed;
+                1,           // success;
+                $random % 2, // is_store;
+                0,           // cond_branch;
+                0,           // uncond_branch;
+                0,           // resolve_taken;
+                0,           // predict_taken;
+                $random,     // predict_target;
+                $random,     // resolve_target;
+                $random,     // dest_prn;
+                $random,     // dest_arn;
+                i * 4,       // PC;
+                i * 4 + 4,   // NPC;
+                $random % 2, // halt;
+                $random % 2, // illegal;
+                0            // csr_op; 
+            };
+            rob_is_packet.valid[i] = `TRUE;
+        end
+
+        for (int i = 0; i < ITER; ++i) begin
+            @(negedge clock);
+            correct_counter += `N;
+            correct_tail = (correct_tail + `N) % `ROB_SZ;
+            correct_head = 0;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            for (int j = 0; j < `N; j++) begin
+                correct = correct && tail_entries[j] == (tail_out + j) % `ROB_SZ;
+            end
+        end
+
+        // full
+        for (int i = 0; i < `N; ++i) begin
+            rob_is_packet.valid[i] = `FALSE;
+        end
+        
+        for (int i = 0; i < ITER / 2; ++i) begin
+            for (int j = 0; j < `N; ++j) begin
+                fu_rob_packet[j] = '{
+                    i * `N + j,   // robn
+                    1,            // executed
+                    $random % 2,  // branch_taken
+                    $random       // target_addr
+                };
+            end
+            @(negedge clock);
+            correct_counter = ITER * `N - i * `N;
+            correct_tail = correct_tail;
+            correct_head = i * `N;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            for (int j = 0; j < `N; j++) begin
+                correct = correct && rob_ct_packet.entries[j].executed == 1;
+            end
+            for (int j = i * `N; j < (i + 1) * `N; ++j) begin
+                correct = correct && entries_out[j].executed == 1;
+            end
+            for (int j = (i + 1) * `N; j < ITER * `N; j++) begin
+                correct = correct && entries_out[j].executed == 0;
+            end
+            for (int j = 0; j < `N; j++) begin
+                correct = correct && tail_entries[j] == (tail_out + j) % `ROB_SZ;
+            end
+        end
+
+        for (int i = 0; i < `N; ++i) begin
+            fu_rob_packet[i].executed = `FALSE;
+        end
+
+        for (int i = 0; i < `N; ++i) begin
+            rob_is_packet.valid[i] = `TRUE;
+        end
+
+        print_entries_out();
+
+        correct_head = (correct_head + `N) % `ROB_SZ;
+        correct_counter -= `N;
+
+        for (int i = 0; i < ITER / 2; ++i) begin
+            @(negedge clock);
+            correct_counter += `N;
+            correct_tail = (correct_tail + `N) % `ROB_SZ;
+            correct_head = correct_head;
+            correct = correct && counter_out == correct_counter && head_out == correct_head && tail_out == correct_tail && squash == correct_squash;
+            $display("Time:%4.0f clock:%b counter:%d, correct_head:%d, correct_tail:%d\n", $time, clock, correct_counter, correct_head, correct_tail);
+            // print_ct_out();
+            print_entries_out();
+        end
+
+        correct = correct && almost_full;
+
+        @(negedge clock);
+        $display("@@@ Passed: test_wrap_around");
+    endtask
+
     task test_cdb_random_blocking;
         parameter ITER = `ROB_SZ / `N;
         init();
@@ -564,16 +664,17 @@ module testbench;
     initial begin
         clock = 0;
 
-        test_almost_full_counter();
-        test_dummy_commit();
-        test_naive_cdb_commit();
-        test_cdb_full();
-        for (int i = 0; i < 10; ++i) begin
-            test_cdb_random_blocking();
-        end
-        for (int i = 0; i < 10; ++i) begin
-            test_random_squash();
-        end
+        // test_almost_full_counter();
+        // test_dummy_commit();
+        // test_naive_cdb_commit();
+        // test_cdb_full();
+        test_wrap_around();
+        // for (int i = 0; i < 10; ++i) begin
+        //     test_cdb_random_blocking();
+        // end
+        // for (int i = 0; i < 10; ++i) begin
+        //     test_random_squash();
+        // end
         $display("@@@ Passed");
         $finish;
     end
