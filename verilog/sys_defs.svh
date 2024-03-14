@@ -436,6 +436,8 @@ typedef struct packed {
     ROBN    robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
+    logic cond_branch;
+    logic uncond_branch;
 } FU_PACKET;
 
 /**
