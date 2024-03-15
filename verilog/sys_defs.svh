@@ -416,6 +416,8 @@ typedef struct packed {
     ROBN     robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
+    logic cond_branch;
+    logic uncond_branch;
 } RS_ENTRY;
 
 typedef struct packed {
@@ -559,7 +561,6 @@ typedef struct packed {
     logic [`NUM_FU_LOAD-1:0] load_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
 } FU_STATE_PACKET;
-
 
 
 `endif // __SYS_DEFS_SVH__

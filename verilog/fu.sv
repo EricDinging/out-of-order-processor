@@ -74,7 +74,6 @@ module alu_cond (
     assign fu_state_alu_packet.cond_branch = fu_alu_packet.cond_branch;
     assign fu_state_alu_packet.uncond_branch = fu_alu_packet.uncond_branch;
     assign fu_state_alu_packet.PC = fu_alu_packet.PC;
-    // TODO: change the field of FU_PACKET: + cond_branch + uncond_branch
 
     DATA opa_mux_out, opb_mux_out;
     // ALU opA mux
@@ -200,7 +199,9 @@ typedef struct packed {
     ROBN    robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
-} FU_PACKET
+    logic cond_branch;
+    logic uncond_branch;
+} FU_PACKET;
 
 typedef struct packed {
     PRN   dest_prn;

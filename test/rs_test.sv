@@ -86,7 +86,9 @@ module testbench;
                 {`PRN_WIDTH{1'h0}},    // dest_prn
                 {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
                 2'b0,
-                4'b0
+                4'b0,
+                1'b0,
+                1'b0
             };
             
             cdb_packet[i] = '{
@@ -178,7 +180,9 @@ module testbench;
                     32'h3,  // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // robn
                     2'b0,
-                    4'b0
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
             // fu_alu_avail = {`NUM_FU_ALU   {`TRUE}};
@@ -238,7 +242,9 @@ module testbench;
                     32'h3,  // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // robn
                     2'b0,
-                    4'b0
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
             end
 
@@ -296,7 +302,9 @@ module testbench;
                     32'h3,  // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // robn
                     2'b0,
-                    4'b0
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
 
             check_fu_output_invalid;
@@ -334,7 +342,9 @@ module testbench;
                     32'h3,  // dest_prn
                     {`ROB_CNT_WIDTH{1'h0}}, // robn
                     2'b0,
-                    4'b0
+                    4'b0,
+                    1'b0,
+                    1'b0
                 };
                 case (($urandom) % 4)
                     0: begin
@@ -458,7 +468,9 @@ module testbench;
                         32'h3,  // dest_prn
                         {`ROB_CNT_WIDTH{1'h0}}, // robn
                         2'b0,
-                        4'b0
+                        4'b0,
+                        1'b0,
+                        1'b0
                     };
                 end
                 @(negedge clock);
@@ -508,7 +520,9 @@ module testbench;
                         32'h3,  // dest_prn
                         {`ROB_CNT_WIDTH{1'h0}}, // robn
                         2'b0,
-                        4'b0
+                        4'b0,
+                        1'b0,
+                        1'b0
                     };
                 end
                 @(negedge clock);
