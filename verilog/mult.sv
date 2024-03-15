@@ -7,7 +7,7 @@
 // period than straight multiplication.
 
 module mult (
-    input clock, reset, start, avail
+    input clock, reset, start, avail,
     input DATA rs1, rs2,
     input MULT_FUNC func,
     input ROBN robn,
@@ -107,7 +107,7 @@ module mult_stage (
     end
 
     always_ff @(posedge clock) begin
-        if (reset) begin
+        if (reset || !avail) begin
             done <= 1'b0;
         end else begin
             done <= start;
