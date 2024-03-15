@@ -562,5 +562,10 @@ typedef struct packed {
     FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
 } FU_STATE_PACKET;
 
+typedef struct packed {
+    logic valid;
+    ADDR PC;
+    ADDR target_addr;
+} CDB_PREDICTOR_PACKET;
 
 `endif // __SYS_DEFS_SVH__

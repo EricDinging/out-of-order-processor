@@ -215,8 +215,6 @@ typedef struct packed {
     ADDR target_addr;
 } FU_ROB_PACKET;
 
-
-
 typedef struct packed {
     ROBN robn;
     PRN dest_prn;
@@ -252,21 +250,14 @@ module fu #(
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
 
     // given back from priority selector
-    input logic [`NUM_FU_ALU-1:0]  alu_selected,
-    input logic [`NUM_FU_MULT-1:0] mult_selected,
-    input logic [`NUM_FU_LOAD-1:0] load_selected,
-
-    input logic [`NUM_FU_ALU-1:0]  alu_last_prepared,
-    input logic [`NUM_FU_MULT-1:0] mult_last_prepared,
-    input logic [`NUM_FU_LOAD-1:0] load_last_prepared,
-
-    // tell rs whether it will the next value will be accepted
-    output logic [`NUM_FU_ALU-1:0]   fu_alu_avail,
-    output logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
-    output logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
-    output logic [`NUM_FU_STORE-1:0] fu_store_avail,
+    input logic [`NUM_FU_ALU-1:0]  alu_avail,
+    input logic [`NUM_FU_MULT-1:0] mult_avail,
+    input logic [`NUM_FU_LOAD-1:0] load_avail,
 
     // TODO: packet for store, to rob and maybe prf
+    // tell rs whether it the next value will be accepted
+    output logic [`NUM_FU_STORE-1:0] fu_store_avail,
+
     output FU_STATE_PACKET fu_state_packet;
 );
 
@@ -274,7 +265,7 @@ module fu #(
         .clock(clock), // not needed for 1-cycle alu
         .reset(reset), // not needed for 1-cycle alu
         .fu_alu_packet(fu_alu_packet),
-        .avail(fu_alu_avail), // not needed for 1-cycle alu
+        .avail(alu_avail), // not needed for 1-cycle alu
         .prepared(fu_state_packet.alu_prepared),
         .fu_state_alu_packet(fu_state_packet.alu_packet)
     );
@@ -283,7 +274,7 @@ module fu #(
         .clock(clock),
         .reset(reset),
         .fu_mult_packet(fu_mult_packet),
-        .avail(fu_mult_avail),
+        .avail(mult_avail),
         .prepared(fu_state_packet.mult_prepared),
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     )
@@ -292,13 +283,10 @@ module fu #(
         .clock(clock),
         .reset(reset),
         .fu_load_packet(fu_load_packet),
-        .avail(fu_load_avail),
+        .avail(load_avail),
         .prepared(fu_state_packet.load_prepared),
         .fu_state_load_packet(fu_state_packet.load_packet)
     )
 
-    assign fu_alu_avail = alu_selected | ~alu_last_prepared | fu_state_packet.alu_packet.cond_branch;
-    assign fu_mult_avail = mult_selected | ~mult_last_prepared;
-    assign fu_load_avail = load_selected | ~load_last_prepared;
 
 endmodule
