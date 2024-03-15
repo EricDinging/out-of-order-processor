@@ -76,6 +76,7 @@ module testbench;
     task init;
         reset = 1;
         correct = 1;
+        rat_squash = 0;
 
         correct_head = 0;
         correct_tail = 0;
@@ -84,11 +85,10 @@ module testbench;
         for (int i = 0; i < `N; ++i) begin
             push_packet[i].valid = `FALSE;
             push_packet[i].prn   = 0;
-            pop_en[i]            =`FALSE;
-            input_free_list[i]   = 0;
+            pop_en[i]            = `FALSE;
         end
 
-        rat_squash = 0;
+        input_free_list = {`PHYS_REG_SZ_R10K{0}};
 
         @(negedge clock);
         reset = 0;
@@ -107,13 +107,56 @@ module testbench;
         for (int i = 0; i < ITER; ++i) begin
             @(negedge clock);
             correct_counter -= `N;
-            correct_head += `N;
+            correct_head = (correct_head + `N) % `PHYS_REG_SZ_R10K;
             correct_tail = correct_tail;
             correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
 
             for (int j = 0; j < `N; ++j) begin
                 correct = correct && pop_packet[j].valid && pop_packet[j].prn == i * `N + j;
             end
+
+            print_entries_out();
+            print_pop_packet();
+        end
+
+        $display("First pop done");
+        
+        @(negedge clock);
+        correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+        pop_en = {`N{`FALSE}};
+
+        for (int i = 0; i < ITER; ++i) begin
+            for (int j = 0; j < `N; ++j) begin
+                push_packet[j].valid = `TRUE;
+                push_packet[j].prn   = `PHYS_REG_SZ_R10K - 1 - (i * `N + j);
+            end
+
+            @(negedge clock);
+            correct_counter += `N;
+            correct_head = correct_head;
+            correct_tail = (correct_tail + `N) % `PHYS_REG_SZ_R10K;
+            correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+            print_entries_out();
+            print_pop_packet();
+        end
+
+        pop_en = {`N{`TRUE}};
+        for (int j = 0; j < `N; ++j) begin
+            push_packet[j].valid = `FALSE;
+        end
+
+        for (int i = 0; i < ITER; ++i) begin
+            @(negedge clock);
+            correct_counter -= `N;
+            correct_head = (correct_head + `N) % `PHYS_REG_SZ_R10K;
+            correct_tail = correct_tail;
+            correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+            for (int j = 0; j < `N; ++j) begin
+                correct = correct && pop_packet[j].valid && pop_packet[j].prn == `PHYS_REG_SZ_R10K - 1 - (i * `N + j);
+            end
+
             print_entries_out();
             print_pop_packet();
         end

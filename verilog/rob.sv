@@ -67,7 +67,7 @@ module rob #(
             if (~is_block && next_counter > 0 && rob_entries[next_head].executed) begin
                 if (rob_entries[next_head].success) begin
                     rob_ct_packet.entries[i] = rob_entries[next_head];
-                    next_head = next_head + 1;
+                    next_head = (next_head + 1) % SIZE;
                     next_counter = next_counter - 1;
                 end else begin
                     squash = 1;
@@ -85,7 +85,7 @@ module rob #(
             for (int i = 0; i < `N; ++i) begin
                 if (rob_is_packet.valid[i]) begin
                     next_rob_entries[next_tail] = rob_is_packet.entries[i];
-                    next_tail = next_tail + 1;
+                    next_tail = (next_tail + 1) % SIZE;
                     next_counter = next_counter + 1;
                 end
             end

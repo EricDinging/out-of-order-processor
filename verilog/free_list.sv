@@ -43,19 +43,19 @@ module free_list #(
         end else begin
             // pop
             for (int i = 0; i < `N; ++i) begin
-                if (pop_en[i]) begin
+                if (pop_en[i] && next_counter > 0) begin
                     next_pop_packet[i].prn   = free_list_entries[next_head];
                     next_pop_packet[i].valid = `TRUE;
-                    next_head++;
+                    next_head = (next_head + 1) % SIZE;
                     next_counter--;
                 end
             end
 
             // push
             for (int i = 0; i < `N; ++i) begin
-                if (push_packet[i].valid) begin
+                if (push_packet[i].valid && next_counter < SIZE) begin
                     next_free_list_entries[next_tail] = push_packet[i].prn;
-                    next_tail++;
+                    next_tail = (next_tail + 1) % SIZE;
                     next_counter++;
                 end
             end
