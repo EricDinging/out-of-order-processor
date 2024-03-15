@@ -7,7 +7,7 @@ module rrat(
 
     output RRAT_CT_OUTPUT rrat_ct_output,
 );
-    free_list free_l;
+    rrat_free_list free_l;
     PRN [31:0] rrat_table;
     PRN [31:0] next_rrat_table;
 
@@ -18,7 +18,9 @@ module rrat(
     end
 
     always_ff @(posedge clock) begin
-
+        if reset begin
+        end else begin
+        end
     end
 
     

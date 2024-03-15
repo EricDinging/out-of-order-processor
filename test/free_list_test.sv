@@ -8,10 +8,13 @@ module testbench;
     logic clock, reset, correct;
 
     // input
-    FREE_LIST_PACKET [`N-1:0]           push_packet;
-    logic            [`N-1:0]           pop_en;
-    PRN              [SIZE-1:0]         input_free_list;
+    FREE_LIST_PACKET       [`N-1:0]     push_packet;
+    logic                  [`N-1:0]     pop_en;
+    PRN                   [SIZE-1:0]    input_free_list;
     logic                               rat_squash;
+    logic [`FREE_LIST_PTR_WIDTH-1:0]    head_in;
+    logic [`FREE_LIST_PTR_WIDTH-1:0]    tail_in;
+    logic [`FREE_LIST_CTR_WIDTH-1:0]    counter_in;
 
     // output
     FREE_LIST_PACKET [`N-1:0]           pop_packet;
@@ -21,6 +24,7 @@ module testbench;
     logic [`FREE_LIST_PTR_WIDTH-1:0] head_out, correct_head;
     logic [`FREE_LIST_PTR_WIDTH-1:0] tail_out, correct_tail;
     logic [`FREE_LIST_CTR_WIDTH-1:0] counter_out, correct_counter;
+    logic [`FREE_LIST_CTR_WIDTH-1:0] total_pop_cnt, total_push_cnt;
 
     free_list dut(
         .clock(clock),
@@ -29,6 +33,9 @@ module testbench;
         .pop_en(pop_en),
         .input_free_list(input_free_list),
         .rat_squash(rat_squash),
+        .head_in(head_in),
+        .tail_in(tail_in),
+        .counter_in(counter_in),
         // output
         .pop_packet(pop_packet),
         .output_free_list(output_free_list),
@@ -115,8 +122,8 @@ module testbench;
                 correct = correct && pop_packet[j].valid && pop_packet[j].prn == i * `N + j;
             end
 
-            print_entries_out();
-            print_pop_packet();
+            // print_entries_out();
+            // print_pop_packet();
         end
 
         $display("First pop done");
@@ -137,8 +144,8 @@ module testbench;
             correct_head = correct_head;
             correct_tail = (correct_tail + `N) % `PHYS_REG_SZ_R10K;
             correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
-            print_entries_out();
-            print_pop_packet();
+            // print_entries_out();
+            // print_pop_packet();
         end
 
         pop_en = {`N{`TRUE}};
@@ -157,17 +164,164 @@ module testbench;
                 correct = correct && pop_packet[j].valid && pop_packet[j].prn == `PHYS_REG_SZ_R10K - 1 - (i * `N + j);
             end
 
-            print_entries_out();
-            print_pop_packet();
+            // print_entries_out();
+            // print_pop_packet();
         end
 
         $display("@@@ Passed test_counter");
     endtask
 
+    task test_random_push_pop;
+        parameter ITER = `PHYS_REG_SZ_R10K / `N;
+        init();
+        total_pop_cnt = 0;
+        total_push_cnt = 0;
+        
+        @(negedge clock);
+        correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+        
+        for (int i = 0; i < ITER; ++i) begin
+            for (int j = 0; j < `N; ++j) begin
+                if ($random % 2) begin
+                    pop_en[j] = `TRUE;
+                    total_pop_cnt += 1;
+                end else begin
+                    pop_en[j] = `FALSE;
+                end
+            end
+            
+            @(negedge clock);
+            correct_counter = `PHYS_REG_SZ_R10K - total_pop_cnt;
+            correct_head = total_pop_cnt;
+            correct_tail = correct_tail;
+            correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+            // print_entries_out();
+            // print_pop_packet();
+        end
+
+        pop_en = {`N{`FALSE}};
+        @(negedge clock);
+
+        for (int i = 0; i < ITER; ++i) begin
+            for (int j = 0; j < `N; ++j) begin
+                if ($random % 2 && total_push_cnt < total_pop_cnt) begin
+                    push_packet[j].valid = `TRUE;
+                    push_packet[j].prn   = total_push_cnt;
+                    total_push_cnt += 1;
+                end else begin
+                    push_packet[j].valid = `FALSE;
+                end
+            end
+
+            @(negedge clock);
+            correct_counter = `PHYS_REG_SZ_R10K - total_pop_cnt + total_push_cnt;
+            correct_head = correct_head;
+            correct_tail = total_push_cnt;
+            correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+            // print_entries_out();
+            // print_pop_packet();
+        end
+        
+        $display("@@@ Passed test_random_push_pop");
+    endtask
+
+    task test_concurrent_random_push_pop;
+        parameter ITER = 2 * `PHYS_REG_SZ_R10K / `N;
+        init();
+        total_pop_cnt = 0;
+        total_push_cnt = 0;
+        
+        @(negedge clock);
+        correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+        for (int j = 0; j < `N; ++j) begin
+            if ($random % 2) begin
+                pop_en[j] = `TRUE;
+                total_pop_cnt += 1;
+            end else begin
+                pop_en[j] = `FALSE;
+            end
+        end
+
+        for (int i = 0; i < ITER; ++i) begin
+            @(negedge clock);
+            correct_counter = `PHYS_REG_SZ_R10K - total_pop_cnt + total_push_cnt;
+            correct_head = total_pop_cnt % `PHYS_REG_SZ_R10K;
+            correct_tail = total_push_cnt % `PHYS_REG_SZ_R10K;
+            correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
+
+            for (int j = 0; j < `N; ++j) begin
+                if (pop_packet[j].valid) begin
+                    push_packet[j].valid = `TRUE;
+                    push_packet[j].prn   = pop_packet[j].prn;
+                    total_push_cnt += 1;
+                end else begin
+                    push_packet[j].valid = `FALSE;
+                end
+            end
+
+            for (int j = 0; j < `N; ++j) begin
+                if ($random % 2) begin
+                    pop_en[j] = `TRUE;
+                    total_pop_cnt += 1;
+                end else begin
+                    pop_en[j] = `FALSE;
+                end
+            end
+
+            // print_entries_out();
+            // print_pop_packet();
+        end
+        
+        $display("@@@ Passed test_concurrent_random_push_pop");
+    endtask
+
+    task test_squash;
+        init();
+
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; ++i) begin
+            input_free_list[i] = `PHYS_REG_SZ_R10K - i - 1;
+        end
+        rat_squash = 1;
+        
+        head_in = $random % `PHYS_REG_SZ_R10K;
+        counter_in = $random % `PHYS_REG_SZ_R10K;
+        tail_in = (head_in + counter_in) % `PHYS_REG_SZ_R10K;
+
+        @(negedge clock);
+        rat_squash = 0;
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; ++i) begin
+            correct = correct && output_free_list[i] == input_free_list[i];
+        end
+        correct = correct && counter_out == counter_in;
+        correct = correct && head_out == head_in;
+        correct = correct && tail_out == tail_in;
+
+        @(negedge clock);
+        $display("@@@ Passed test_squash");
+    endtask
+
+
+
     initial begin
         clock = 0;
 
         test_counter();
+
+        for (int i = 0; i < 10; ++i) begin
+            test_random_push_pop();
+        end
+        
+        for (int i = 0; i < 10; ++i) begin
+            test_concurrent_random_push_pop();
+        end
+        
+        for (int i = 0; i < 10; ++i) begin
+            test_squash();
+        end
         
         $display("@@@ Passed");
         $finish;

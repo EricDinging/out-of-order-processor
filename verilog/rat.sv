@@ -8,7 +8,7 @@ module rat(
 
     output RAT_IS_OUTPUT rat_is_output,
 );
-    free_list free_l;
+    rat_free_list free_l;
     PRN [31:0] rat_table;
     PRN [31:0] next_rat_table;
 

@@ -242,6 +242,18 @@ build/prf.simv: $(FREE_LIST_FILES)
 build/prf.cov.simv: $(FREE_LIST_FILES)
 synth/prf.vg: $(FREE_LIST_FILES)
 
+# RAT
+RAT_FILES = verilog/sys_defs.svh verilog/free_list.sv
+build/rat.simv: $(RAT_FILES)
+build/rat.cov.simv: $(RAT_FILES)
+synth/rat.vg: $(RAT_FILES)
+
+# RRAT
+RRAT_FILES = verilog/sys_defs.svh verilog/free_list.sv
+build/rrat.simv: $(RRAT_FILES)
+build/rrat.cov.simv: $(RRAT_FILES)
+synth/rrat.vg: $(RRAT_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################

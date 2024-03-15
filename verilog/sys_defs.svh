@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////
+ /////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
 //                                                                     //
@@ -529,9 +529,9 @@ typedef struct packed {
 } RRAT_CT_OUTPUT_ENTRY;
     
 typedef struct packed {
-    RRAT_CT_OUTPUT_ENTRY [31:0] entries;
-    logic success;
-    PRN   head, tail;
+    RRAT_CT_OUTPUT_ENTRY          [31:0] entries;
+    logic                         success;
+    PRN                           head, tail;
     PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;
 } RRAT_CT_OUTPUT;
 
