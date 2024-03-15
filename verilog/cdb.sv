@@ -54,6 +54,7 @@ module cdb #(
     } CDB_PACKET;
     */
 
+    // calculate mux input
     always_comb begin
         // alu
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
@@ -101,6 +102,17 @@ module cdb #(
                                                 fu_state_packet.load_packet[i].result
                                             }
                                             else 0
+        end
+    end
+
+    // predictor output
+    always_comb begin
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            cdb_predictor_packet[i] = '{
+                fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].take_branch,
+                fu_state_packet.alu_packet[i].PC,
+                fu_state_packet.alu_packet[i].basic.result
+            }
         end
     end
 

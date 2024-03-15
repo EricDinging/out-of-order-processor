@@ -75,6 +75,7 @@ module alu_cond (
     assign fu_state_alu_packet.uncond_branch = fu_alu_packet.uncond_branch;
     assign fu_state_alu_packet.PC = fu_alu_packet.PC;
 
+    logic internal_take;
     DATA opa_mux_out, opb_mux_out;
     // ALU opA mux
     always_comb begin
@@ -99,6 +100,7 @@ module alu_cond (
         endcase
     end
 
+    assign fu_state_alu_packet.take_branch = fu_alu_packet.uncond_branch || (fu_alu_packet.cond_branch && internal_take);
     alu alu_0 (
         // Inputs
         .opa(opa_mux_out),
@@ -116,7 +118,7 @@ module alu_cond (
         .rs2(fu_alu_packet.op2),
 
         // Output
-        .take(fu_state_alu_packet.take_branch)
+        .take(internal_take)
     );
 
 endmodule
