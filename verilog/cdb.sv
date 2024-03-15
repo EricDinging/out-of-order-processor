@@ -31,7 +31,8 @@ module cdb #(
     CDB_PACKET [`NUM_FU_ALU-1:0] alu_cdb_packet;
     CDB_PACKET [`NUM_FU_MULt+`NUM_FU_LOAD-1:0] other_cdb_packet;
 
-    logic [`N-1:0][`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] mux_select; // TODO: the mux need a default value
+    logic [`N-1:0][`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] mux_select;
+    logic [`NUM_FU_ALU-1:0] cond_branches;
     
     assign alu_avail = alu_selected | ~cdb_state.alu_prepared | cdb_state.alu_packet.cond_branch;
     assign mult_avail = mult_selected | ~cdb_state.mult_prepared;
@@ -41,7 +42,7 @@ module cdb #(
         .WIDTH(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD),
         .REQS(`N)
     ) psel_fu_cdb (
-        .req({fu_state_packet.alu_prepared & ~fu_state_packet.alu_packet.cond_branch, fu_state_packet.mult_prepared, fu_state_packet.load_prepared}), // TODO: cond_branch
+        .req({fu_state_packet.alu_prepared & ~cond_branches, fu_state_packet.mult_prepared, fu_state_packet.load_prepared}),
         .gnt({alu_selected, mult_selected, load_selected}),
         .gnt_bus(mux_select),
         .empty()
@@ -53,6 +54,14 @@ module cdb #(
         DATA  value;
     } CDB_PACKET;
     */
+
+    // compile cond_branch into an array
+    genvar i;
+    generate
+        for (i = 0; i < `NUM_FU_ALU; i++) begin
+            assign cond_branches[i] = fu_state_packet.alu_packet[i].cond_branch;
+        end
+    endgenerate
 
     // calculate mux input
     always_comb begin
@@ -169,6 +178,7 @@ module mux_cdb (
     output FU_ROB_PACKET fu_rob_packet;
     output CDB_PACKET cdb_packet;
 );
+    // default is 0
     always_comb begin
         fu_rob_packet = 0;
         cdb_packet = 0;
