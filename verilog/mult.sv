@@ -7,13 +7,17 @@
 // period than straight multiplication.
 
 module mult (
-    input clock, reset, start,
+    input clock, reset, start, avail
     input DATA rs1, rs2,
     input MULT_FUNC func,
+    input ROBN robn,
+    input PRN dest_prn,
     // input logic [TODO] dest_tag_in,
 
     // output logic [TODO] dest_tag_out,
     output DATA result,
+    output ROBN output_robn,
+    output PRN  output_dest_prn,
     output done
 );
 
@@ -21,6 +25,8 @@ module mult (
     MULT_FUNC func_out;
 
     logic [(64*(`MULT_STAGES-1))-1:0] internal_sums, internal_mcands, internal_mpliers;
+    ROBN [`MULT_STAGES-2:0] internal_robns;
+    PRN  [`MULT_STAGES-2:0] internal_dest_prns;
     logic [`MULT_STAGES-2:0] internal_dones;
 
     logic [63:0] mcand, mplier, product;
@@ -31,15 +37,20 @@ module mult (
     mult_stage mstage [`MULT_STAGES-1:0] (
         .clock (clock),
         .reset (reset),
+        .avail (avail), // TODO: check that it actually expands
         .func        ({internal_funcs,   func}),
         .start       ({internal_dones,   start}), // forward prev done as next start
         .prev_sum    ({internal_sums,    64'h0}), // start the sum at 0
         .mplier      ({internal_mpliers, mplier}),
         .mcand       ({internal_mcands,  mcand}),
+        .robn        ({internal_robns, robn}),
+        .dest_prn    ({internal_dest_prns, dest_prn}),
         .product_sum ({product,    internal_sums}),
         .next_mplier ({mplier_out, internal_mpliers}),
         .next_mcand  ({mcand_out,  internal_mcands}),
         .next_func   ({func_out,   internal_funcs}),
+        .output_robn ({output_robn, internal_robns}),
+        .output_dest_prn ({output_dest_prn, internal_dest_prns}),
         .done        ({done,       internal_dones}) // done when the final stage is done
     );
 
@@ -62,12 +73,16 @@ endmodule // mult
 
 
 module mult_stage (
-    input clock, reset, start,
+    input clock, reset, start, avail,
     input [63:0] prev_sum, mplier, mcand,
     input MULT_FUNC func,
+    input ROBN robn,
+    input PRN dest_prn,
 
     output logic [63:0] product_sum, next_mplier, next_mcand,
     output MULT_FUNC next_func,
+    output ROBN output_robn,
+    output PRN  output_dest_prn,
     output logic done
 );
 
@@ -81,10 +96,14 @@ module mult_stage (
     assign shifted_mcand = {mcand[63-SHIFT:0], SHIFT'('b0)};
 
     always_ff @(posedge clock) begin
-        product_sum <= prev_sum + partial_product;
-        next_mplier <= shifted_mplier;
-        next_mcand  <= shifted_mcand;
-        next_func   <= func;
+        if (avail) begin
+            product_sum <= prev_sum + partial_product;
+            next_mplier <= shifted_mplier;
+            next_mcand  <= shifted_mcand;
+            next_func   <= func;
+            output_robn <= robn;
+            output_dest_prn <= dest_prn;
+        end
     end
 
     always_ff @(posedge clock) begin

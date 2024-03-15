@@ -62,16 +62,18 @@ module conditional_branch (
 endmodule // conditional_branch
 
 module alu_cond (
+    input logic clock, reset, // unused, purely combinational
     input FU_PACKET fu_alu_packet,
-    input logic last_selected,
+    input logic avail, // unused, purely combinational
+    output logic prepared,
     output FU_STATE_ALU_PACKET fu_state_alu_packet
 );
-    assign valid = fu_alu_packet.valid;
-    assign dest_prn = fu_alu_packet.dest_prn;
-    assign robn = fu_alu_packet.robn;
-    assign cond_branch = fu_alu_packet.cond_branch;
-    assign uncond_branch = fu_alu_packet.uncond_branch;
-    assign PC = fu_alu_packet.PC;
+    assign prepared = fu_alu_packet.valid;
+    assign fu_state_alu_packet.basic.dest_prn = fu_alu_packet.dest_prn;
+    assign fu_state_alu_packet.basic.robn = fu_alu_packet.robn;
+    assign fu_state_alu_packet.cond_branch = fu_alu_packet.cond_branch;
+    assign fu_state_alu_packet.uncond_branch = fu_alu_packet.uncond_branch;
+    assign fu_state_alu_packet.PC = fu_alu_packet.PC;
     // TODO: change the field of FU_PACKET: + cond_branch + uncond_branch
 
     DATA opa_mux_out, opb_mux_out;
@@ -105,7 +107,7 @@ module alu_cond (
         .func(fu_alu_packet.func),
 
         // Output
-        .result(alu_result)
+        .result(fu_state_alu_packet.basic.result)
     );
 
     conditional_branch conditional_branch_0 (
@@ -115,22 +117,71 @@ module alu_cond (
         .rs2(fu_alu_packet.op2),
 
         // Output
-        .take(take_branch)
+        .take(fu_state_alu_packet.take_branch)
     );
 
 endmodule
 
-module mult (
+module mult_impl (
+    input logic clock, reset,
     input FU_PACKET fu_mult_packet,
-    input logic last_selected, // tell the multiplier stage to stall if unavail
+    input logic avail,
+    output logic prepared,
     output FU_STATE_BASIC_PACKET fu_state_mult_packet
 );
     
+    DATA opa_mux_out, opb_mux_out;
+    // ALU opA mux
+    always_comb begin
+        case (fu_mult_packet.opa_select)
+            OPA_IS_RS1:  opa_mux_out = fu_mult_packet.op1;
+            OPA_IS_PC:   opa_mux_out = fu_mult_packet.PC;
+            OPA_IS_ZERO: opa_mux_out = 0;
+            default:     opa_mux_out = 32'hdeadface; // dead face
+        endcase
+    end
+
+    // ALU opB mux
+    always_comb begin
+        case (fu_mult_packet.opb_select)
+            OPB_IS_RS2:   opb_mux_out = fu_mult_packet.op2;
+            OPB_IS_I_IMM: opb_mux_out = `RV32_signext_Iimm(fu_mult_packet.inst);
+            OPB_IS_S_IMM: opb_mux_out = `RV32_signext_Simm(fu_mult_packet.inst);
+            OPB_IS_B_IMM: opb_mux_out = `RV32_signext_Bimm(fu_mult_packet.inst);
+            OPB_IS_U_IMM: opb_mux_out = `RV32_signext_Uimm(fu_mult_packet.inst);
+            OPB_IS_J_IMM: opb_mux_out = `RV32_signext_Jimm(fu_mult_packet.inst);
+            default:      opb_mux_out = 32'hfacefeed; // face feed
+        endcase
+    end
+
+    mult multiplier (
+        .clock(clock),
+        .reset(reset),
+
+        // input
+        .start(fu_mult_packet.valid), // read into the state
+        // note that valid is not related to avail
+        // they are one cycle off -- another state register within the rs
+        .avail(avail), // simply stall all the state registers
+        .rs1(opa_mux_out),
+        .rs2(opb_mux_out),
+        .func(fu_mult_packet.func),
+        .robn(fu_mult_packet.robn),
+        .dest_prn(fu_mult_packet.dest_prn),
+
+        // output
+        .result(fu_state_mult_packet.result),
+        .output_robn(fu_state_mult_packet.robn),
+        .output_dest_prn(fu_state_mult_packet.dest_prn),
+        .done(prepared)
+    );
 endmodule
 
 module load (
+    input logic clock, reset,
     input FU_PACKET fu_load_packet,
-    input logic last_selected,
+    input logic avail,
+    output logic prepared,
     output FU_STATE_BASIC_PACKET fu_state_load_packet
 );
 
@@ -198,38 +249,55 @@ module fu #(
     input FU_PACKET [`NUM_FU_MULT-1:0] fu_mult_packet,
     input FU_PACKET [`NUM_FU_LOAD-1:0] fu_load_packet,
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
+
+    // given back from priority selector
     input logic [`NUM_FU_ALU-1:0]  alu_selected,
     input logic [`NUM_FU_MULT-1:0] mult_selected,
     input logic [`NUM_FU_LOAD-1:0] load_selected,
+
+    input logic [`NUM_FU_ALU-1:0]  alu_last_prepared,
+    input logic [`NUM_FU_MULT-1:0] mult_last_prepared,
+    input logic [`NUM_FU_LOAD-1:0] load_last_prepared,
+
+    // tell rs whether it will the next value will be accepted
     output logic [`NUM_FU_ALU-1:0]   fu_alu_avail,
     output logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
     output logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
     output logic [`NUM_FU_STORE-1:0] fu_store_avail,
 
-    // packet for store, to rob and maybe prf
+    // TODO: packet for store, to rob and maybe prf
     output FU_STATE_PACKET fu_state_packet;
 );
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
+        .clock(clock), // not needed for 1-cycle alu
+        .reset(reset), // not needed for 1-cycle alu
         .fu_alu_packet(fu_alu_packet),
-        .last_selected(alu_selected),
+        .avail(fu_alu_avail), // not needed for 1-cycle alu
+        .prepared(fu_state_packet.alu_prepared),
         .fu_state_alu_packet(fu_state_packet.alu_packet)
     );
 
-    mult mult_components [`NUM_FU_MULT-1:0] (
+    mult_impl mult_components [`NUM_FU_MULT-1:0] (
+        .clock(clock),
+        .reset(reset),
         .fu_mult_packet(fu_mult_packet),
-        .last_selected(mult_selected),
+        .avail(fu_mult_avail),
+        .prepared(fu_state_packet.mult_prepared),
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     )
 
     load load_components [`NUM_FU_LOAD-1:0] (
+        .clock(clock),
+        .reset(reset),
         .fu_load_packet(fu_load_packet),
-        .last_selected(load_selected),
+        .avail(fu_load_avail),
+        .prepared(fu_state_packet.load_prepared),
         .fu_state_load_packet(fu_state_packet.load_packet)
     )
 
-    assign fu_alu_avail = alu_selected | fu_state_packet.alu_prepared;
-    assign mult_alu_avail = mult_selected | fu_state_packet.mult_prepared;
-    assign load_alu_avail = load_selected | fu_state_packet.load_prepared;
+    assign fu_alu_avail = alu_selected | ~alu_last_prepared | fu_state_packet.alu_packet.cond_branch;
+    assign fu_mult_avail = mult_selected | ~mult_last_prepared;
+    assign fu_load_avail = load_selected | ~load_last_prepared;
 
 endmodule

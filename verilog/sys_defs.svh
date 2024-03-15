@@ -537,6 +537,29 @@ typedef struct packed {
     PRN  prn;
 } PRF_WRITE;
 
+typedef struct packed {
+    ROBN robn;
+    PRN dest_prn;
+    DATA result;
+} FU_STATE_BASIC_PACKET;
+
+typedef struct packed {
+    FU_STATE_BASIC_PACKET basic;
+    logic take_branch;
+    logic cond_branch;
+    logic uncond_branch;
+    ADDR PC;
+} FU_STATE_ALU_PACKET;
+
+typedef struct packed {
+    logic [`NUM_FU_ALU-1:0] alu_prepared;
+    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
+    logic [`NUM_FU_MULT-1:0] mult_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
+    logic [`NUM_FU_LOAD-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
+} FU_STATE_PACKET;
+
 
 
 `endif // __SYS_DEFS_SVH__
