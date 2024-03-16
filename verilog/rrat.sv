@@ -9,11 +9,11 @@ module rrat #(
     output RRAT_CT_OUTPUT rrat_ct_output,
 );
 
+    // state
     PRN [SIZE-1:0] rrat_table, next_rrat_table;
     logic          success, next_success;
     
-    FREE_LIST_PACKET [`N-1:0] push_packet;
-    // FREE_LIST_PACKET [`N-1:0] pop_packet;
+    FREE_LIST_PACKET [`N-1:0] push_packet; // pr that is released
     logic            [`N-1:0] pop_en;
 
     rrat_free_list free_l(
@@ -45,11 +45,11 @@ module rrat #(
 
         for (int i = 0; i < N; i++) begin
             if (rrat_ct_input.success[i] && next_success) begin
-                if (!rrat_ct_input[i].arns[0]) begin
-                    next_rrat_table[rrat_ct_input[i].arns[0]] = rrat_ct_input[i].prn;
-                    pop_en[i]                                 = `TRUE;
-                    push_packet[i].valid                      = `TRUE;
-                    push_packet[i].prn                        = rrat_ct_input[i].prn;
+                if (!rrat_ct_input.arns[i]) begin
+                    push_packet[i].prn                     = next_rrat_table[rrat_ct_input.arns[i]];
+                    push_packet[i].valid                   = `TRUE;
+                    next_rrat_table[rrat_ct_input.arns[i]] = rrat_ct_input.prns[i];
+                    pop_en[i]                              = `TRUE;
                 end
             end else begin
                 next_success = `FALSE;
@@ -62,17 +62,12 @@ module rrat #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            success <= `TRUE;
-            for (int i = 0; i < SIZE; i++) begin
-                rrat_table[i].valid <= `FALSE;
-                rrat_table[i].prn   <= 0;
-            end
+            success    <= `TRUE;
+            rrat_table <= {SIZE{0}};
         end else begin
             success    <= next_success;
             rrat_table <= next_rrat_table;
         end
     end
-
-    
 
 endmodule

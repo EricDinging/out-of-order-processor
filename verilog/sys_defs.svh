@@ -526,17 +526,11 @@ typedef struct packed {
 } RRAT_CT_INPUT;
 
 typedef struct packed {
-    PRN   prn;
-    logic valid;
-} RRAT_CT_OUTPUT_ENTRY;
-    
-typedef struct packed {
-    RRAT_CT_OUTPUT_ENTRY             [`ARCH_REG_SZ-1:0] entries;
+    PRN   [`ARCH_REG_SZ-1:0]         entries;
     logic                            squash;
     PRN                              head, tail;
     logic [`FREE_LIST_CTR_WIDTH-1:0] free_list_counter;
     PRN   [`PHYS_REG_SZ_R10K-1:0]    free_list;
-
 } RRAT_CT_OUTPUT;
 
 typedef struct packed {
