@@ -81,6 +81,13 @@ module testbench;
         end
     endtask
 
+    task print_push_packet;
+        $display("time: %4.0f\n", $time);
+        for (int i = 0; i < `N; ++i) begin
+            $display("push_packet: idx %d: valid %b prn: %d\n", i, push_packet[i].valid, push_packet[i].prn);
+        end
+    endtask
+
     task init;
         reset = 1;
         correct = 1;
@@ -210,9 +217,12 @@ module testbench;
             // print_pop_packet();
         end
 
-        @(negedge clock); 
-    
         pop_en = {`N{`FALSE}};
+        @(negedge clock); 
+        $display("time: %4.0f, pass pop\n", $time); // 260
+        // print_entries_out();
+        // print_pop_packet();
+    
         
 
         for (int i = 0; i < ITER; ++i) begin
@@ -226,12 +236,13 @@ module testbench;
                 end
             end
 
+            print_push_packet();
             @(negedge clock);
             correct_counter = `PHYS_REG_SZ_R10K - total_pop_cnt + total_push_cnt;
             correct_head = correct_head;
             correct_tail = total_push_cnt;
             correct = correct && correct_counter == counter_out && head_out == correct_head && tail_out == correct_tail;
-
+            $display("time: %4.0f, i: %d, correct: %b\n", $time, i, correct);
             // print_entries_out();
             // print_pop_packet();
         end
