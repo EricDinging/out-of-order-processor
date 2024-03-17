@@ -5,7 +5,6 @@ module rat(
     input RAT_IS_INPUT rat_is_input,
     input RRAT_CT_OUTPUT rrat_ct_output,
 
-
     output RAT_IS_OUTPUT rat_is_output,
 );
     rat_free_list free_l;
