@@ -29,7 +29,7 @@ module free_list #(
     
     
     // always_comb begin
-    always @(*) begin    
+    always_comb begin
         next_head              = head;
         next_tail              = tail;
         next_counter           = counter;
@@ -78,8 +78,8 @@ module free_list #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            counter <= SIZE;
-            head    <= 0;
+            counter <= SIZE - `ARCH_REG_SZ;
+            head    <= `ARCH_REG_SZ;
             tail    <= 0;
             for (int i = 0; i < SIZE; i++) begin
                 free_list_entries[i] <= i;

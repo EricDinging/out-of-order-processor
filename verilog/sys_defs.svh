@@ -521,16 +521,21 @@ typedef struct packed {
 
 typedef struct packed {
     logic   [`N-1:0] success;
-    PRN     [`N-1:0] prns;
     REG_IDX [`N-1:0] arns; // arn = 0 encodes no valid dest_arn 
 } RRAT_CT_INPUT;
 
 typedef struct packed {
-    PRN   [`ARCH_REG_SZ-1:0]         entries;
+    logic valid;
+    PRN   prn;
+} FREE_LIST_PACKET;
+
+typedef struct packed {
+    FREE_LIST_PACKET        [`N-1:0] free_packet;
     logic                            squash;
+    PRN           [`ARCH_REG_SZ-1:0] entries;
     PRN                              head, tail;
     logic [`FREE_LIST_CTR_WIDTH-1:0] free_list_counter;
-    PRN   [`PHYS_REG_SZ_R10K-1:0]    free_list;
+    PRN      [`PHYS_REG_SZ_R10K-1:0] free_list;
 } RRAT_CT_OUTPUT;
 
 typedef struct packed {
@@ -542,10 +547,5 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
-
-typedef struct packed {
-    logic valid;
-    PRN   prn;
-} FREE_LIST_PACKET;
 
 `endif // __SYS_DEFS_SVH__

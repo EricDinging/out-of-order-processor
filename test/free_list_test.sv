@@ -55,7 +55,6 @@ module testbench;
             $display("@@@ Failed ENDING TESTBENCH : ERROR !");
             $display("Time:%4.0f clock:%b counter:%d head:%d, tail:%d\n", $time, clock, counter_out, head_out, tail_out);
             $display("correct_counter:%d correct_head:%d, correct_tail:%d\n", correct_counter, correct_head, correct_tail);
-            $display("pop_packet[0].valid: %b, pop_packet[0].prn: %d", pop_packet[0].valid, pop_packet[0].prn);
             print_entries_out();
             print_pop_packet();
             $finish;
@@ -92,7 +91,7 @@ module testbench;
         reset = 1;
         correct = 1;
         rat_squash = 0;
-
+        
         correct_head = 0;
         correct_tail = 0;
         correct_counter = `PHYS_REG_SZ_R10K;
@@ -103,10 +102,19 @@ module testbench;
             pop_en[i]            = `FALSE;
         end
 
-        input_free_list = {`PHYS_REG_SZ_R10K{0}};
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; ++i) begin
+            input_free_list[i] = i;
+        end
+        head_in = 0;
+        tail_in = 0;
+        counter_in = `PHYS_REG_SZ_R10K;
 
         @(negedge clock);
         reset = 0;
+        correct = correct && head_out == `ARCH_REG_SZ && tail_out == 0 && counter_out == `PHYS_REG_SZ_R10K - `ARCH_REG_SZ;
+        rat_squash = 1;
+        @(negedge clock);
+        rat_squash = 0;
     endtask
     
     task test_counter;
@@ -119,13 +127,11 @@ module testbench;
         @(negedge clock);
         @(negedge clock);
 
-        // $monitor("time: %4.0f, pop_packet[0].valid: %b, pop_packet[0].prn: %d", $time, pop_packet[0].valid, pop_packet[0].prn);
         pop_en = {`N{`TRUE}};
 
-        
         for (int i = 0; i < ITER; ++i) begin
             #1;
-            print_pop_packet();
+            // print_pop_packet();
             for (int j = 0; j < `N; ++j) begin
                 correct = correct && pop_packet[j].valid && pop_packet[j].prn == i * `N + j;
             end 
@@ -236,7 +242,7 @@ module testbench;
                 end
             end
 
-            print_push_packet();
+            // print_push_packet();
             @(negedge clock);
             correct_counter = `PHYS_REG_SZ_R10K - total_pop_cnt + total_push_cnt;
             correct_head = correct_head;
