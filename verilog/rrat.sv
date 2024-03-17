@@ -11,7 +11,7 @@ module rrat #(
     // state
     PRN [SIZE-1:0] rrat_table, next_rrat_table;
     logic          success, next_success;
-    
+
     logic            [`N-1:0] pop_en;
     FREE_LIST_PACKET [`N-1:0] pop_packet;
 
@@ -40,10 +40,12 @@ module rrat #(
         for (int i = 0; i < `N; i++) begin
             if (next_success) begin
                 if (rrat_ct_input.arns[i] != 0) begin
-                    rrat_ct_output.free_packet[i].prn      = next_rrat_table[rrat_ct_input.arns[i]];
-                    rrat_ct_output.free_packet[i].valid    = `TRUE;
-                    pop_en[i]                              = `TRUE;
-                    next_rrat_table[rrat_ct_input.arns[i]] = pop_packet[i].prn;
+                    rrat_ct_output.free_packet[i].prn   = next_rrat_table[rrat_ct_input.arns[i]];
+                    rrat_ct_output.free_packet[i].valid = `TRUE;
+                    pop_en[i]                           = `TRUE;
+                    if (pop_packet[i].valid) begin
+                        next_rrat_table[rrat_ct_input.arns[i]] = pop_packet[i].prn;
+                    end
                 end
             end
             next_success = next_success && rrat_ct_input.success[i];
@@ -59,7 +61,6 @@ module rrat #(
             for (int i = 0; i < SIZE; i++) begin
                 rrat_table[i] = i;
             end
-            
         end else begin
             success    <= next_success;
             rrat_table <= next_rrat_table;

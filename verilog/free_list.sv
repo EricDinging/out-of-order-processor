@@ -34,11 +34,6 @@ module free_list #(
         next_tail              = tail;
         next_counter           = counter;
         next_free_list_entries = free_list_entries;
-        
-        // for (int i = 0; i < `N; ++i) begin
-        //     pop_packet[i].prn   = 0;
-        //     pop_packet[i].valid = `TRUE;
-        // end
 
         if (rat_squash) begin
             next_free_list_entries = input_free_list;
@@ -109,7 +104,9 @@ module rat_free_list #(
 
     output FREE_LIST_PACKET   [`N-1:0] pop_packet
     `ifdef DEBUG_OUT
-    , output PRN            [SIZE-1:0] output_free_list
+    , output PRN                              head, tail
+    , output logic [`FREE_LIST_CTR_WIDTH-1:0] counter
+    , output PRN                   [SIZE-1:0] free_list
     `endif
 );
     
@@ -125,9 +122,10 @@ module rat_free_list #(
         .rat_squash(rat_squash),
         .pop_packet(pop_packet)
         `ifdef DEBUG_OUT
-        , .output_free_list()
-        `else
-        , .output_free_list(output_free_list)
+        , .output_free_list(free_list)
+        , .head_out(head)
+        , .tail_out(tail)
+        , .counter_out(counter)
         `endif
     );
 
