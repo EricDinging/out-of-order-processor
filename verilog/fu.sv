@@ -258,8 +258,8 @@ module fu #(
 
     // TODO: packet for store, to rob and maybe prf
     // tell rs whether it the next value will be accepted
-    output logic [`NUM_FU_STORE-1:0] fu_store_avail,
-
+    output logic [`NUM_FU_STORE-1:0] store_avail,
+    output FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet,
     output FU_STATE_PACKET fu_state_packet;
 );
 
@@ -290,5 +290,21 @@ module fu #(
         .fu_state_load_packet(fu_state_packet.load_packet)
     )
 
+    for (int i = 0; i < `NUM_FU_ALU; i++) begin
+        cond_rob_packet[i].robn = fu_state_packet.alu_packet.basic.robn;
+        cond_rob_packet[i].executed = fu_state_packet.alu_prepared[i] && alu_packet[i].cond_branch;
+        cond_rob_packet[i].branch_taken = fu_state_packet.alu_packet.take_branch;
+        cond_rob_packet[i].target_addr = fu_state_packet.alu_packet.basic.result;
+    end
 
 endmodule
+
+
+/*
+typedef struct packed {
+    ROBN  robn;
+    logic executed;
+    logic branch_taken;
+    ADDR target_addr;
+} FU_ROB_PACKET;
+*/

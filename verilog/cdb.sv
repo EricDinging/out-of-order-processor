@@ -13,8 +13,7 @@ module cdb #(
     output logic [`NUM_FU_LOAD-1:0] load_avail,
 
     // data path
-    output CDB_PREDICTOR_PACKET [`NUM_FU_ALU-1:0] cdb_predictor_packet, // for predictor, regardless of priority selection
-
+    // output CDB_PREDICTOR_PACKET [`NUM_FU_ALU-1:0] cdb_predictor_packet, // for predictor, regardless of priority selection
     output FU_ROB_PACKET [SIZE-1:0] fu_rob_packet,
     output CDB_PACKET    [SIZE-1:0] cdb_output // for both cdb and prf
 );
@@ -34,7 +33,7 @@ module cdb #(
     logic [`N-1:0][`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] mux_select;
     logic [`NUM_FU_ALU-1:0] cond_branches;
     
-    assign alu_avail = alu_selected | ~cdb_state.alu_prepared | cdb_state.alu_packet.cond_branch;
+    assign alu_avail = alu_selected | ~cdb_state.alu_prepared | cond_branches;
     assign mult_avail = mult_selected | ~cdb_state.mult_prepared;
     assign load_avail = load_selected | ~cdb_state.load_prepared;
 
@@ -72,13 +71,11 @@ module cdb #(
                 fu_state_packet.alu_prepared[i],
                 fu_state_packet.alu_packet[i].take_branch,
                 fu_state_packet.alu_packet[i].basic.result
-            }
-            alu_cdb_packet[i] = if fu_state_packet.alu_prepared[i]
-                                then '{
-                                    fu_state_packet.alu_packet[i].basic.dest_prn,
-                                    fu_state_packet.alu_packet[i].basic.result
-                                }
-                                else 0
+            };
+            alu_cdb_packet[i] = fu_state_packet.alu_prepared[i] ? '{
+                fu_state_packet.alu_packet[i].basic.dest_prn,
+                fu_state_packet.alu_packet[i].basic.result
+            } : 0;
         end
 
         // mult
@@ -88,13 +85,11 @@ module cdb #(
                 fu_state_packet.mult_prepared[i],
                 1'b0, // not taken
                 32'b0 // null address
-            }
-            other_cdb_packet[i] = if fu_state_packet.mult_prepared[i]
-                                  then '{
-                                    fu_state_packet.mult_packet[i].dest_prn,
-                                    fu_state_packet.mult_packet[i].result
-                                  }
-                                  else 0
+            };
+            other_cdb_packet[i] = fu_state_packet.mult_prepared[i] ? '{
+                fu_state_packet.mult_packet[i].dest_prn,
+                fu_state_packet.mult_packet[i].result
+            } : 0;
         end
         
         // load
@@ -104,26 +99,24 @@ module cdb #(
                 fu_state_packet.load_prepared[i],
                 1'b0, // not taken
                 32'b0 // null address
-            }
-            other_cdb_packet[`NUM_FU_MULT+i] = if fu_state_packet.load_prepared[i]
-                                            then '{
-                                                fu_state_packet.load_packet[i].dest_prn,
-                                                fu_state_packet.load_packet[i].result
-                                            }
-                                            else 0
+            };
+            other_cdb_packet[`NUM_FU_MULT+i] =  fu_state_packet.load_prepared[i] ? '{
+                fu_state_packet.load_packet[i].dest_prn,
+                fu_state_packet.load_packet[i].result
+            } : 0;
         end
     end
 
-    // predictor output
-    always_comb begin
-        for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            cdb_predictor_packet[i] = '{
-                fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].take_branch,
-                fu_state_packet.alu_packet[i].PC,
-                fu_state_packet.alu_packet[i].basic.result
-            }
-        end
-    end
+    // // predictor output
+    // always_comb begin
+    //     for (int i = 0; i < `NUM_FU_ALU; i++) begin
+    //         cdb_predictor_packet[i] = '{
+    //             fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].take_branch,
+    //             fu_state_packet.alu_packet[i].PC,
+    //             fu_state_packet.alu_packet[i].basic.result
+    //         };
+    //     end
+    // end
 
     /*
     typedef struct packed {
@@ -167,12 +160,12 @@ module select_insn (
         .select(mux_select), // TODO: check field match
         .fu_rob_packet(fu_rob_packet),
         .cdb_packet(cdb_packet)
-    )
+    );
 endmodule
 
 module mux_cdb (
-    input FU_ROB_PACKET [`NUM_FU_ALU+`NUM_FU_MULt+`NUM_FU_LOAD-1:0] rob_packets;
-    input CDB_PACKET [`NUM_FU_ALU+`NUM_FU_MULt+`NUM_FU_LOAD-1:0] cdb_packets;
+    input FU_ROB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] rob_packets;
+    input CDB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] cdb_packets;
     input logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select;
 
     output FU_ROB_PACKET fu_rob_packet;
@@ -183,8 +176,27 @@ module mux_cdb (
         fu_rob_packet = 0;
         cdb_packet = 0;
         for (int i = 0; i < `NUM_FU_ALU+`NUM_FU_MULt+`NUM_FU_LOAD; i++) begin
-            fu_rob_packet = fu_rob_packet | (rob_packets[i] & {`ROB_CNT_WIDTH+2+32{select[i]}});
+            fu_rob_packet = fu_rob_packet | (rob_packets[i] & {(`ROB_CNT_WIDTH+2+32){select[i]}});
             cdb_packet = cdb_packet | (cdb_packets[i] & {32+`PRN_WIDTH{select[i]}});
         end
     end
+
+    onehot_mux mux_rob#(
+        SIZE = $bits(FU_ROB_PACKET),
+        WIDTH = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD
+    )(
+        .in(rob_packets),
+        .select(select),
+        .out(fu_rob_packet)
+    );
+    
+    onehot_mux mux_cdb#(
+        SIZE = $bits(CDB_PACKET),
+        WIDTH = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD
+    )(
+        .in(cdb_packets),
+        .select(select),
+        .out(cdb_packet)
+    );
+
 endmodule

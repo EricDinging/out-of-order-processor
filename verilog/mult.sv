@@ -107,9 +107,9 @@ module mult_stage (
     end
 
     always_ff @(posedge clock) begin
-        if (reset || !avail) begin
+        if (reset) begin
             done <= 1'b0;
-        end else begin
+        end else if (avail) begin
             done <= start;
         end
     end
