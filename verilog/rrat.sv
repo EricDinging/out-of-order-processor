@@ -12,14 +12,13 @@ module rrat #(
     PRN [SIZE-1:0] rrat_table, next_rrat_table;
     logic          success, next_success;
     
-    FREE_LIST_PACKET [`N-1:0] push_packet;   // pr that is released
     logic            [`N-1:0] pop_en;
     FREE_LIST_PACKET [`N-1:0] pop_packet;
 
     rrat_free_list free_l(
         .clock(clock),
         .reset(reset),
-        .push_packet(push_packet),
+        .push_packet(rrat_ct_output.free_packet),
         .pop_en(pop_en),
         // output
         .pop_packet(pop_packet),
@@ -34,27 +33,25 @@ module rrat #(
         next_rrat_table = rrat_table;
         pop_en          = {`N{`FALSE}};
         for (int i = 0; i < `N; i++) begin
-            push_packet[i].valid = `FALSE;
-            push_packet[i].prn   = 0;
+            rrat_ct_output.free_packet[i].valid = `FALSE;
+            rrat_ct_output.free_packet[i].prn   = 0;
         end
 
         for (int i = 0; i < `N; i++) begin
-            if (rrat_ct_input.success[i] && next_success) begin
+            if (next_success) begin
                 if (rrat_ct_input.arns[i] != 0) begin
-                    push_packet[i].prn                     = next_rrat_table[rrat_ct_input.arns[i]];
-                    push_packet[i].valid                   = `TRUE;
+                    rrat_ct_output.free_packet[i].prn      = next_rrat_table[rrat_ct_input.arns[i]];
+                    rrat_ct_output.free_packet[i].valid    = `TRUE;
                     pop_en[i]                              = `TRUE;
                     next_rrat_table[rrat_ct_input.arns[i]] = pop_packet[i].prn;
                 end
-            end else begin
-                next_success = `FALSE;
             end
-        end
+            next_success = next_success && rrat_ct_input.success[i];
+        end 
     end
 
     assign rrat_ct_output.squash  = ~success;
     assign rrat_ct_output.entries = rrat_table;
-    assign rrat_ct_output.free_packet = push_packet;
 
     always_ff @(posedge clock) begin
         if (reset) begin
