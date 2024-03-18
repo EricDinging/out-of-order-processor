@@ -109,6 +109,7 @@ module testbench;
     endtask
 
     task mixed_alu_w_cond_branch;
+        init;
         int count;
         fu_alu_packet[0] = '{
             1, // valid
