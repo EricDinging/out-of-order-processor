@@ -10,7 +10,7 @@ module onehot_mux #(
     genvar i;
     generate
         for (i = 0; i < WIDTH; ++i) begin
-            assign out = in[i] & '{SIZE{select[i]}};
+            assign out = in[i] & {SIZE{select[i]}};
         end
     endgenerate
     

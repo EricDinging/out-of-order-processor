@@ -73,7 +73,6 @@ module alu_cond (
     assign fu_state_alu_packet.basic.robn = fu_alu_packet.robn;
     assign fu_state_alu_packet.cond_branch = fu_alu_packet.cond_branch;
     assign fu_state_alu_packet.uncond_branch = fu_alu_packet.uncond_branch;
-    assign fu_state_alu_packet.PC = fu_alu_packet.PC;
 
     logic internal_take;
     DATA opa_mux_out, opb_mux_out;
@@ -105,7 +104,7 @@ module alu_cond (
         // Inputs
         .opa(opa_mux_out),
         .opb(opb_mux_out),
-        .func(fu_alu_packet.func),
+        .func(fu_alu_packet.func.alu),
 
         // Output
         .result(fu_state_alu_packet.basic.result)
@@ -166,7 +165,7 @@ module mult_impl (
         .avail(avail), // simply stall all the state registers
         .rs1(opa_mux_out),
         .rs2(opb_mux_out),
-        .func(fu_mult_packet.func),
+        .func(fu_mult_packet.func.mult),
         .robn(fu_mult_packet.robn),
         .dest_prn(fu_mult_packet.dest_prn),
 
@@ -260,7 +259,7 @@ module fu #(
     // tell rs whether it the next value will be accepted
     output logic [`NUM_FU_STORE-1:0] store_avail,
     output FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet,
-    output FU_STATE_PACKET fu_state_packet;
+    output FU_STATE_PACKET fu_state_packet
 );
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
@@ -279,7 +278,7 @@ module fu #(
         .avail(mult_avail),
         .prepared(fu_state_packet.mult_prepared),
         .fu_state_mult_packet(fu_state_packet.mult_packet)
-    )
+    );
 
     load load_components [`NUM_FU_LOAD-1:0] (
         .clock(clock),
@@ -288,13 +287,15 @@ module fu #(
         .avail(load_avail),
         .prepared(fu_state_packet.load_prepared),
         .fu_state_load_packet(fu_state_packet.load_packet)
-    )
+    );
 
-    for (int i = 0; i < `NUM_FU_ALU; i++) begin
-        cond_rob_packet[i].robn = fu_state_packet.alu_packet.basic.robn;
-        cond_rob_packet[i].executed = fu_state_packet.alu_prepared[i] && alu_packet[i].cond_branch;
-        cond_rob_packet[i].branch_taken = fu_state_packet.alu_packet.take_branch;
-        cond_rob_packet[i].target_addr = fu_state_packet.alu_packet.basic.result;
+    always_comb begin
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            cond_rob_packet[i].robn = fu_state_packet.alu_packet[i].basic.robn;
+            cond_rob_packet[i].executed = fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].cond_branch;
+            cond_rob_packet[i].branch_taken = fu_state_packet.alu_packet[i].take_branch;
+            cond_rob_packet[i].target_addr = fu_state_packet.alu_packet[i].basic.result;
+        end
     end
 
 endmodule

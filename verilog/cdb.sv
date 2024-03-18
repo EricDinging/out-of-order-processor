@@ -26,9 +26,9 @@ module cdb #(
 
     // for mux input
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] alu_rob_packet;
-    FU_ROB_PACKET [`NUM_FU_MULt+`NUM_FU_LOAD-1:0] other_rob_packet;
+    FU_ROB_PACKET [`NUM_FU_MULT+`NUM_FU_LOAD-1:0] other_rob_packet;
     CDB_PACKET [`NUM_FU_ALU-1:0] alu_cdb_packet;
-    CDB_PACKET [`NUM_FU_MULt+`NUM_FU_LOAD-1:0] other_cdb_packet;
+    CDB_PACKET [`NUM_FU_MULT+`NUM_FU_LOAD-1:0] other_cdb_packet;
 
     logic [`N-1:0][`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] mux_select;
     logic [`NUM_FU_ALU-1:0] cond_branches;
@@ -130,7 +130,7 @@ module cdb #(
     select_insn mux_cdb_inst (
         .rob_packets({alu_rob_packet, other_rob_packet}),
         .cdb_packets({alu_cdb_packet, other_cdb_packet}),
-        .mult_select(mult_select),
+        .mux_select(mux_select),
         .fu_rob_packet(fu_rob_packet),
         .cdb_packet(cdb_output)
     );
@@ -147,12 +147,12 @@ endmodule
 
 
 module select_insn (
-    input FU_ROB_PACKET [`NUM_FU_ALU+`NUM_FU_MULt+`NUM_FU_LOAD-1:0] rob_packets;
-    input CDB_PACKET [`NUM_FU_ALU+`NUM_FU_MULt+`NUM_FU_LOAD-1:0] cdb_packets;
-    input logic [`N-1:0][`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] mux_select;
+    input FU_ROB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] rob_packets,
+    input CDB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] cdb_packets,
+    input logic [`N-1:0][`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] mux_select,
 
-    output FU_ROB_PACKET [`N-1:0] fu_rob_packet;
-    output CDB_PACKET [`N-1:0] cdb_packet;
+    output FU_ROB_PACKET [`N-1:0] fu_rob_packet,
+    output CDB_PACKET [`N-1:0] cdb_packet
 );
     mux_cdb mux_cdb_inst [`N-1:0] (
         .rob_packets(rob_packets),
@@ -164,36 +164,36 @@ module select_insn (
 endmodule
 
 module mux_cdb (
-    input FU_ROB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] rob_packets;
-    input CDB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] cdb_packets;
-    input logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select;
+    input FU_ROB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] rob_packets,
+    input CDB_PACKET [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] cdb_packets,
+    input logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select,
 
-    output FU_ROB_PACKET fu_rob_packet;
-    output CDB_PACKET cdb_packet;
+    output FU_ROB_PACKET fu_rob_packet,
+    output CDB_PACKET cdb_packet
 );
     // default is 0
-    always_comb begin
-        fu_rob_packet = 0;
-        cdb_packet = 0;
-        for (int i = 0; i < `NUM_FU_ALU+`NUM_FU_MULt+`NUM_FU_LOAD; i++) begin
-            fu_rob_packet = fu_rob_packet | (rob_packets[i] & {(`ROB_CNT_WIDTH+2+32){select[i]}});
-            cdb_packet = cdb_packet | (cdb_packets[i] & {32+`PRN_WIDTH{select[i]}});
-        end
-    end
+    // always_comb begin
+    //     fu_rob_packet = 0;
+    //     cdb_packet = 0;
+    //     for (int i = 0; i < `NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD; i++) begin
+    //         fu_rob_packet = fu_rob_packet | (rob_packets[i] & {(`ROB_CNT_WIDTH+2+32){select[i]}});
+    //         cdb_packet = cdb_packet | (cdb_packets[i] & {32+`PRN_WIDTH{select[i]}});
+    //     end
+    // end
 
-    onehot_mux mux_rob#(
-        SIZE = $bits(FU_ROB_PACKET),
-        WIDTH = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD
-    )(
+    onehot_mux #(
+        .SIZE($bits(FU_ROB_PACKET)),
+        .WIDTH(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD)
+    ) mux_rob (
         .in(rob_packets),
         .select(select),
         .out(fu_rob_packet)
     );
     
-    onehot_mux mux_cdb#(
-        SIZE = $bits(CDB_PACKET),
-        WIDTH = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD
-    )(
+    onehot_mux #(
+        .SIZE($bits(CDB_PACKET)),
+        .WIDTH(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD)
+    ) mux_cdb (
         .in(cdb_packets),
         .select(select),
         .out(cdb_packet)

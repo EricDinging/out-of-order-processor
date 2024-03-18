@@ -39,7 +39,7 @@
 `define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
-`define NUM_FU_ALU 2
+`define NUM_FU_ALU 3
 `define NUM_FU_MULT 2
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
@@ -550,7 +550,6 @@ typedef struct packed {
     logic take_branch;
     logic cond_branch;
     logic uncond_branch;
-    ADDR PC;
 } FU_STATE_ALU_PACKET;
 
 typedef struct packed {
