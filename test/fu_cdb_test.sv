@@ -109,6 +109,7 @@ module testbench;
     endtask
 
     task mixed_alu_w_cond_branch;
+        int count;
         fu_alu_packet[0] = '{
             1, // valid
             `RV32_ADD, // inst
@@ -145,11 +146,15 @@ module testbench;
             1, // take_branch
             32'h00000003 // result
         };
+        #(`CLOCK_PERIOD/5.0);
+        count = 0;
         correct = cond_rob_packet[1] == correct_cond_rob_packet[1];
-
-        
-        
-        
+        @(negedge clock);
+        for (int i = 0; i < `N; i++) begin
+            if (cdb_output[i].dest_prn != 0)
+                ++count;
+        end
+        correct &= count == 1;
     endtask
 
     task more_than_n_alu;
@@ -250,11 +255,12 @@ module testbench;
     end
 
     initial begin
-        // mixed_alu_w_cond_branch;
+        mixed_alu_w_cond_branch;
         more_than_n_alu;
         exactly_n_alu;
         less_than_n_alu;
         only_mult;
+        $finish;
     end
     
 endmodule
