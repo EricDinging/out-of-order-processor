@@ -118,7 +118,7 @@ module icache (
             last_tag         <= current_tag;
             miss_outstanding <= unanswered_miss;
             if (update_mem_tag) begin
-                current_mem_tag <= Imem2proc_response;
+                current_mem_tag <= Imem2proc_transaction_tag; //FIXED
             end
             if (got_mem_data) begin // If data came from memory, meaning tag matches
                 icache_data[current_index].data  <= Imem2proc_data;
