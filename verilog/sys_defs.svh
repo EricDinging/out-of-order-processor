@@ -1,4 +1,4 @@
- /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
 //                                                                     //
@@ -547,5 +547,23 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
+
+typedef struct packed {
+    logic success;
+    logic predict_taken;
+    ADDR  predict_target;
+    logic resolve_taken;
+    ADDR  resolve_target;
+} ROB_IF_ENTRY;
+
+typedef struct packed {
+    ROB_IF_ENTRY [`N-1:0] entries;
+} ROB_IF_PACKET;
+
+typedef struct packed {
+    logic is_branch;
+    logic valid;
+    ADDR  pc;
+} PC_ENTRY;
 
 `endif // __SYS_DEFS_SVH__
