@@ -32,6 +32,7 @@
 `define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
+`define ARCH_REG_SZ 32
 `define PRN_WIDTH $clog2(`PHYS_REG_SZ_R10K)
 `define FREE_LIST_CTR_WIDTH $clog2(`PHYS_REG_SZ_R10K+1)
 `define FREE_LIST_PTR_WIDTH $clog2(`PHYS_REG_SZ_R10K)
@@ -520,19 +521,21 @@ typedef struct packed {
 
 typedef struct packed {
     logic   [`N-1:0] success;
-    REG_IDX [`N-1:0] arns;
+    REG_IDX [`N-1:0] arns; // arn = 0 encodes no valid dest_arn 
 } RRAT_CT_INPUT;
 
 typedef struct packed {
-    PRN   prn;
     logic valid;
-} RRAT_CT_OUTPUT_ENTRY;
-    
+    PRN   prn;
+} FREE_LIST_PACKET;
+
 typedef struct packed {
-    RRAT_CT_OUTPUT_ENTRY          [31:0] entries;
-    logic                         success;
-    PRN                           head, tail;
-    PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;
+    FREE_LIST_PACKET        [`N-1:0] free_packet;
+    logic                            squash;
+    PRN           [`ARCH_REG_SZ-1:0] entries;
+    PRN                              head, tail;
+    logic [`FREE_LIST_CTR_WIDTH-1:0] free_list_counter;
+    PRN      [`PHYS_REG_SZ_R10K-1:0] free_list;
 } RRAT_CT_OUTPUT;
 
 typedef struct packed {
@@ -544,12 +547,5 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
-
-typedef struct packed {
-    logic valid;
-    PRN   prn;
-} FREE_LIST_PACKET;
-
-
 
 `endif // __SYS_DEFS_SVH__
