@@ -554,7 +554,6 @@ module testbench;
         end
     endtask
 
-    
 
     task exit_on_error;
         begin
@@ -575,7 +574,7 @@ module testbench;
 
 
     initial begin
-        clock  = 0;
+        clock = 0;
 
 
         fmt = "@@@ Time:%4.0f clock:%b counter:%b, almost_full:%b\n entries_out:%b\n, rs_is_packet:%b\n, \

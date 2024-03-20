@@ -96,7 +96,7 @@
 # there should be no need to change anything for project 3
 
 # this is a global clock period variable used in the tcl script and referenced in testbenches
-export CLOCK_PERIOD = 8.0
+export CLOCK_PERIOD = 10.0
 
 # the Verilog Compiler command and arguments
 VCS = SW_VCS=2020.12-SP2-1 vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
@@ -215,7 +215,7 @@ ALL_HEADERS = $(CPU_HEADERS)
 
 MULT_FILES = verilog/sys_defs.svh
 build/mult.simv: $(MULT_FILES)
-build/mult.cov: $(MULT_FILES)
+build/mult.cov.simv: $(MULT_FILES)
 synth/mult.vg: $(MULT_FILES)
 
 # TODO: add any files required for the RS here (besides test/rs_test.sv and verilog/rs.sv)
@@ -227,13 +227,13 @@ synth/rs.vg: $(RS_FILES)
 # TODO: add any files required for the ROB here (besides test/rob_test.sv and verilog/rob.sv)
 ROB_FILES = verilog/sys_defs.svh
 build/rob.simv: $(ROB_FILES)
-build/rob.cov: $(ROB_FILES)
+build/rob.cov.simv: $(ROB_FILES)
 synth/rob.vg: $(ROB_FILES)
 
 # PRF
 PRF_FILES = verilog/sys_defs.svh
 build/prf.simv: $(PRF_FILES)
-build/prf.cov: $(PRF_FILES)
+build/prf.cov.simv: $(PRF_FILES)
 synth/prf.vg: $(PRF_FILES)
 
 # FU_CDB
@@ -241,6 +241,24 @@ FU_CDB_FILES = verilog/sys_defs.svh verilog/fu.sv verilog/cdb.sv verilog/mult.sv
 build/fu_cdb.simv: $(FU_CDB_FILES)
 build/fu_cdb.cov.simv: $(FU_CDB_FILES)
 synth/fu_cdb.vg: $(FU_CDB_FILES)
+
+# FREE_LIST
+FREE_LIST_FILES = verilog/sys_defs.svh
+build/prf.simv: $(FREE_LIST_FILES)
+build/prf.cov.simv: $(FREE_LIST_FILES)
+synth/prf.vg: $(FREE_LIST_FILES)
+
+# RAT
+RAT_FILES = verilog/sys_defs.svh verilog/free_list.sv
+build/rat.simv: $(RAT_FILES)
+build/rat.cov.simv: $(RAT_FILES)
+synth/rat.vg: $(RAT_FILES)
+
+# RRAT
+RRAT_FILES = verilog/sys_defs.svh verilog/free_list.sv
+build/rrat.simv: $(RRAT_FILES)
+build/rrat.cov.simv: $(RRAT_FILES)
+synth/rrat.vg: $(RRAT_FILES)
 
 #################################
 # ---- Main CPU Definition ---- #

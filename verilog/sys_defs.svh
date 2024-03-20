@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////
+ /////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
 //                                                                     //
@@ -23,6 +23,7 @@
 // superscalar width
 `define N 2
 `define LOGN $clog2(`N)
+`define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
@@ -31,8 +32,13 @@
 `define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
+`define ARCH_REG_SZ 32
 `define PRN_WIDTH $clog2(`PHYS_REG_SZ_R10K)
+`define FREE_LIST_CTR_WIDTH $clog2(`PHYS_REG_SZ_R10K+1)
+`define FREE_LIST_PTR_WIDTH $clog2(`PHYS_REG_SZ_R10K)
+
 `define ROB_CNT_WIDTH $clog2(`ROB_SZ + 1)
+`define ROB_PTR_WIDTH $clog2(`ROB_SZ)
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
@@ -457,20 +463,25 @@ typedef struct packed {
  */
 typedef struct packed {
     logic    executed;
-    logic    success;
+    logic    success; // branch_taken prediction success
     logic    is_store;
-    logic    is_branch;
+    logic    cond_branch;
+    logic    uncond_branch;
+    logic    resolve_taken;
+    logic    predict_taken;
+    ADDR     predict_target;
+    ADDR     resolve_target;
     PRN      dest_prn; // debug only
     REG_IDX  dest_arn;
     ADDR     PC;
-    ADDR     NPC; // branch target for branches, jalr/ jar target for jalr/ jar
-    logic    halt;          // Is this a halt?
-    logic    illegal;       // Is this instruction illegal?
-    logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+    ADDR     NPC;     // PC + 4
+    logic    halt;    // Is this a halt?
+    logic    illegal; // Is this instruction illegal?
+    logic    csr_op;  // Is this a CSR operation? (we only used this as a cheap way to get return code)
 } ROB_ENTRY;
 
 typedef struct packed {
-    logic valid;
+    logic     [`N-1:0] valid; // all valid entries are in the front of the packet
     ROB_ENTRY [`N-1:0] entries;
 } ROB_IS_PACKET;
 
@@ -478,7 +489,7 @@ typedef struct packed {
     ROBN  robn;
     logic executed;
     logic branch_taken;
-    ADDR target_addr;
+    ADDR  target_addr;
 } FU_ROB_PACKET;
 
 typedef struct packed {
@@ -514,19 +525,21 @@ typedef struct packed {
 
 typedef struct packed {
     logic   [`N-1:0] success;
-    REG_IDX [`N-1:0] arns;
+    REG_IDX [`N-1:0] arns; // arn = 0 encodes no valid dest_arn 
 } RRAT_CT_INPUT;
 
 typedef struct packed {
-    PRN   prn;
     logic valid;
-} RRAT_CT_OUTPUT_ENTRY;
-    
+    PRN   prn;
+} FREE_LIST_PACKET;
+
 typedef struct packed {
-    RRAT_CT_OUTPUT_ENTRY [31:0] entries;
-    logic success;
-    PRN   head, tail;
-    PRN   [`PHYS_REG_SZ_R10K-1:0] free_list;
+    FREE_LIST_PACKET        [`N-1:0] free_packet;
+    logic                            squash;
+    PRN           [`ARCH_REG_SZ-1:0] entries;
+    PRN                              head, tail;
+    logic [`FREE_LIST_CTR_WIDTH-1:0] free_list_counter;
+    PRN      [`PHYS_REG_SZ_R10K-1:0] free_list;
 } RRAT_CT_OUTPUT;
 
 typedef struct packed {
@@ -538,6 +551,7 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
+
 
 typedef struct packed {
     ROBN robn;
