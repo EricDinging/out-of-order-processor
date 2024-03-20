@@ -7,7 +7,7 @@
 module alu (
     input DATA opa,
     input DATA opb,
-    ALU_FUNC   func,
+    input ALU_FUNC   func,
 
     output DATA result
 );
@@ -62,17 +62,19 @@ module conditional_branch (
 endmodule // conditional_branch
 
 module alu_cond (
+    input logic clock, reset, // unused, purely combinational
     input FU_PACKET fu_alu_packet,
-    output logic valid
-    output logic take_branch,
-    output DATA alu_result,
-    output PRN dest_prn,
-    output ROBN robn
+    input logic avail, // unused, purely combinational
+    output logic prepared,
+    output FU_STATE_ALU_PACKET fu_state_alu_packet
 );
-    assign valid = fu_alu_packet.valid;
-    assign dest_prn = fu_alu_packet.dest_prn;
-    assign robn = fu_alu_packet.robn;
+    assign prepared = fu_alu_packet.valid;
+    assign fu_state_alu_packet.basic.dest_prn = fu_alu_packet.dest_prn;
+    assign fu_state_alu_packet.basic.robn = fu_alu_packet.robn;
+    assign fu_state_alu_packet.cond_branch = fu_alu_packet.cond_branch;
+    assign fu_state_alu_packet.uncond_branch = fu_alu_packet.uncond_branch;
 
+    logic internal_take;
     DATA opa_mux_out, opb_mux_out;
     // ALU opA mux
     always_comb begin
@@ -97,14 +99,15 @@ module alu_cond (
         endcase
     end
 
+    assign fu_state_alu_packet.take_branch = fu_alu_packet.uncond_branch || (fu_alu_packet.cond_branch && internal_take);
     alu alu_0 (
         // Inputs
         .opa(opa_mux_out),
         .opb(opb_mux_out),
-        .func(fu_alu_packet.func),
+        .func(fu_alu_packet.func.alu),
 
         // Output
-        .result(alu_result)
+        .result(fu_state_alu_packet.basic.result)
     );
 
     conditional_branch conditional_branch_0 (
@@ -114,20 +117,74 @@ module alu_cond (
         .rs2(fu_alu_packet.op2),
 
         // Output
-        .take(take_branch)
+        .take(internal_take)
     );
 
 endmodule
 
-module mult (
+module mult_impl (
+    input logic clock, reset,
     input FU_PACKET fu_mult_packet,
-    input logic avail, // tell the multiplier stage to stall if unavail
-    output logic valid,
-    output DATA mult_result,
-    output PRN dest_prn,
-    output ROBN robn
+    input logic avail,
+    output logic prepared,
+    output FU_STATE_BASIC_PACKET fu_state_mult_packet
 );
     
+    DATA opa_mux_out, opb_mux_out;
+    // ALU opA mux
+    always_comb begin
+        case (fu_mult_packet.opa_select)
+            OPA_IS_RS1:  opa_mux_out = fu_mult_packet.op1;
+            OPA_IS_PC:   opa_mux_out = fu_mult_packet.PC;
+            OPA_IS_ZERO: opa_mux_out = 0;
+            default:     opa_mux_out = 32'hdeadface; // dead face
+        endcase
+    end
+
+    // ALU opB mux
+    always_comb begin
+        case (fu_mult_packet.opb_select)
+            OPB_IS_RS2:   opb_mux_out = fu_mult_packet.op2;
+            OPB_IS_I_IMM: opb_mux_out = `RV32_signext_Iimm(fu_mult_packet.inst);
+            OPB_IS_S_IMM: opb_mux_out = `RV32_signext_Simm(fu_mult_packet.inst);
+            OPB_IS_B_IMM: opb_mux_out = `RV32_signext_Bimm(fu_mult_packet.inst);
+            OPB_IS_U_IMM: opb_mux_out = `RV32_signext_Uimm(fu_mult_packet.inst);
+            OPB_IS_J_IMM: opb_mux_out = `RV32_signext_Jimm(fu_mult_packet.inst);
+            default:      opb_mux_out = 32'hfacefeed; // face feed
+        endcase
+    end
+
+    mult multiplier (
+        .clock(clock),
+        .reset(reset),
+
+        // input
+        .start(fu_mult_packet.valid), // read into the state
+        // note that valid is not related to avail
+        // they are one cycle off -- another state register within the rs
+        .avail(avail), // simply stall all the state registers
+        .rs1(opa_mux_out),
+        .rs2(opb_mux_out),
+        .func(fu_mult_packet.func.mult),
+        .robn(fu_mult_packet.robn),
+        .dest_prn(fu_mult_packet.dest_prn),
+
+        // output
+        .result(fu_state_mult_packet.result),
+        .output_robn(fu_state_mult_packet.robn),
+        .output_dest_prn(fu_state_mult_packet.dest_prn),
+        .done(prepared)
+    );
+endmodule
+
+module load (
+    input logic clock, reset,
+    input FU_PACKET fu_load_packet,
+    input logic avail,
+    output logic prepared,
+    output FU_STATE_BASIC_PACKET fu_state_load_packet
+);
+
 endmodule
 
 
@@ -143,7 +200,9 @@ typedef struct packed {
     ROBN    robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
-} FU_PACKET
+    logic cond_branch;
+    logic uncond_branch;
+} FU_PACKET;
 
 typedef struct packed {
     PRN   dest_prn;
@@ -156,6 +215,29 @@ typedef struct packed {
     logic branch_taken;
     ADDR target_addr;
 } FU_ROB_PACKET;
+
+typedef struct packed {
+    ROBN robn;
+    PRN dest_prn;
+    DATA result;
+} FU_STATE_BASIC_PACKET;
+
+typedef struct packed {
+    FU_STATE_BASIC_PACKET basic;
+    logic take_branch;
+    logic cond_branch;
+    logic uncond_branch;
+    ADDR PC;
+} FU_STATE_ALU_PACKET;
+
+typedef struct packed {
+    logic [`NUM_FU_ALU-1:0] alu_prepared;
+    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
+    logic [`NUM_FU_MULT-1:0] mult_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
+    logic [`NUM_FU_LOAD-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
+} FU_STATE_PACKET;
 */
 
 
@@ -167,13 +249,63 @@ module fu #(
     input FU_PACKET [`NUM_FU_MULT-1:0] fu_mult_packet,
     input FU_PACKET [`NUM_FU_LOAD-1:0] fu_load_packet,
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
-    output logic [`NUM_FU_ALU-1:0]   fu_alu_avail,
-    output logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
-    output logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
-    output logic [`NUM_FU_STORE-1:0] fu_store_avail,
-    output FU_ROB_PACKET [`CDB_SZ-1:0] fu_rob_packet,
-    output CDB_PACKET [`CDB_SZ-1:0] cdb_packet
+
+    // given back from priority selector
+    input logic [`NUM_FU_ALU-1:0]  alu_avail,
+    input logic [`NUM_FU_MULT-1:0] mult_avail,
+    input logic [`NUM_FU_LOAD-1:0] load_avail,
+
+    // TODO: packet for store, to rob and maybe prf
+    // tell rs whether it the next value will be accepted
+    output logic [`NUM_FU_STORE-1:0] store_avail,
+    output FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet,
+    output FU_STATE_PACKET fu_state_packet
 );
 
+    alu_cond alu_components [`NUM_FU_ALU-1:0] (
+        .clock(clock), // not needed for 1-cycle alu
+        .reset(reset), // not needed for 1-cycle alu
+        .fu_alu_packet(fu_alu_packet),
+        .avail(alu_avail), // not needed for 1-cycle alu
+        .prepared(fu_state_packet.alu_prepared),
+        .fu_state_alu_packet(fu_state_packet.alu_packet)
+    );
+
+    mult_impl mult_components [`NUM_FU_MULT-1:0] (
+        .clock(clock),
+        .reset(reset),
+        .fu_mult_packet(fu_mult_packet),
+        .avail(mult_avail),
+        .prepared(fu_state_packet.mult_prepared),
+        .fu_state_mult_packet(fu_state_packet.mult_packet)
+    );
+
+    load load_components [`NUM_FU_LOAD-1:0] (
+        .clock(clock),
+        .reset(reset),
+        .fu_load_packet(fu_load_packet),
+        .avail(load_avail),
+        .prepared(fu_state_packet.load_prepared),
+        .fu_state_load_packet(fu_state_packet.load_packet)
+    );
+
+    always_comb begin
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            cond_rob_packet[i].robn = fu_state_packet.alu_packet[i].basic.robn;
+            cond_rob_packet[i].executed = fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].cond_branch;
+            cond_rob_packet[i].branch_taken = fu_state_packet.alu_packet[i].take_branch;
+            cond_rob_packet[i].target_addr = fu_state_packet.alu_packet[i].basic.result;
+        end
+    end
 
 endmodule
+
+
+/*
+typedef struct packed {
+    ROBN  robn;
+    logic executed;
+    logic branch_taken;
+    ADDR target_addr;
+} FU_ROB_PACKET;
+*/

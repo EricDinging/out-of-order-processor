@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat rat prf free_list
+MODULES = cpu mult rob rs rrat rat prf free_list fu cdb fu_cdb onehot_mux
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -235,6 +235,12 @@ PRF_FILES = verilog/sys_defs.svh
 build/prf.simv: $(PRF_FILES)
 build/prf.cov.simv: $(PRF_FILES)
 synth/prf.vg: $(PRF_FILES)
+
+# FU_CDB
+FU_CDB_FILES = verilog/sys_defs.svh verilog/fu.sv verilog/cdb.sv verilog/mult.sv verilog/onehot_mux.sv verilog/psel_gen.sv
+build/fu_cdb.simv: $(FU_CDB_FILES)
+build/fu_cdb.cov.simv: $(FU_CDB_FILES)
+synth/fu_cdb.vg: $(FU_CDB_FILES)
 
 # FREE_LIST
 FREE_LIST_FILES = verilog/sys_defs.svh

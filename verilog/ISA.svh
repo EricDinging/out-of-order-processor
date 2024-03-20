@@ -116,7 +116,7 @@
 `define RV32_SLLI      `RV32_Rtype(`RV32_OP_IMM, 3'b001, 7'b0000000)
 `define RV32_SRLI      `RV32_Rtype(`RV32_OP_IMM, 3'b101, 7'b0000000)
 `define RV32_SRAI      `RV32_Rtype(`RV32_OP_IMM, 3'b101, 7'b0100000)
-`define RV32_ADD       `RV32_Rtype(`RV32_OP,3'b000,7'b0000000)
+`define RV32_ADD       `RV32_Rtype(`RV32_OP, 3'b000, 7'b0000000)
 `define RV32_SUB       `RV32_Rtype(`RV32_OP, 3'b000, 7'b0100000)
 `define RV32_SLL       `RV32_Rtype(`RV32_OP, 3'b001, 7'b0000000)
 `define RV32_SLT       `RV32_Rtype(`RV32_OP, 3'b010, 7'b0000000)
@@ -126,7 +126,7 @@
 `define RV32_SRA       `RV32_Rtype(`RV32_OP, 3'b101, 7'b0100000)
 `define RV32_OR        `RV32_Rtype(`RV32_OP, 3'b110, 7'b0000000)
 `define RV32_AND       `RV32_Rtype(`RV32_OP, 3'b111, 7'b0000000)
-`define RV32_FENCE_     `RV32_Itype(`RV32_FENCE, `RV32_FENCE_FUN3)
+`define RV32_FENCE_    `RV32_Itype(`RV32_FENCE, `RV32_FENCE_FUN3)
 `define RV32_FENCE_I   `RV32_Itype(`RV32_FENCE, `RV32_FENCE_I_FUN3)
 
 //RV32M

@@ -45,7 +45,7 @@
 `define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
-`define NUM_FU_ALU 2
+`define NUM_FU_ALU 3
 `define NUM_FU_MULT 2
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
@@ -422,6 +422,8 @@ typedef struct packed {
     ROBN     robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
+    logic cond_branch;
+    logic uncond_branch;
 } RS_ENTRY;
 
 typedef struct packed {
@@ -442,6 +444,8 @@ typedef struct packed {
     ROBN    robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
+    logic cond_branch;
+    logic uncond_branch;
 } FU_PACKET;
 
 /**
@@ -547,5 +551,35 @@ typedef struct packed {
     DATA value;
     PRN  prn;
 } PRF_WRITE;
+
+
+typedef struct packed {
+    ROBN robn;
+    PRN dest_prn;
+    DATA result;
+} FU_STATE_BASIC_PACKET;
+
+typedef struct packed {
+    FU_STATE_BASIC_PACKET basic;
+    logic take_branch;
+    logic cond_branch;
+    logic uncond_branch;
+} FU_STATE_ALU_PACKET;
+
+typedef struct packed {
+    // prepared and actual packet splitted for simplicity in input of priority selectors
+    logic [`NUM_FU_ALU-1:0] alu_prepared;
+    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
+    logic [`NUM_FU_MULT-1:0] mult_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
+    logic [`NUM_FU_LOAD-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
+} FU_STATE_PACKET;
+
+typedef struct packed {
+    logic valid;
+    ADDR PC;
+    ADDR target_addr;
+} CDB_PREDICTOR_PACKET;
 
 `endif // __SYS_DEFS_SVH__

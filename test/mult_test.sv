@@ -34,6 +34,11 @@ endmodule // correct_mult
 module testbench;
 
     logic clock, start, reset, done, failed;
+    logic avail;
+    ROBN robn;
+    PRN dest_prn;
+    ROBN output_robn;
+    PRN output_dest_prn;
     DATA r1, r2, correct_r, mul_r;
     MULT_FUNC f;
 
@@ -43,10 +48,15 @@ module testbench;
         .clock(clock),
         .reset(reset),
         .start(start),
+        .avail(avail),
         .rs1(r1),
         .rs2(r2),
         .func(f),
+        .robn(robn),
+        .dest_prn(dest_prn),
         .result(mul_r),
+        .output_robn(output_robn),
+        .output_dest_prn(output_dest_prn),
         .done(done)
     );
 
@@ -62,6 +72,42 @@ module testbench;
         #(`CLOCK_PERIOD/2.0);
         clock = ~clock;
     end
+
+    task init;
+        clock = 0;
+        reset = 1;
+        failed = 0;
+        avail = 0;
+        @(negedge clock);
+        @(negedge clock);
+        reset = 0;
+        @(negedge clock);
+    endtask
+
+    task test_pipeline;
+        init;
+        @(negedge clock);
+        start = 1;
+        avail = 1;
+        robn = 1;
+        dest_prn = 1;
+        r1 = 5;
+        r2 = 5;
+        f = M_MUL;
+        @(negedge clock);
+        robn = 2;
+        @(negedge clock);
+        robn = 3;
+        @(negedge clock);
+        robn = 4;
+        @(negedge clock);
+        @(negedge clock);
+        avail = 0;
+        for (int i = 0; i < `MULT_STAGES; i++) begin
+            @(negedge clock);
+            $display("done: %b, robn: %d", done, output_robn);
+        end
+    endtask
 
 
     task wait_until_done;
@@ -81,6 +127,7 @@ module testbench;
         begin
             @(negedge clock);
             start = 1;
+            avail = 1;
             r1 = reg_1;
             r2 = reg_2;
             f = func;
@@ -147,6 +194,7 @@ module testbench;
         else
             $display("@@@ Passed\n");
 
+        test_pipeline;
         $finish;
     end
 
