@@ -1,4 +1,4 @@
- /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
 //                                                                     //
@@ -313,6 +313,8 @@ typedef struct packed {
     ADDR  PC;
     ADDR  NPC; // PC + 4
     logic valid;
+    logic predict_taken;
+    ADDR  predict_target;
 } IF_ID_PACKET;
 
 /**
@@ -552,7 +554,6 @@ typedef struct packed {
     PRN  prn;
 } PRF_WRITE;
 
-
 typedef struct packed {
     ROBN robn;
     PRN dest_prn;
@@ -576,10 +577,29 @@ typedef struct packed {
     FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
 } FU_STATE_PACKET;
 
+// typedef struct packed {
+//     logic valid;
+//     ADDR PC;
+//     ADDR target_addr;
+// } CDB_PREDICTOR_PACKET;
+
 typedef struct packed {
+    logic success;
+    logic predict_taken;
+    ADDR  predict_target;
+    logic resolve_taken;
+    ADDR  resolve_target;
+} ROB_IF_ENTRY;
+
+typedef struct packed {
+    ROB_IF_ENTRY [`N-1:0] entries;
+} ROB_IF_PACKET;
+
+typedef struct packed {
+    logic taken;
     logic valid;
-    ADDR PC;
-    ADDR target_addr;
-} CDB_PREDICTOR_PACKET;
+    ADDR  pc;
+} PC_ENTRY;
+
 
 `endif // __SYS_DEFS_SVH__

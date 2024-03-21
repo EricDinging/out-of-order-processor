@@ -54,15 +54,16 @@ module icache (
     input MEM_TAG   Imem2proc_data_tag,
 
     // From fetch stage
-    input ADDR proc2Icache_addr,
-
+    input ADDR [`N-1:0] proc2Icache_addr,
+    // TODO add valid check
+    input logic [`N-1:0] valid,
     // To memory
     output MEM_COMMAND proc2Imem_command,
     output ADDR        proc2Imem_addr,
 
     // To fetch stage
-    output MEM_BLOCK Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     Icache_valid_out // When valid is high
+    output MEM_BLOCK [`N-1:0] Icache_data_out, // Data is mem[proc2Icache_addr]
+    output logic     [`N-1:0] Icache_valid_out // When valid is high
 );
 
     // ---- Cache data ---- //
@@ -75,10 +76,19 @@ module icache (
     logic [12-`CACHE_LINE_BITS:0] current_tag, last_tag;
     logic [`CACHE_LINE_BITS - 1:0] current_index, last_index;
 
-    assign {current_tag, current_index} = proc2Icache_addr[15:3];
+    assign {current_tag, current_index} = proc2Icache_addr[0][15:3];
 
-    assign Icache_data_out = icache_data[current_index].data;
-    assign Icache_valid_out = icache_data[current_index].valid &&
+    genvar i;
+    generate begin
+        for (i = 1; i < `N; ++i) begin
+            assign Icache_data_out[i] = {64{0}};
+            assign Icache_valid_out[i] = `FALSE;
+        end
+    end
+    endgenerate
+
+    assign Icache_data_out[0]  = icache_data[current_index].data;
+    assign Icache_valid_out[0] = valid[0] && icache_data[current_index].valid &&
                               (icache_data[current_index].tags == current_tag);
 
     // ---- Main cache logic ---- //
@@ -97,12 +107,12 @@ module icache (
 
     // If we have a new miss or still waiting for the response tag, we might
     // need to wait for the response tag because dcache has priority over icache
-    wire unanswered_miss = changed_addr ? !Icache_valid_out
+    wire unanswered_miss = changed_addr ? !Icache_valid_out[0]
                                         : miss_outstanding && (Imem2proc_transaction_tag == 0);
 
     // Keep sending memory requests until we receive a response tag or change addresses
     assign proc2Imem_command = (miss_outstanding && !changed_addr) ? BUS_LOAD : BUS_NONE;
-    assign proc2Imem_addr    = {proc2Icache_addr[31:3],3'b0};
+    assign proc2Imem_addr    = {proc2Icache_addr[0][31:3],3'b0};
 
     // ---- Cache state registers ---- //
 
@@ -118,7 +128,7 @@ module icache (
             last_tag         <= current_tag;
             miss_outstanding <= unanswered_miss;
             if (update_mem_tag) begin
-                current_mem_tag <= Imem2proc_response;
+                current_mem_tag <= Imem2proc_transaction_tag; //FIXED
             end
             if (got_mem_data) begin // If data came from memory, meaning tag matches
                 icache_data[current_index].data  <= Imem2proc_data;

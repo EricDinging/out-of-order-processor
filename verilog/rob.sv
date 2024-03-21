@@ -44,7 +44,7 @@ module rob #(
         for (int i = 0; i < `N; ++i) begin
             rob_ct_packet.entries[i] = '{
                     0, // executed;
-                    0, // success;
+                    1, // success;
                     0, // is_store;
                     0, // cond_branch;
                     0, // uncond_branch;
