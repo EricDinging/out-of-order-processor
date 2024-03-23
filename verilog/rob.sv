@@ -9,7 +9,7 @@ module rob #(
     
     input ROB_IS_PACKET rob_is_packet,
 
-    input FU_ROB_PACKET [`CDB_SZ-1:0] fu_rob_packet,
+    input FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0] fu_rob_packet,
 
     output logic         almost_full,
     output ROB_CT_PACKET rob_ct_packet, 
@@ -92,10 +92,10 @@ module rob #(
         end
         
         // CDB update
-        for (int i = 0; i < `CDB_SZ; ++i) begin
+        for (int i = 0; i < `FU_ROB_PACKET_SZ; ++i) begin
             if (fu_rob_packet[i].executed) begin
-                next_rob_entries[fu_rob_packet[i].robn].executed = 1;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_taken = fu_rob_packet[i].branch_taken;
+                next_rob_entries[fu_rob_packet[i].robn].executed       = 1;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_taken  = fu_rob_packet[i].branch_taken;
                 next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].target_addr;
                 if (rob_entries[fu_rob_packet[i].robn].cond_branch || rob_entries[fu_rob_packet[i].robn].uncond_branch) begin
                     next_rob_entries[fu_rob_packet[i].robn].success = (next_rob_entries[fu_rob_packet[i].robn].resolve_taken  == next_rob_entries[fu_rob_packet[i].robn].predict_taken)

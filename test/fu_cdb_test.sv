@@ -14,7 +14,7 @@ module testbench;
     logic [`NUM_FU_LOAD-1:0] load_avail;
     logic [`NUM_FU_STORE-1:0] store_avail;
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet;
-    FU_ROB_PACKET [`N-1:0] fu_rob_packet;
+    FU_ROB_PACKET [`N-1:0] cdb_rob_packet;
     CDB_PACKET    [`N-1:0] cdb_output;
 
     // testing parameters
@@ -33,8 +33,7 @@ module testbench;
         .mult_avail(mult_avail),
         .load_avail(load_avail),
         .store_avail(store_avail),
-        .cond_rob_packet(cond_rob_packet),
-        .fu_rob_packet(fu_rob_packet),
+        .fu_rob_packet({cond_rob_packet, cdb_rob_packet}),
         .cdb_output(cdb_output)
     );
 

@@ -6,7 +6,7 @@ module testbench;
 
     // intput
     ROB_IS_PACKET rob_is_packet;
-    FU_ROB_PACKET [`CDB_SZ-1:0] fu_rob_packet;
+    FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0] fu_rob_packet;
 
     // output
     logic         almost_full;
