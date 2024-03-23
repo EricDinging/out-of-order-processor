@@ -26,7 +26,7 @@ module prf #(
     input PRF_WRITE [`N-1:0] write_data,
      
     // commit or issue (set prf entry invalid)
-    input PRN [`N-1:0] prn_invalid
+    input PRN [`N-1:0] prn_invalid,
 
     // // on mispredict
     // input logic mispredict
@@ -64,7 +64,8 @@ module prf #(
             output_value[i] = entries[read_prn[i]];
             for (int j = 0; j < `N; j++) begin
                 if (write_valid[j] && write_data[j].prn == read_prn[i]) begin
-                    output_value[i] = write_data[j].value;
+                    output_value[i].value = write_data[j].value;
+                    output_value[i].valid = `TRUE;
                 end
             end
         end
@@ -99,7 +100,7 @@ module prf #(
             end
             entries[`PHYS_REG_SZ_R10K-1:`ARCH_REG_SZ] <= 0;
             `ifdef DEBUG_OUT
-            counter <= 0;
+            counter <= `ARCH_REG_SZ - 1;
             `endif
         end else begin
             entries <= next_entries;
