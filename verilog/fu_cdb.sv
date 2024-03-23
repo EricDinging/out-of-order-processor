@@ -11,12 +11,13 @@ module fu_cdb(
     output logic [`NUM_FU_MULT-1:0] mult_avail,
     output logic [`NUM_FU_LOAD-1:0] load_avail,
     output logic [`NUM_FU_STORE-1:0] store_avail,
-    output FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet,
-    output FU_ROB_PACKET [`N-1:0] fu_rob_packet,
+    output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0] fu_rob_packet,
     output CDB_PACKET    [`N-1:0] cdb_output // for both cdb and prf
 );
 
     FU_STATE_PACKET fu_state_packet;
+    FU_ROB_PACKET cond_rob_packet;
+    FU_ROB_PACKET cdb_rob_packet;
     
     fu fu_inst(
         .clock(clock),
@@ -39,7 +40,9 @@ module fu_cdb(
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
         .load_avail(load_avail),
-        .fu_rob_packet(fu_rob_packet),
+        .fu_rob_packet(cdb_rob_packet),
         .cdb_output(cdb_output)
     );
+
+    assign fu_rob_packet = {cond_rob_packet, cdb_rob_packet};
 endmodule
