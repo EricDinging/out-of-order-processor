@@ -64,7 +64,7 @@ module prf #(
             output_value[i] = entries[read_prn[i]];
             for (int j = 0; j < `N; j++) begin
                 if (write_valid[j] && write_data[j].prn == read_prn[i]) begin
-                    output_value[i] = write_data[j].value;
+                    output_value[i].value = write_data[j].value;
                 end
             end
         end
