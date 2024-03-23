@@ -25,6 +25,7 @@
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
+`define FU_ROB_PACKET_SZ `NUM_FU_ALU + `N
 
 // sizes
 `define ROB_SZ 16
@@ -432,6 +433,37 @@ typedef struct packed {
     RS_ENTRY [`N-1:0] entries;
 } RS_IS_PACKET;
 
+typedef struct packed {
+    INST     inst; // Opcode & Immediate
+    logic    valid;
+    ADDR     PC;
+    FU_TYPE  fu;
+    FU_FUNC  func;
+    // logic    op1_ready, op2_ready;
+    // OP_FIELD op1,       op2;
+    // PRN      dest_prn;
+    // ROBN     robn;
+    ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
+    ALU_OPB_SELECT opb_select; // same as above, 4 bits
+    logic cond_branch;
+    logic uncond_branch;
+} ID_RS_PACKET;
+
+typedef struct packed {
+    ID_RS_PACKET  [`N-1:0] id_rs_packet,
+    ROB_IS_PACKET rob_is_packet,
+    RAT_IS_INPUT  rat_is_input
+} ID_OOO_PACKET;
+
+typedef struct packed {
+    logic          [`N_CNT_WIDTH-1:0] completed_inst;
+    EXCEPTION_CODE           [`N-1:0] exception_code;
+    REG_IDX                  [`N-1:0] wr_idx;
+    DATA                     [`N-1:0] wr_data;
+    logic                    [`N-1:0] wr_en;
+    ADDR                     [`N-1:0] NPC;
+} OOO_CT_PACKET;
+
 /**
  * FU Packet:
  * Data exchanged between reservation stations and the FU
@@ -475,6 +507,7 @@ typedef struct packed {
     ADDR     resolve_target;
     PRN      dest_prn; // debug only
     REG_IDX  dest_arn;
+    DATA     data;
     ADDR     PC;
     ADDR     NPC;     // PC + 4
     logic    halt;    // Is this a halt?

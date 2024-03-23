@@ -26,12 +26,12 @@ module cpu (
 `endif
 
     // Note: these are assigned at the very bottom of the module
-    output logic [3:0]    pipeline_completed_insts,
-    output EXCEPTION_CODE pipeline_error_status,
-    output REG_IDX        pipeline_commit_wr_idx,
-    output DATA           pipeline_commit_wr_data,
-    output logic          pipeline_commit_wr_en,
-    output ADDR           pipeline_commit_NPC,
+    output logic [`N_CNT_WIDTH-1:0]    pipeline_completed_insts,
+    output EXCEPTION_CODE  [`N-1:0] pipeline_error_status,
+    output REG_IDX         [`N-1:0] pipeline_commit_wr_idx,
+    output DATA            [`N-1:0] pipeline_commit_wr_data,
+    output logic           [`N-1:0] pipeline_commit_wr_en,
+    output ADDR            [`N-1:0] pipeline_commit_NPC,
 
     // Debug outputs: these signals are solely used for debugging in testbenches
     // Do not change for project 3
@@ -61,31 +61,92 @@ module cpu (
     //////////////////////////////////////////////////
 
     // Pipeline register enables
-    logic if_id_enable, id_ex_enable, ex_mem_enable, mem_wb_enable;
+    logic if_id_enable, id_ooo_enable;
 
     // Outputs from IF-Stage and IF/ID Pipeline Register
-    ADDR proc2Imem_addr;
+    // ADDR proc2Imem_addr;
     IF_ID_PACKET if_packet, if_id_reg;
 
-    // Outputs from ID stage and ID/EX Pipeline Register
-    ID_EX_PACKET id_packet, id_ex_reg;
+    // Input to OoO
+    ID_OOO_PACKET id_ooo_packet, id_ooo_reg;
+    // Output from OoO
+    logic         structural_hazard;
+    ROB_IF_PACKET rob_if_packet;
+    logic         squash;
+    OOO_CT_PACKET ooo_ct_packet;
 
-    // Outputs from EX-Stage and EX/MEM Pipeline Register
-    EX_MEM_PACKET ex_packet, ex_mem_reg;
+    //////////////////////////////////////////////////
+    //                                              //
+    //                  Stage Fetch                 //
+    //                                              //
+    //////////////////////////////////////////////////
 
-    // Outputs from MEM-Stage and MEM/WB Pipeline Register
-    MEM_WB_PACKET mem_packet, mem_wb_reg;
+    stage_fetch fetch(
+        .clock(clock),
+        .reset(reset),
+        .stall(squash? 0: structural_hazard),
+        .mem2proc_transaction_tag(mem2proc_transaction_tag),
+        .mem2proc_data(mem2proc_data),
+        .mem2proc_data_tag(mem2proc_data_tag),
+        .rob_if_packet(rob_if_packet),
+        .proc2Imem_command(proc2mem_command),
+        .proc2Imem_addr(proc2mem_addr),
+        .if_id_packet(if_packet)
+    );
+
+    always_ff (@posedge clock) begin
+        if (reset || squash) begin
+            if_id_reg <= 0;
+        end else if (if_id_enable) begin
+            if_id_reg <= if_packet;
+        end
+    end
+
+    assign if_id_enable = !structural_hazard;
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //                  Stage Decode                //
+    //                                              //
+    //////////////////////////////////////////////////
+    // squash decode
+    stage_decode decode (
+        .if_id_packet(if_id_reg),
+        .id_ooo_packet(id_ooo_packet)
+    );
+
+    always_ff (@posedge clock) begin
+        if (reset || squash) begin
+            id_ooo_reg <= 0;
+        end else if (id_ooo_enable) begin
+            id_ooo_reg <= id_ooo_packet;
+        end
+    end
+
+    assign id_ooo_enable = !structural_hazard;
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //                  Out of Order                //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    ooo ooo_inst (
+        .clock(clock),
+        .reset(reset),
+        .id_ooo_packet(id_ooo_reg),
+        .structural_hazard(structural_hazard),
+        .rob_if_packet(rob_if_packet),
+        .squash(squash),
+        .ooo_ct_packet(ooo_ct_packet)
+    );
 
     // Outputs from MEM-Stage to memory
-    ADDR proc2Dmem_addr;
-    DATA proc2Dmem_data;
-    logic [1:0]  proc2Dmem_command;
-    MEM_SIZE     proc2Dmem_size;
+    // ADDR proc2Dmem_addr;
+    // DATA proc2Dmem_data;
+    // logic [1:0]  proc2Dmem_command;
+    // MEM_SIZE     proc2Dmem_size;
 
-    // Outputs from WB-Stage (These loop back to the register file in ID)
-    logic   wb_regfile_en;
-    REG_IDX wb_regfile_idx;
-    DATA    wb_regfile_data;
 
     //////////////////////////////////////////////////
     //                                              //
@@ -98,22 +159,22 @@ module cpu (
     // note that there is no latency in project 3
     // but there will be a 100ns latency in project 4
 
-    always_comb begin
-        if (proc2Dmem_command != MEM_NONE) begin // read or write DATA from memory
-            proc2mem_command = proc2Dmem_command;
-            proc2mem_addr    = proc2Dmem_addr;
-`ifndef CACHE_MODE
-            proc2mem_size    = proc2Dmem_size;  // size is never DOUBLE in project 3
-`endif
-        end else begin                          // read an INSTRUCTION from memory
-            proc2mem_command = MEM_LOAD;
-            proc2mem_addr    = proc2Imem_addr;
-`ifndef CACHE_MODE
-            proc2mem_size    = DOUBLE;          // instructions load a full memory line (64 bits)
-`endif
-        end
-        proc2mem_data = {32'b0, proc2Dmem_data};
-    end
+//     always_comb begin
+//         if (proc2Dmem_command != MEM_NONE) begin // read or write DATA from memory
+//             proc2mem_command = proc2Dmem_command;
+//             proc2mem_addr    = proc2Dmem_addr;
+// `ifndef CACHE_MODE
+//             proc2mem_size    = proc2Dmem_size;  // size is never DOUBLE in project 3
+// `endif
+//         end else begin                          // read an INSTRUCTION from memory
+//             proc2mem_command = MEM_LOAD;
+//             proc2mem_addr    = proc2Imem_addr;
+// `ifndef CACHE_MODE
+//             proc2mem_size    = DOUBLE;          // instructions load a full memory line (64 bits)
+// `endif
+//         end
+//         proc2mem_data = {32'b0, proc2Dmem_data};
+//     end
 
     //////////////////////////////////////////////////
     //                                              //
@@ -121,14 +182,21 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
-    assign pipeline_completed_insts = {3'b0, mem_wb_reg.valid}; // commit one valid instruction
-    assign pipeline_error_status = mem_wb_reg.illegal ? ILLEGAL_INST :
-                                   mem_wb_reg.halt    ? HALTED_ON_WFI :
-                                   (mem2proc_transaction_tag == 4'h0) ? LOAD_ACCESS_FAULT : NO_ERROR;
+    // assign pipeline_completed_insts = {3'b0, mem_wb_reg.valid}; // commit one valid instruction
+    // assign pipeline_error_status = mem_wb_reg.illegal ? ILLEGAL_INST :
+    //                                mem_wb_reg.halt    ? HALTED_ON_WFI :
+    //                                (mem2proc_transaction_tag == 4'h0) ? LOAD_ACCESS_FAULT : NO_ERROR;
 
-    assign pipeline_commit_wr_en   = wb_regfile_en;
-    assign pipeline_commit_wr_idx  = wb_regfile_idx;
-    assign pipeline_commit_wr_data = wb_regfile_data;
-    assign pipeline_commit_NPC     = mem_wb_reg.NPC;
+    // assign pipeline_commit_wr_en   = wb_regfile_en;
+    // assign pipeline_commit_wr_idx  = wb_regfile_idx;
+    // assign pipeline_commit_wr_data = wb_regfile_data;
+    // assign pipeline_commit_NPC     = mem_wb_reg.NPC;
+
+    assign pipeline_completed_insts = ooo_ct_packet.completed_inst;
+    assign pipeline_error_status = ooo_ct_packet.exception_code; // TODO: LOAD_ACCESS_FAULT
+    assign pipeline_commit_wr_idx = ooo_ct_packet.wr_idx;
+    assign pipeline_commit_wr_data = ooo_ct_packet.wr_data;
+    assign pipeline_commit_wr_en = ooo_ct_packet.wr_en;
+    assign pipeline_commit_NPC = ooo_ct_packet.NPC;
 
 endmodule // pipeline
