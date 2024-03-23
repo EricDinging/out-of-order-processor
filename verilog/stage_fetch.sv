@@ -44,7 +44,8 @@ endmodule
 
 module stage_fetch (
     input clock, reset,
-    input ROB_IF_PACKET rob_if_packet,
+    // TODO: should not connect squash to this reset
+    input logic stall,
 
     // From memory
     input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
@@ -136,6 +137,10 @@ module stage_fetch (
             if_id_packet[i].NPC            = if_id_packet[i].PC + 4;
             if_id_packet[i].predict_taken  = target_pc[i].taken;
             if_id_packet[i].predict_target = target_pc[i].pc;
+        end
+
+        if (stall) begin
+            next_pc_start = pc_start;
         end
     end
 
