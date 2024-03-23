@@ -31,6 +31,10 @@ module prf #(
     // // on mispredict
     // input logic mispredict
 
+    // for writeback file
+    input PRN [`N-1:0] wb_read_prn,
+    output PRF_ENTRY [`N-1:0] wb_prf_out
+
     `ifdef DEBUG_OUT
     , output PRF_ENTRY [SIZE-1:0] entries_out
     , output PRN counter
@@ -50,6 +54,7 @@ module prf #(
     generate
         for (i = 0; i < `N; ++i) begin
             assign write_valid[i] = write_data[i].prn != 0;
+            assign wb_prf_out[i] = entries[wb_read_prn[i]];
         end
     endgenerate
 
@@ -89,8 +94,10 @@ module prf #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            entries[0] <= '{`TRUE, 0};
-            entries[`PHYS_REG_SZ_R10K-1:1] <= 0;
+            for (int i = 0; i < `ARCH_REG_SZ; i++) begin
+                entries[i] <= '{`TRUE, 0};
+            end
+            entries[`PHYS_REG_SZ_R10K-1:`ARCH_REG_SZ] <= 0;
             `ifdef DEBUG_OUT
             counter <= 0;
             `endif
