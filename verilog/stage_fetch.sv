@@ -82,7 +82,7 @@ module stage_fetch (
         .pc_start(pc_start),
         .rob_if_packet(rob_if_packet),
         // output
-        .target(target_pc)
+        .target_pc(target_pc)
     );
 
     icache ic (
@@ -92,7 +92,7 @@ module stage_fetch (
         .Imem2proc_data(mem2proc_data),
         .Imem2proc_data_tag(mem2proc_data_tag),
         .proc2Icache_addr(proc2Icache_addr),
-        .proc2Icache_valid(proc2Icache_valid),
+        .valid(proc2Icache_valid),
         .proc2Imem_command(proc2Imem_command),
         .proc2Imem_addr(proc2Imem_addr),
         .Icache_data_out(Icache_data_out),
@@ -115,7 +115,7 @@ module stage_fetch (
 
         for (int i = 0; i < `N; ++i) begin
             if (!rob_if_packet.entries[i].success) begin
-                next_pc_start     = rob_if_packet.resolve_target;
+                next_pc_start     = rob_if_packet.entries[i].resolve_target;
                 proc2Icache_valid = {`N{`FALSE}};
             end
         end

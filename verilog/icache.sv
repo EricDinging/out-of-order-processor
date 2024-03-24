@@ -111,7 +111,7 @@ module icache (
                                         : miss_outstanding && (Imem2proc_transaction_tag == 0);
 
     // Keep sending memory requests until we receive a response tag or change addresses
-    assign proc2Imem_command = (miss_outstanding && !changed_addr) ? BUS_LOAD : BUS_NONE;
+    assign proc2Imem_command = (miss_outstanding && !changed_addr) ? MEM_LOAD : MEM_NONE;
     assign proc2Imem_addr    = {proc2Icache_addr[0][31:3],3'b0};
 
     // ---- Cache state registers ---- //
