@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`include "ISA.svh"
 `define DEBUG_OUT
 
 

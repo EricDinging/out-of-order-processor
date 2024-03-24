@@ -65,6 +65,7 @@ module testbench;
     end
 
     initial begin
+        clock = 0;
         init;
         $finish;
     end

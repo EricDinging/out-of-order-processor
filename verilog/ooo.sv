@@ -185,7 +185,7 @@ module ooo # (
             ooo_ct_packet.exception_code[i] = 
                 rob_ct_packet.entries[i].illegal ? ILLEGAL_INST :
                 rob_ct_packet.entries[i].halt    ? HALTED_ON_WFI : NO_ERROR;
-            ooo_ct_packet.wr_idx[i] = rob_ct_packet.entries[i].dest_arn;
+            ooo_ct_packet.wr_idx[i] = rob_ct_packet.entries[i].dest_prn;
             ooo_ct_packet.wr_en[i] = ooo_ct_packet.wr_idx[i] != `ZERO_REG;
             ooo_ct_packet.NPC[i] = rob_ct_packet.entries[i].NPC;
         end

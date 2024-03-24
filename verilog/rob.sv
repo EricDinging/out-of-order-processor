@@ -43,7 +43,7 @@ module rob #(
 
         for (int i = 0; i < `N; ++i) begin
             rob_ct_packet.entries[i] = '{
-                    0, // executed;
+                    1'b0, // executed;
                     1, // success;
                     0, // is_store;
                     0, // cond_branch;
@@ -54,6 +54,7 @@ module rob #(
                     0, // resolve_target;
                     0, // dest_prn;
                     0, // dest_arn;
+                    0, //data
                     0, // PC;
                     0, // NPC;
                     0, // halt;
@@ -140,6 +141,7 @@ module rob #(
                     0, // resolve_target;
                     0, // dest_prn;
                     0, // dest_arn;
+                    0, // data;
                     0, // PC;
                     0, // NPC;
                     0, // halt;

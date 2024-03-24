@@ -33,7 +33,7 @@ module prf #(
 
     // for writeback file
     input PRN [`N-1:0] wb_read_prn,
-    output PRF_ENTRY [`N-1:0] wb_prf_out
+    output DATA [`N-1:0] wb_prf_out
 
     `ifdef DEBUG_OUT
     , output PRF_ENTRY [SIZE-1:0] entries_out
@@ -54,7 +54,7 @@ module prf #(
     generate
         for (i = 0; i < `N; ++i) begin
             assign write_valid[i] = write_data[i].prn != 0;
-            assign wb_prf_out[i] = entries[wb_read_prn[i]];
+            assign wb_prf_out[i] = entries[wb_read_prn[i]].value;
         end
     endgenerate
 
