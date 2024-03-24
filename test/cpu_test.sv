@@ -54,12 +54,12 @@ module testbench;
     MEM_SIZE    proc2mem_size;
 `endif
 
-    logic [3:0]    pipeline_completed_insts;
-    EXCEPTION_CODE pipeline_error_status;
-    logic [4:0]    pipeline_commit_wr_idx;
-    logic [31:0]   pipeline_commit_wr_data;
-    logic          pipeline_commit_wr_en;
-    logic [31:0]   pipeline_commit_NPC;
+    logic [`N_CNT_WIDTH-1:0]    pipeline_completed_insts,
+    EXCEPTION_CODE  [`N-1:0] pipeline_error_status,
+    REG_IDX         [`N-1:0] pipeline_commit_wr_idx,
+    DATA            [`N-1:0] pipeline_commit_wr_data,
+    logic           [`N-1:0] pipeline_commit_wr_en,
+    ADDR            [`N-1:0] pipeline_commit_NPC,
 
     // ADDR  if_NPC_dbg;
     // DATA  if_inst_dbg;

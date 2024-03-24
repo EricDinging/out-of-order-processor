@@ -439,21 +439,12 @@ typedef struct packed {
     ADDR     PC;
     FU_TYPE  fu;
     FU_FUNC  func;
-    // logic    op1_ready, op2_ready;
-    // OP_FIELD op1,       op2;
-    // PRN      dest_prn;
-    // ROBN     robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
     logic cond_branch;
     logic uncond_branch;
 } ID_RS_PACKET;
 
-typedef struct packed {
-    ID_RS_PACKET  [`N-1:0] id_rs_packet,
-    ROB_IS_PACKET rob_is_packet,
-    RAT_IS_INPUT  rat_is_input
-} ID_OOO_PACKET;
 
 typedef struct packed {
     logic          [`N_CNT_WIDTH-1:0] completed_inst;
@@ -633,6 +624,12 @@ typedef struct packed {
     logic valid;
     ADDR  pc;
 } PC_ENTRY;
+
+typedef struct packed {
+    ID_RS_PACKET  [`N-1:0] id_rs_packet;
+    ROB_IS_PACKET rob_is_packet;
+    RAT_IS_INPUT  rat_is_input;
+} ID_OOO_PACKET;
 
 
 `endif // __SYS_DEFS_SVH__

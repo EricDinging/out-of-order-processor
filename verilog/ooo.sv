@@ -20,7 +20,6 @@ module ooo # (
     logic        rs_almost_full;
 
     ROB_IS_PACKET               rob_is_packet;
-    FU_ROB_PACKET [`CDB_SZ-1:0] fu_rob_packet;
     logic                       rob_almost_full;
     ROB_CT_PACKET               rob_ct_packet;
     ROBN          [`N-1:0]      rob_tail_entries;
@@ -56,7 +55,7 @@ module ooo # (
     rs rs_inst(
         .clock(clock),
         .reset(reset || squash),
-        .CDB_PACKET(cdb_packet),
+        .cdb_packet(cdb_packet),
         .rs_is_packet(rs_is_packet),
         .fu_alu_avail(alu_avail),
         .fu_mult_avail(mult_avail),
@@ -67,7 +66,7 @@ module ooo # (
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
         .fu_store_packet(fu_store_packet),
-        .almost_full(rs_almost_full),
+        .almost_full(rs_almost_full)
     );
 
     fu_cdb fu_cdb_inst(
@@ -99,13 +98,13 @@ module ooo # (
     rob rob_inst (
         .clock(clock),
         .reset(reset),
-        .ROB_IS_PACKET(id_ooo_packet.rob_is_packet),
-        .FU_ROB_PACKET(fu_rob_packet),
+        .rob_is_packet(id_ooo_packet.rob_is_packet),
+        .fu_rob_packet(fu_rob_packet),
         // output
         .almost_full(rob_almost_full),
-        .ROB_CT_PACKET(rob_ct_packet),
-        .ROBN(rob_tail_entries),
-        .squash(squash),
+        .rob_ct_packet(rob_ct_packet),
+        .tail_entries(rob_tail_entries),
+        .squash(squash)
     ); 
 
     rat rat_inst(
@@ -114,7 +113,7 @@ module ooo # (
         .rat_is_input(id_ooo_packet.rat_is_input),
         .rrat_ct_output(rrat_ct_output),
         // output
-        .rat_is_output(rat_is_output),
+        .rat_is_output(rat_is_output)
     );
 
     rrat rrat_inst(
@@ -122,7 +121,7 @@ module ooo # (
         .reset(reset),
         .rrat_ct_input(rrat_ct_input),
         // output
-        .rrat_ct_output(rrat_ct_output),
+        .rrat_ct_output(rrat_ct_output)
     );
 
     always_comb begin
@@ -143,16 +142,16 @@ module ooo # (
             rs_is_packet.entries[i].op2       =
                 prf_output_value[2*i+1].valid ? prf_output_value[2*i+1].value : rat_is_output.entries[i].op2_prn;
             
-            rs_is_packet.entries[i].inst  = id_ooo_packet.rs_is_input.entries[i].inst;
-            rs_is_packet.entries[i].valid = id_ooo_packet.rs_is_input.entries[i].valid;
-            rs_is_packet.entries[i].PC    = id_ooo_packet.rs_is_input.entries[i].PC;
-            rs_is_packet.entries[i].fu    = id_ooo_packet.rs_is_input.entries[i].fu;
-            rs_is_packet.entries[i].func  = id_ooo_packet.rs_is_input.entries[i].func;
+            rs_is_packet.entries[i].inst  = id_ooo_packet.id_rs_packet[i].inst;
+            rs_is_packet.entries[i].valid = id_ooo_packet.id_rs_packet[i].valid;
+            rs_is_packet.entries[i].PC    = id_ooo_packet.id_rs_packet[i].PC;
+            rs_is_packet.entries[i].fu    = id_ooo_packet.id_rs_packet[i].fu;
+            rs_is_packet.entries[i].func  = id_ooo_packet.id_rs_packet[i].func;
 
-            rs_is_packet.entries[i].opa_select    = id_ooo_packet.rs_is_input.entries[i].opa_select;
-            rs_is_packet.entries[i].opb_select    = id_ooo_packet.rs_is_input.entries[i].opb_select;
-            rs_is_packet.entries[i].cond_branch   = id_ooo_packet.rs_is_input.entries[i].cond_branch;
-            rs_is_packet.entries[i].uncond_branch = id_ooo_packet.rs_is_input.entries[i].uncond_branch;
+            rs_is_packet.entries[i].opa_select    = id_ooo_packet.id_rs_packet[i].opa_select;
+            rs_is_packet.entries[i].opb_select    = id_ooo_packet.id_rs_packet[i].opb_select;
+            rs_is_packet.entries[i].cond_branch   = id_ooo_packet.id_rs_packet[i].cond_branch;
+            rs_is_packet.entries[i].uncond_branch = id_ooo_packet.id_rs_packet[i].uncond_branch;
 
             rs_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
             rs_is_packet.entries[i].robn     = rob_tail_entries[i];
@@ -175,14 +174,14 @@ module ooo # (
             prn_invalid[i] = rat_is_output.entries[i].dest_prn;
             read_prn[2*i] = rat_is_output.entries[i].op1_prn;
             read_prn[2*i+1] = rat_is_output.entries[i].op2_prn;
-            write_data[i].value = cdb_packet[i].value;
-            write_data[i].prn = cdb_packet[i].dest_prn;
+            prn_write_data[i].value = cdb_packet[i].value;
+            prn_write_data[i].prn = cdb_packet[i].dest_prn;
         end
 
         // rob ct output
         ooo_ct_packet.completed_inst = 0;
         for (int i = 0; i < `N; ++i) begin
-            ooo_ct_packet.completed_inst += rob_ct_packet.entries[i].valid && rob_ct_packet.entries[i].success;
+            ooo_ct_packet.completed_inst += rob_ct_packet.entries[i].executed && rob_ct_packet.entries[i].success;
             ooo_ct_packet.exception_code[i] = 
                 rob_ct_packet.entries[i].illegal ? ILLEGAL_INST :
                 rob_ct_packet.entries[i].halt    ? HALTED_ON_WFI : NO_ERROR;

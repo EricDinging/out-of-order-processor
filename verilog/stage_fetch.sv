@@ -53,11 +53,11 @@ module stage_fetch (
     input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
 
     // From ROB
-    input  ROB_IF_PACKET  rob_if_packet,
+    input  ROB_IF_PACKET rob_if_packet,
 
     output MEM_COMMAND  proc2Imem_command,
     output ADDR         proc2Imem_addr,
-    output IF_ID_PACKET [`N-1:0] if_id_packet,
+    output IF_ID_PACKET [`N-1:0] if_id_packet
 );
 
     // state

@@ -84,7 +84,7 @@ module cpu (
     stage_fetch fetch(
         .clock(clock),
         .reset(reset),
-        .stall(squash? 0: structural_hazard),
+        .stall(squash ? 0 : structural_hazard),
         .mem2proc_transaction_tag(mem2proc_transaction_tag),
         .mem2proc_data(mem2proc_data),
         .mem2proc_data_tag(mem2proc_data_tag),

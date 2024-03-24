@@ -238,8 +238,8 @@ module testbench;
         for (int i = 0; i < `N; i++) begin
             correct = correct && mult_avail[i];
             correct = correct && !cond_rob_packet[i].executed;
-            correct = correct && fu_rob_packet[i].robn == 1;
-            correct = correct && fu_rob_packet[i].executed;
+            correct = correct && cdb_rob_packet[i].robn == 1;
+            correct = correct && cdb_rob_packet[i].executed;
             correct = correct && cdb_output[i].dest_prn == 1;
             correct = correct && cdb_output[i].value == 25;
         end

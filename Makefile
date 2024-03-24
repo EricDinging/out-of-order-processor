@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat rat prf free_list fu cdb fu_cdb onehot_mux
+MODULES = cpu mult rob rs rrat rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -259,6 +259,24 @@ RRAT_FILES = verilog/sys_defs.svh verilog/free_list.sv
 build/rrat.simv: $(RRAT_FILES)
 build/rrat.cov.simv: $(RRAT_FILES)
 synth/rrat.vg: $(RRAT_FILES)
+
+# OOO
+OOO_FILES = verilog/sys_defs.svh verilog/ooo.sv verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv
+build/ooo.simv: $(OOO_FILES)
+build/ooo.cov.simv: $(OOO_FILES)
+build/ooo.vg: $(OOO_FILES)
+
+# STAGE_DECODE
+STAGE_DECODE_FILES = verilog/sys_defs.svh verilog/stage_decode.sv verilog/decoder.sv
+build/stage_decode.simv: $(STAGE_DECODE_FILES)
+build/stage_decode.cov.simv: $(STAGE_DECODE_FILES)
+synth/stage_decode.vg: $(STAGE_DECODE_FILES)
+
+# STAGE_FETCH
+STAGE_FETCH_FILES = verilog/sys_defs.svh verilog/stage_fetch.sv verilog/icache.sv
+build/stage_fetch.simv: $(STAGE_FETCH_FILES)
+build/stage_fetch.cov.simv: $(STAGE_FETCH_FILES)
+synth/stage_fetch.vg: $(STAGE_FETCH_FILES)
 
 #################################
 # ---- Main CPU Definition ---- #
