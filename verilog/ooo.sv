@@ -52,6 +52,9 @@ module ooo # (
     // cdb output
     CDB_PACKET    [`N-1:0] cdb_packet;
 
+    // prf input, connect to cpu output
+    PRN [`N-1:0] wb_read_prn;
+
     rs rs_inst(
         .clock(clock),
         .reset(reset || squash),
@@ -91,14 +94,14 @@ module ooo # (
         .output_value(prf_output_value),
         .write_data(prn_write_data),
         .prn_invalid(prn_invalid),
-        .wb_read_prn(ooo_ct_packet.wr_idx),
+        .wb_read_prn(wb_read_prn),
         .wb_prf_out(ooo_ct_packet.wr_data)
     );
 
     rob rob_inst (
         .clock(clock),
         .reset(reset),
-        .rob_is_packet(id_ooo_packet.rob_is_packet),
+        .rob_is_packet(rob_is_packet),
         .fu_rob_packet(fu_rob_packet),
         // output
         .almost_full(rob_almost_full),
@@ -126,6 +129,7 @@ module ooo # (
 
     always_comb begin
         // issue
+
         // rob input
         rob_is_packet = id_ooo_packet.rob_is_packet;
         for (int i = 0; i < `N; ++i) begin
@@ -171,23 +175,25 @@ module ooo # (
 
         // prf input
         for (int i = 0; i < `N; ++i) begin
-            prn_invalid[i] = rat_is_output.entries[i].dest_prn;
-            read_prn[2*i] = rat_is_output.entries[i].op1_prn;
+            prn_invalid[i]  = rat_is_output.entries[i].dest_prn; // TODO
+            read_prn[2*i]   = rat_is_output.entries[i].op1_prn;
             read_prn[2*i+1] = rat_is_output.entries[i].op2_prn;
             prn_write_data[i].value = cdb_packet[i].value;
-            prn_write_data[i].prn = cdb_packet[i].dest_prn;
+            prn_write_data[i].prn   = cdb_packet[i].dest_prn;
         end
 
         // rob ct output
         ooo_ct_packet.completed_inst = 0;
         for (int i = 0; i < `N; ++i) begin
-            ooo_ct_packet.completed_inst += rob_ct_packet.entries[i].executed && rob_ct_packet.entries[i].success;
+            ooo_ct_packet.completed_inst += rob_ct_packet.entries[i].executed;
             ooo_ct_packet.exception_code[i] = 
                 rob_ct_packet.entries[i].illegal ? ILLEGAL_INST :
                 rob_ct_packet.entries[i].halt    ? HALTED_ON_WFI : NO_ERROR;
-            ooo_ct_packet.wr_idx[i] = rob_ct_packet.entries[i].dest_prn;
-            ooo_ct_packet.wr_en[i] = ooo_ct_packet.wr_idx[i] != `ZERO_REG;
-            ooo_ct_packet.NPC[i] = rob_ct_packet.entries[i].NPC;
+            wb_read_prn[i]          = rob_ct_packet.entries[i].dest_prn;
+            ooo_ct_packet.wr_idx[i] = rob_ct_packet.entries[i].dest_arn;
+            ooo_ct_packet.wr_en[i]  = ooo_ct_packet.wr_idx[i] != `ZERO_REG;
+            // ooo_ct_packet.wr_en[i]  = `TRUE; // debug
+            ooo_ct_packet.NPC[i]    = rob_ct_packet.entries[i].NPC;
         end
     end
 

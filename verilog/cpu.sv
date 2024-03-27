@@ -26,7 +26,7 @@ module cpu (
 `endif
 
     // Note: these are assigned at the very bottom of the module
-    output logic [`N_CNT_WIDTH-1:0]    pipeline_completed_insts,
+    output logic [`N_CNT_WIDTH-1:0] pipeline_completed_insts,
     output EXCEPTION_CODE  [`N-1:0] pipeline_error_status,
     output REG_IDX         [`N-1:0] pipeline_commit_wr_idx,
     output DATA            [`N-1:0] pipeline_commit_wr_data,
@@ -193,10 +193,10 @@ module cpu (
     // assign pipeline_commit_NPC     = mem_wb_reg.NPC;
 
     assign pipeline_completed_insts = ooo_ct_packet.completed_inst;
-    assign pipeline_error_status = ooo_ct_packet.exception_code; // TODO: LOAD_ACCESS_FAULT
-    assign pipeline_commit_wr_idx = ooo_ct_packet.wr_idx;
-    assign pipeline_commit_wr_data = ooo_ct_packet.wr_data;
-    assign pipeline_commit_wr_en = ooo_ct_packet.wr_en;
-    assign pipeline_commit_NPC = ooo_ct_packet.NPC;
+    assign pipeline_error_status    = ooo_ct_packet.exception_code; // TODO: LOAD_ACCESS_FAULT
+    assign pipeline_commit_wr_idx   = ooo_ct_packet.wr_idx;
+    assign pipeline_commit_wr_data  = ooo_ct_packet.wr_data;
+    assign pipeline_commit_wr_en    = ooo_ct_packet.wr_en;
+    assign pipeline_commit_NPC      = ooo_ct_packet.NPC;
 
 endmodule // pipeline

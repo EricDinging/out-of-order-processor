@@ -53,7 +53,7 @@ module prf #(
     generate
         for (i = 0; i < `N; ++i) begin
             assign write_valid[i] = write_data[i].prn != 0;
-            assign wb_prf_out[i] = entries[wb_read_prn[i]].value;
+            assign wb_prf_out[i]  = entries[wb_read_prn[i]].value;
         end
     endgenerate
 

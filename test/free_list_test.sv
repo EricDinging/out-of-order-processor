@@ -325,10 +325,48 @@ module testbench;
         $display("@@@ Passed test_squash");
     endtask
 
+    task test_init;
+        reset = 1;
+        correct = 1;
+        rat_squash = 0;
+        
+        correct_head = 0;
+        correct_tail = 0;
+        correct_counter = `PHYS_REG_SZ_R10K;
+
+        for (int i = 0; i < `N; ++i) begin
+            push_packet[i].valid = `FALSE;
+            push_packet[i].prn   = 0;
+            pop_en[i]            = `FALSE;
+        end
+
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; ++i) begin
+            input_free_list[i] = i;
+        end
+        head_in = 0;
+        tail_in = 0;
+        counter_in = `PHYS_REG_SZ_R10K;
+
+        @(negedge clock);
+        reset = 0;
+
+        for (int i = 0; i < `N; ++i) begin
+            pop_en[i]            = `TRUE;
+        end
+
+        #1;
+
+        print_entries_out();
+        print_pop_packet();
+
+    endtask
+
 
 
     initial begin
         clock = 0;
+
+        test_init();
 
         test_counter();
 
@@ -343,7 +381,7 @@ module testbench;
         for (int i = 0; i < 10; ++i) begin
             test_squash();
         end
-        
+
         $display("@@@ Passed");
         $finish;
     end

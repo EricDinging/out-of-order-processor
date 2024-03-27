@@ -280,32 +280,33 @@ module testbench;
             //              proc2mem_data[63:32], proc2mem_data[31:0]);
 
             // print register write information to the writeback output file
-            if (pipeline_completed_insts > 0) begin
-                if (pipeline_commit_wr_en)
+            for (int i = 0; i < pipeline_completed_insts; ++i) begin
+                if (pipeline_commit_wr_en[i])
                     $fdisplay(wb_fileno, "PC=%x, REG[%d]=%x",
-                              pipeline_commit_NPC - 4,
-                              pipeline_commit_wr_idx,
-                              pipeline_commit_wr_data);
+                              pipeline_commit_NPC[i] - 4,
+                              pipeline_commit_wr_idx[i],
+                              pipeline_commit_wr_data[i]);
                 else
-                    $fdisplay(wb_fileno, "PC=%x, ---", pipeline_commit_NPC - 4);
+                    $fdisplay(wb_fileno, "PC=%x, ---", pipeline_commit_NPC[i] - 4);
             end
 
             // stop the processor
-            if (pipeline_error_status != NO_ERROR || clock_count > 50000000) begin
+            for (int i = 0; i < `N; ++i) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 50000000) begin
+                    $display("  %16t : Processor Finished", $realtime);
 
-                $display("  %16t : Processor Finished", $realtime);
+                    // display the final memory and status
+                    show_mem_and_status(pipeline_error_status, 0,`MEM_64BIT_LINES - 1);
+                    // output the final CPI
+                    output_cpi_file();
+                    // close the writeback and pipeline output files
+                    // close_pipeline_output_file();
+                    $fclose(wb_fileno);
 
-                // display the final memory and status
-                show_mem_and_status(pipeline_error_status, 0,`MEM_64BIT_LINES - 1);
-                // output the final CPI
-                output_cpi_file();
-                // close the writeback and pipeline output files
-                // close_pipeline_output_file();
-                $fclose(wb_fileno);
+                    $display("\n---- Finished CPU Testbench ----\n");
 
-                $display("\n---- Finished CPU Testbench ----\n");
-
-                #100 $finish;
+                    #100 $finish;
+                end
             end
         end // if(reset)
     end

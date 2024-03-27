@@ -58,7 +58,7 @@ module rat #(
             for (int i = 0; i < `N; ++i) begin
                 rat_is_output.entries[i].op1_prn = next_rat_table[rat_is_input.entries[i].op1_arn];
                 rat_is_output.entries[i].op2_prn = next_rat_table[rat_is_input.entries[i].op2_arn];
-                if (rat_is_input.entries[i].dest_arn != 0) begin
+                if (rat_is_input.entries[i].dest_arn != `ZERO_REG) begin
                     pop_en[i] = `TRUE;
                     if (pop_packet[i].valid) begin
                         next_rat_table[rat_is_input.entries[i].dest_arn] = pop_packet[i].prn;
