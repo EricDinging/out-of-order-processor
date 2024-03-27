@@ -71,8 +71,9 @@ module stage_decode #(
             assign id_ooo_packet.rob_is_packet.entries[i].illegal        = illegal[i];
             assign id_ooo_packet.rob_is_packet.entries[i].csr_op         = csr_op[i];
             // rat
-            assign id_ooo_packet.rat_is_input.entries[i].dest_arn =
-                has_dest[i] ? if_id_packet[i].inst.r.rd : `ZERO_REG;
+            // assign id_ooo_packet.rat_is_input.entries[i].dest_arn =
+            //     has_dest[i] ? if_id_packet[i].inst.r.rd : `ZERO_REG;
+            assign id_ooo_packet.rat_is_input.entries[i].dest_arn = if_id_packet[i].inst.r.rd;
             assign id_ooo_packet.rat_is_input.entries[i].op1_arn  =
                 (opa_select[i] == OPA_IS_RS1 || cond_branch[i]) ? if_id_packet[i].inst.r.rs1 : `ZERO_REG;
             assign id_ooo_packet.rat_is_input.entries[i].op2_arn  =

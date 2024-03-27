@@ -25,6 +25,11 @@ module cpu (
     output MEM_SIZE    proc2mem_size,    // Data size sent to memory
 `endif
 
+`ifdef CPU_DEBUG_OUT
+    output IF_ID_PACKET  [`N-1:0] if_id_reg_debug,
+    output ID_OOO_PACKET          id_ooo_reg_debug,
+`endif
+
     // Note: these are assigned at the very bottom of the module
     output logic [`N_CNT_WIDTH-1:0] pipeline_completed_insts,
     output EXCEPTION_CODE  [`N-1:0] pipeline_error_status,
@@ -65,7 +70,8 @@ module cpu (
 
     // Outputs from IF-Stage and IF/ID Pipeline Register
     // ADDR proc2Imem_addr;
-    IF_ID_PACKET if_packet, if_id_reg;
+    
+    IF_ID_PACKET  [`N-1:0] if_packet, if_id_reg;
 
     // Input to OoO
     ID_OOO_PACKET id_ooo_packet, id_ooo_reg;
@@ -84,7 +90,7 @@ module cpu (
     stage_fetch fetch(
         .clock(clock),
         .reset(reset),
-        .stall(squash ? 0 : structural_hazard),
+        .stall(squash ? `FALSE : structural_hazard),
         .mem2proc_transaction_tag(mem2proc_transaction_tag),
         .mem2proc_data(mem2proc_data),
         .mem2proc_data_tag(mem2proc_data_tag),
@@ -96,13 +102,17 @@ module cpu (
 
     always_ff @(posedge clock) begin
         if (reset || squash) begin
-            if_id_reg <= 0;
+            if_id_reg <= {`N{0}};
         end else if (if_id_enable) begin
             if_id_reg <= if_packet;
         end
     end
 
     assign if_id_enable = !structural_hazard;
+
+`ifdef CPU_DEBUG_OUT
+    assign if_id_reg_debug = if_id_reg;
+`endif
 
     //////////////////////////////////////////////////
     //                                              //
@@ -124,6 +134,10 @@ module cpu (
     end
 
     assign id_ooo_enable = !structural_hazard;
+
+`ifdef CPU_DEBUG_OUT
+    assign id_ooo_reg_debug = id_ooo_reg;
+`endif
 
     //////////////////////////////////////////////////
     //                                              //

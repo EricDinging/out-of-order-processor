@@ -154,7 +154,7 @@ module rrat_free_list #(
         .reset(reset),
         .push_packet(push_packet),
         .pop_en(pop_en),
-        .input_free_list({`PHYS_REG_SZ_R10K{1'b0}}),
+        .input_free_list({`PHYS_REG_SZ_R10K{0}}),
         .head_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
         .tail_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
         .counter_in({`FREE_LIST_PTR_WIDTH{1'b0}}),

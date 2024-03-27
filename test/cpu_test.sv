@@ -7,6 +7,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 // P4 TODO: Add your own debugging framework. Basic printing of data structures
 //          is an absolute necessity for the project. You can use C functions
@@ -61,6 +62,11 @@ module testbench;
     logic           [`N-1:0] pipeline_commit_wr_en;
     ADDR            [`N-1:0] pipeline_commit_NPC;
 
+`ifdef CPU_DEBUG_OUT
+    IF_ID_PACKET [`N-1:0]  if_id_reg_debug;
+    ID_OOO_PACKET id_ooo_reg_debug;
+`endif
+
     // ADDR  if_NPC_dbg;
     // DATA  if_inst_dbg;
     // logic if_valid_dbg;
@@ -78,6 +84,23 @@ module testbench;
     // logic mem_wb_valid_dbg;
 
 
+    task print_if_id_reg;
+        $display("IF/ID Register:");
+        for (int i = 0; i < `N; ++i) begin
+            $display("  PC[%0d]: %x", i, if_id_reg_debug[i].PC);
+            $display("  Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
+            $display("  Valid[%0d]: %x", i, if_id_reg_debug[i].valid);
+        end
+    endtask
+
+    task print_id_ooo_reg;
+        $display("ID/EX Register:");
+        for (int i = 0; i < `N; ++i) begin
+            $display("  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
+            $display("  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
+        end
+    endtask
+
     // Instantiate the Pipeline
     cpu verisimpleV (
         // Inputs
@@ -94,6 +117,8 @@ module testbench;
 `ifndef CACHE_MODE
         .proc2mem_size    (proc2mem_size),
 `endif
+        .if_id_reg_debug (if_id_reg_debug),
+        .id_ooo_reg_debug(id_ooo_reg_debug),
 
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -156,7 +181,6 @@ module testbench;
             instr_count <= instr_count + pipeline_completed_insts;
         end
     end
-
 
     // Task to output the final CPI and # of elapsed clock edges
     task output_cpi_file;
@@ -266,6 +290,8 @@ module testbench;
     always @(negedge clock) begin
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
+            print_if_id_reg();
+            print_id_ooo_reg();
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);

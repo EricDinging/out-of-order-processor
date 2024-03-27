@@ -1,1 +1,2 @@
-    add x1, x2, x0
+    addi x2, x1, 1
+    wfi
