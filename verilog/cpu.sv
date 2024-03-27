@@ -31,7 +31,7 @@ module cpu (
     output REG_IDX         [`N-1:0] pipeline_commit_wr_idx,
     output DATA            [`N-1:0] pipeline_commit_wr_data,
     output logic           [`N-1:0] pipeline_commit_wr_en,
-    output ADDR            [`N-1:0] pipeline_commit_NPC,
+    output ADDR            [`N-1:0] pipeline_commit_NPC
 
     // Debug outputs: these signals are solely used for debugging in testbenches
     // Do not change for project 3
@@ -94,7 +94,7 @@ module cpu (
         .if_id_packet(if_packet)
     );
 
-    always_ff (@posedge clock) begin
+    always_ff @(posedge clock) begin
         if (reset || squash) begin
             if_id_reg <= 0;
         end else if (if_id_enable) begin
@@ -115,7 +115,7 @@ module cpu (
         .id_ooo_packet(id_ooo_packet)
     );
 
-    always_ff (@posedge clock) begin
+    always_ff @(posedge clock) begin
         if (reset || squash) begin
             id_ooo_reg <= 0;
         end else if (id_ooo_enable) begin

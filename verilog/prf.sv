@@ -1,5 +1,4 @@
 `include "sys_defs.svh"
-`define DEBUG_OUT
 // PRN, DATA
 /*
 typedef struct packed {

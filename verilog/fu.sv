@@ -1,6 +1,5 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
-`define DEBUG_OUT
 
 
 // ALU: computes the result of FUNC applied with operands A and B

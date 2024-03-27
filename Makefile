@@ -296,7 +296,28 @@ CPU_TESTBENCH = test/pipeline_print.c \
 # verilog/cpu.sv is implicit
 CPU_SOURCES = verilog/regfile.sv \
               verilog/icache.sv \
-              verilog/mult.sv
+              verilog/mult.sv \
+							verilog/cdb.sv \
+							verilog/decoder.sv \
+							verilog/FIFO.sv \
+							verilog/free_list.sv \
+							verilog/fu_cdb.sv \
+							verilog/fu.sv \
+							verilog/icache.sv \
+							verilog/ooo.sv \
+							verilog/prf.sv \
+							verilog/psel_gen.sv \
+							verilog/rat.sv \
+							verilog/rob.sv \
+							verilog/rrat.sv \
+							verilog/rs.sv \
+							verilog/stage_decode.sv \
+							verilog/stage_fetch.sv \
+							verilog/onehot_mux.sv
+
+
+
+
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 synth/cpu.vg: $(CPU_SOURCES) $(CPU_HEADERS)
