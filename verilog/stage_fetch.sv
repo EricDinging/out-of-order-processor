@@ -44,7 +44,6 @@ endmodule
 
 module stage_fetch (
     input clock, reset,
-    // TODO: should not connect squash to this reset
     input logic stall,
 
     // From memory
