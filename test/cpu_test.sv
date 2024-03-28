@@ -64,7 +64,9 @@ module testbench;
 
 `ifdef CPU_DEBUG_OUT
     IF_ID_PACKET [`N-1:0]  if_id_reg_debug;
-    ID_OOO_PACKET id_ooo_reg_debug;
+    ID_OOO_PACKET          id_ooo_reg_debug;
+    logic                  squash_debug;
+    ROB_IF_PACKET          rob_if_packet_debug;               
 `endif
 
     // ADDR  if_NPC_dbg;
@@ -87,7 +89,7 @@ module testbench;
     task print_if_id_reg;
         $display("IF/ID Register:");
         for (int i = 0; i < `N; ++i) begin
-            $display("  PC[%0d]: %x", i, if_id_reg_debug[i].PC);
+            $display("  PC[%0d]: %0d", i, if_id_reg_debug[i].PC);
             $display("  Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
             $display("  Valid[%0d]: %x", i, if_id_reg_debug[i].valid);
         end
@@ -98,6 +100,15 @@ module testbench;
         for (int i = 0; i < `N; ++i) begin
             $display("  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
             $display("  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
+        end
+    endtask
+
+    task print_rob_if_debug;
+        $display("ROB IF Output:");
+        $display("  Squash? %b", squash_debug);
+        for (int i = 0; i < `N; ++i) begin
+            $display("  success? %d, predict_taken? %d, predict_target: %0d", rob_if_packet_debug.entries[i].success, rob_if_packet_debug.entries[i].predict_taken, rob_if_packet_debug.entries[i].predict_target); 
+            $display("  resolve_taken? %d, resolve_target: %0d", rob_if_packet_debug.entries[i].resolve_taken, rob_if_packet_debug.entries[i].resolve_target);
         end
     endtask
 
@@ -117,9 +128,12 @@ module testbench;
 `ifndef CACHE_MODE
         .proc2mem_size    (proc2mem_size),
 `endif
+`ifdef CPU_DEBUG_OUT
         .if_id_reg_debug (if_id_reg_debug),
         .id_ooo_reg_debug(id_ooo_reg_debug),
-
+        .squash_debug(squash_debug),
+        .rob_if_packet_debug(rob_if_packet_debug),
+`endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
         .pipeline_commit_wr_data  (pipeline_commit_wr_data),
@@ -292,6 +306,9 @@ module testbench;
             #2; // wait a short time to avoid a clock edge
             print_if_id_reg();
             print_id_ooo_reg();
+            print_rob_if_debug();
+
+            $display("======");
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);

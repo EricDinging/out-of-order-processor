@@ -28,6 +28,8 @@ module cpu (
 `ifdef CPU_DEBUG_OUT
     output IF_ID_PACKET  [`N-1:0] if_id_reg_debug,
     output ID_OOO_PACKET          id_ooo_reg_debug,
+    output logic                  squash_debug,
+    output ROB_IF_PACKET          rob_if_packet_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -161,6 +163,10 @@ module cpu (
     // logic [1:0]  proc2Dmem_command;
     // MEM_SIZE     proc2Dmem_size;
 
+`ifdef CPU_DEBUG_OUT
+    assign squash_debug        = squash;
+    assign rob_if_packet_debug = rob_if_packet;
+`endif
 
     //////////////////////////////////////////////////
     //                                              //
