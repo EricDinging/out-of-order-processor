@@ -41,16 +41,17 @@ module cdb #(
     assign load_avail = load_selected | ~cdb_state.load_prepared;
 
     `ifdef CPU_DEBUG_OUT
-    assign select_debug = {alu_selected, mult_selected, load_selected};
+    assign select_debug = 
+            {alu_selected, mult_selected, load_selected};
     `endif
     psel_gen #(
         .WIDTH(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD),
         .REQS (`N)
     ) psel_fu_cdb (
         .req({
-            fu_state_packet.alu_prepared & ~cond_branches,
-            fu_state_packet.mult_prepared,
-            fu_state_packet.load_prepared
+            cdb_state.alu_prepared & ~cond_branches,
+            cdb_state.mult_prepared,
+            cdb_state.load_prepared
         }),
         .gnt({alu_selected, mult_selected, load_selected}),
         .gnt_bus(mux_select),
@@ -68,59 +69,60 @@ module cdb #(
     genvar i;
     generate
     for (i = 0; i < `NUM_FU_ALU; i++) begin
-        assign cond_branches[i] = fu_state_packet.alu_packet[i].cond_branch;
+        assign cond_branches[i] = cdb_state.alu_packet[i].cond_branch;
     end
     endgenerate
 
     // calculate mux input
     always_comb begin
     // alu
-    for (int i = 0; i < `NUM_FU_ALU; i++) begin
-        alu_rob_packet[i] = '{
-            fu_state_packet.alu_packet[i].basic.robn,
-            fu_state_packet.alu_prepared[i],
-            fu_state_packet.alu_packet[i].take_branch,
-            fu_state_packet.alu_packet[i].basic.result
-        };
-        alu_cdb_packet[i] = fu_state_packet.alu_prepared[i] ?
-        '{fu_state_packet.alu_packet[i].basic.dest_prn, fu_state_packet.alu_packet[i].basic.result}
-        : 0;
-    end
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            alu_rob_packet[i] = '{
+                cdb_state.alu_packet[i].basic.robn,
+                cdb_state.alu_prepared[i],
+                cdb_state.alu_packet[i].take_branch,
+                cdb_state.alu_packet[i].basic.result
+            };
+            alu_cdb_packet[i] = cdb_state.alu_prepared[i] ?
+            '{cdb_state.alu_packet[i].basic.dest_prn, cdb_state.alu_packet[i].basic.result}
+            : 0;
+        end
 
-    // mult
-    for (int i = 0; i < `NUM_FU_MULT; i++) begin
-        other_rob_packet[i] = '{
-            fu_state_packet.mult_packet[i].robn,
-            fu_state_packet.mult_prepared[i],
-            1'b0,  // not taken
-            32'b0  // null address
-        };
-        other_cdb_packet[i] = fu_state_packet.mult_prepared[i] ?
-        '{fu_state_packet.mult_packet[i].dest_prn, fu_state_packet.mult_packet[i].result}
-        : 0;
-    end
+        // load
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            other_rob_packet[i] = '{
+                cdb_state.load_packet[i].robn,
+                cdb_state.load_prepared[i],
+                1'b0,  // not taken
+                32'b0  // null address
+            };
+            other_cdb_packet[i] = 0;
+        end
 
-    // load
-    // for (int i = 0; i < `NUM_FU_LOAD; i++) begin
-    //     other_rob_packet[`NUM_FU_MULT+i] = '{
-    //         fu_state_packet.load_packet[i].robn,
-    //         fu_state_packet.load_prepared[i],
-    //         1'b0,  // not taken
-    //         32'b0  // null address
-    //     };
-    //     other_cdb_packet[`NUM_FU_MULT+i] = fu_state_packet.load_prepared[i] ?
-    //     '{fu_state_packet.load_packet[i].dest_prn, fu_state_packet.load_packet[i].result}
-    //     : 0;
-    // end
+        // mult
+        for (int i = 0; i < `NUM_FU_MULT; i++) begin
+            other_rob_packet[`NUM_FU_LOAD + i] = '{
+                cdb_state.mult_packet[i].robn,
+                cdb_state.mult_prepared[i],
+                1'b0,  // not taken
+                32'b0  // null address
+            };
+            other_cdb_packet[`NUM_FU_LOAD + i] = cdb_state.mult_prepared[i] ?
+            '{cdb_state.mult_packet[i].dest_prn, cdb_state.mult_packet[i].result}
+            : 0;
+            // other_cdb_packet[i] = '{5'b1, 32'hdeadbeef};
+            // other_cdb_packet[i].dest_prn = 5'b1;
+            // other_cdb_packet[i].value = 32'hdeadbeef;
+        end
     end
 
     // // predictor output
     // always_comb begin
     //     for (int i = 0; i < `NUM_FU_ALU; i++) begin
     //         cdb_predictor_packet[i] = '{
-    //             fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].take_branch,
-    //             fu_state_packet.alu_packet[i].PC,
-    //             fu_state_packet.alu_packet[i].basic.result
+    //             cdb_state.alu_prepared[i] && cdb_state.alu_packet[i].take_branch,
+    //             cdb_state.alu_packet[i].PC,
+    //             cdb_state.alu_packet[i].basic.result
     //         };
     //     end
     // end

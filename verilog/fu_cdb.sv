@@ -12,9 +12,9 @@ module fu_cdb(
     output logic [`NUM_FU_LOAD-1:0] load_avail,
     output logic [`NUM_FU_STORE-1:0] store_avail,
     output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0] fu_rob_packet,
-    output CDB_PACKET    [`N-1:0] cdb_output, // for both cdb and prf
+    output CDB_PACKET    [`N-1:0] cdb_output // for both cdb and prf
     `ifdef CPU_DEBUG_OUT
-    output FU_STATE_PACKET fu_state_packet_debug
+    , output FU_STATE_PACKET fu_state_packet_debug
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug
     `endif
 );

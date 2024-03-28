@@ -70,6 +70,7 @@ module testbench;
     // cdb  
     CDB_PACKET    [`N-1:0] cdb_packet_debug;   
     FU_STATE_PACKET        fu_state_packet_debug;
+
     logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;     
 `endif
 
@@ -124,13 +125,22 @@ module testbench;
     endtask
 
     task print_fu_state_packet;
+        $display("FU State Alu Packet:");
+        for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+            $display("Prepared[%d]=%b, robn[%d]=%d", i, fu_state_packet_debug.alu_prepared[i], i, fu_state_packet_debug.alu_packet[i].basic.robn);
+            $display("result[%d]=%b, dest_prn[%d]=%d", i, fu_state_packet_debug.alu_packet[i].basic.result, i, fu_state_packet_debug.alu_packet[i].basic.dest_prn);
+        end
         $display("FU State Mult Packet:");
-        for (int i = 0; i < `N; ++i) begin
+        for (int i = 0; i < `NUM_FU_MULT; ++i) begin
             $display("Prepared[%d]=%b, robn[%d]=%d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
             $display("result[%d]=%b, dest_prn[%d]=%d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
         end
     endtask
 
+
+    task print_select;
+        $display("select:%b", select_debug);
+    endtask
 
     // Instantiate the Pipeline
     cpu verisimpleV (
@@ -332,6 +342,7 @@ module testbench;
             print_rob_if_debug();
             print_cdb_packet();
             print_fu_state_packet();
+            print_select();
 
             $display("======");
 
@@ -360,7 +371,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 100) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000000000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status
@@ -380,3 +391,4 @@ module testbench;
     end
 
 endmodule // module testbench
+
