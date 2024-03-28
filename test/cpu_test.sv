@@ -66,7 +66,8 @@ module testbench;
     IF_ID_PACKET [`N-1:0]  if_id_reg_debug;
     ID_OOO_PACKET          id_ooo_reg_debug;
     logic                  squash_debug;
-    ROB_IF_PACKET          rob_if_packet_debug;               
+    ROB_IF_PACKET          rob_if_packet_debug;    
+    CDB_PACKET    [`N-1:0] cdb_packet_debug;           
 `endif
 
     // ADDR  if_NPC_dbg;
@@ -112,6 +113,14 @@ module testbench;
         end
     endtask
 
+    task print_cdb_packet;
+        $display("CDB Packet:");
+        for (int i = 0; i < `N; ++i) begin
+            $display("PRN[%d]=%d, value[%d]=%d", i, cdb_packet_debug[i].dest_prn, i, cdb_packet_debug[i].value);
+        end
+    endtask
+
+
     // Instantiate the Pipeline
     cpu verisimpleV (
         // Inputs
@@ -133,6 +142,7 @@ module testbench;
         .id_ooo_reg_debug(id_ooo_reg_debug),
         .squash_debug(squash_debug),
         .rob_if_packet_debug(rob_if_packet_debug),
+        .cdb_packet_debug(cdb_packet_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -307,6 +317,7 @@ module testbench;
             print_if_id_reg();
             print_id_ooo_reg();
             print_rob_if_debug();
+            print_cdb_packet();
 
             $display("======");
 
@@ -335,7 +346,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 50000000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 100) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status

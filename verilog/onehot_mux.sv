@@ -1,6 +1,6 @@
 module onehot_mux #(
-    parameter SIZE,
-    parameter WIDTH
+    parameter SIZE=10,
+    parameter WIDTH=10
 ) (
     input logic [WIDTH-1:0][SIZE-1:0] in,
     input logic [WIDTH-1:0] select,

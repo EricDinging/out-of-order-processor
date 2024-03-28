@@ -30,6 +30,7 @@ module cpu (
     output ID_OOO_PACKET          id_ooo_reg_debug,
     output logic                  squash_debug,
     output ROB_IF_PACKET          rob_if_packet_debug,
+    output CDB_PACKET    [`N-1:0] cdb_packet_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -155,6 +156,9 @@ module cpu (
         .rob_if_packet(rob_if_packet),
         .squash(squash),
         .ooo_ct_packet(ooo_ct_packet)
+        `ifdef CPU_DEBUG_OUT
+        , .cdb_packet_debug(cdb_packet_debug)
+        `endif
     );
 
     // Outputs from MEM-Stage to memory

@@ -14,6 +14,9 @@ module ooo # (
     output logic         squash,
     output ROB_IF_PACKET rob_if_packet,
     output OOO_CT_PACKET ooo_ct_packet
+    `ifdef CPU_DEBUG_OUT
+    , output CDB_PACKET [`N-1:0] cdb_packet_debug
+    `endif
 );
 
     RS_IS_PACKET rs_is_packet;
@@ -52,6 +55,9 @@ module ooo # (
     // cdb output
     CDB_PACKET    [`N-1:0] cdb_packet;
 
+    `ifdef CPU_DEBUG_OUT
+        assign cdb_packet_debug = cdb_packet;
+    `endif
     // prf input, connect to cpu output
     PRN [`N-1:0] wb_read_prn;
 
