@@ -31,6 +31,8 @@ module cpu (
     output logic                  squash_debug,
     output ROB_IF_PACKET          rob_if_packet_debug,
     output CDB_PACKET    [`N-1:0] cdb_packet_debug,
+    output FU_STATE_PACKET fu_state_packet_debug,
+    output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -105,7 +107,7 @@ module cpu (
 
     always_ff @(posedge clock) begin
         if (reset || squash) begin
-            if_id_reg <= {`N{0}};
+            if_id_reg <= 0;
         end else if (if_id_enable) begin
             if_id_reg <= if_packet;
         end
@@ -158,6 +160,8 @@ module cpu (
         .ooo_ct_packet(ooo_ct_packet)
         `ifdef CPU_DEBUG_OUT
         , .cdb_packet_debug(cdb_packet_debug)
+        , .fu_state_packet_debug(fu_state_packet_debug)
+        , .select_debug(select_debug)
         `endif
     );
 

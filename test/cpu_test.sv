@@ -66,8 +66,11 @@ module testbench;
     IF_ID_PACKET [`N-1:0]  if_id_reg_debug;
     ID_OOO_PACKET          id_ooo_reg_debug;
     logic                  squash_debug;
-    ROB_IF_PACKET          rob_if_packet_debug;    
-    CDB_PACKET    [`N-1:0] cdb_packet_debug;           
+    ROB_IF_PACKET          rob_if_packet_debug;  
+    // cdb  
+    CDB_PACKET    [`N-1:0] cdb_packet_debug;   
+    FU_STATE_PACKET        fu_state_packet_debug;
+    logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;     
 `endif
 
     // ADDR  if_NPC_dbg;
@@ -120,6 +123,14 @@ module testbench;
         end
     endtask
 
+    task print_fu_state_packet;
+        $display("FU State Mult Packet:");
+        for (int i = 0; i < `N; ++i) begin
+            $display("Prepared[%d]=%b, robn[%d]=%d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
+            $display("result[%d]=%b, dest_prn[%d]=%d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
+        end
+    endtask
+
 
     // Instantiate the Pipeline
     cpu verisimpleV (
@@ -143,6 +154,8 @@ module testbench;
         .squash_debug(squash_debug),
         .rob_if_packet_debug(rob_if_packet_debug),
         .cdb_packet_debug(cdb_packet_debug),
+        .fu_state_packet_debug(fu_state_packet_debug),
+        .select_debug(select_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -318,6 +331,7 @@ module testbench;
             print_id_ooo_reg();
             print_rob_if_debug();
             print_cdb_packet();
+            print_fu_state_packet();
 
             $display("======");
 

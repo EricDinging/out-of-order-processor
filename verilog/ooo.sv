@@ -16,6 +16,8 @@ module ooo # (
     output OOO_CT_PACKET ooo_ct_packet
     `ifdef CPU_DEBUG_OUT
     , output CDB_PACKET [`N-1:0] cdb_packet_debug
+    , output FU_STATE_PACKET fu_state_packet_debug
+    , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug
     `endif
 );
 
@@ -91,6 +93,10 @@ module ooo # (
         .store_avail(store_avail),
         .fu_rob_packet(fu_rob_packet),
         .cdb_output(cdb_packet)
+        `ifdef CPU_DEBUG_OUT
+        , .fu_state_packet_debug(fu_state_packet_debug)
+        , .select_debug(select_debug)
+        `endif
     );
 
     prf prf_inst(
