@@ -58,8 +58,8 @@ module ooo # (
     rs rs_inst(
         .clock(clock),
         .reset(reset || squash),
-        .cdb_packet(cdb_packet),
         .rs_is_packet(rs_is_packet),
+        .cdb_packet(cdb_packet),
         .fu_alu_avail(alu_avail),
         .fu_mult_avail(mult_avail),
         .fu_load_avail(load_avail),

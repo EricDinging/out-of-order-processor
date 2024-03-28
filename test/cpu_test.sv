@@ -322,7 +322,7 @@ module testbench;
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status
-                    show_mem_and_status(pipeline_error_status, 0,`MEM_64BIT_LINES - 1);
+                    show_mem_and_status(pipeline_error_status[i], 0,`MEM_64BIT_LINES - 1);
                     // output the final CPI
                     output_cpi_file();
                     // close the writeback and pipeline output files

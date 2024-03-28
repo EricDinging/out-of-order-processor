@@ -449,7 +449,7 @@ typedef struct packed {
 typedef struct packed {
     logic          [`N_CNT_WIDTH-1:0] completed_inst;
     EXCEPTION_CODE           [`N-1:0] exception_code;
-    PRN                      [`N-1:0] wr_idx;
+    REG_IDX                  [`N-1:0] wr_idx;
     DATA                     [`N-1:0] wr_data;
     logic                    [`N-1:0] wr_en;
     ADDR                     [`N-1:0] NPC;
