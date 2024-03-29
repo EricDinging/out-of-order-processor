@@ -194,34 +194,44 @@ module ooo # (
         // issue
 
         // rob input
-        rob_is_packet = id_ooo_packet.rob_is_packet;
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
+            rob_is_packet.valid[i] = `FALSE;
+        end
+        if (~structural_hazard) begin
+            rob_is_packet = id_ooo_packet.rob_is_packet;
+            for (int i = 0; i < `N; ++i) begin
+                rob_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
+            end
         end
 
         // rs input
         for (int i = 0; i < `N; ++i) begin
-            // consecutive prf entry belongs to the same insn
-            rs_is_packet.entries[i].op1_ready = prf_output_value[2*i].valid; // || id_ooo_packet.id_rs_packet[i].op1_ready;
-            rs_is_packet.entries[i].op1       =
-                prf_output_value[2*i].valid ? prf_output_value[2*i].value : rat_is_output.entries[i].op1_prn;
-            rs_is_packet.entries[i].op2_ready = prf_output_value[2*i+1].valid; // || id_ooo_packet.id_rs_packet[i].op2_ready;
-            rs_is_packet.entries[i].op2       =
-                prf_output_value[2*i+1].valid ? prf_output_value[2*i+1].value : rat_is_output.entries[i].op2_prn;
-            
-            rs_is_packet.entries[i].inst  = id_ooo_packet.id_rs_packet[i].inst;
-            rs_is_packet.entries[i].valid = id_ooo_packet.id_rs_packet[i].valid;
-            rs_is_packet.entries[i].PC    = id_ooo_packet.id_rs_packet[i].PC;
-            rs_is_packet.entries[i].fu    = id_ooo_packet.id_rs_packet[i].fu;
-            rs_is_packet.entries[i].func  = id_ooo_packet.id_rs_packet[i].func;
+            rs_is_packet.entries[i].valid = `FALSE;
+        end
+        if (~structural_hazard) begin
+            for (int i = 0; i < `N; ++i) begin
+                // consecutive prf entry belongs to the same insn
+                rs_is_packet.entries[i].op1_ready = prf_output_value[2*i].valid; // || id_ooo_packet.id_rs_packet[i].op1_ready;
+                rs_is_packet.entries[i].op1       =
+                    prf_output_value[2*i].valid ? prf_output_value[2*i].value : rat_is_output.entries[i].op1_prn;
+                rs_is_packet.entries[i].op2_ready = prf_output_value[2*i+1].valid; // || id_ooo_packet.id_rs_packet[i].op2_ready;
+                rs_is_packet.entries[i].op2       =
+                    prf_output_value[2*i+1].valid ? prf_output_value[2*i+1].value : rat_is_output.entries[i].op2_prn;
+                
+                rs_is_packet.entries[i].inst  = id_ooo_packet.id_rs_packet[i].inst;
+                rs_is_packet.entries[i].valid = id_ooo_packet.id_rs_packet[i].valid;
+                rs_is_packet.entries[i].PC    = id_ooo_packet.id_rs_packet[i].PC;
+                rs_is_packet.entries[i].fu    = id_ooo_packet.id_rs_packet[i].fu;
+                rs_is_packet.entries[i].func  = id_ooo_packet.id_rs_packet[i].func;
 
-            rs_is_packet.entries[i].opa_select    = id_ooo_packet.id_rs_packet[i].opa_select;
-            rs_is_packet.entries[i].opb_select    = id_ooo_packet.id_rs_packet[i].opb_select;
-            rs_is_packet.entries[i].cond_branch   = id_ooo_packet.id_rs_packet[i].cond_branch;
-            rs_is_packet.entries[i].uncond_branch = id_ooo_packet.id_rs_packet[i].uncond_branch;
+                rs_is_packet.entries[i].opa_select    = id_ooo_packet.id_rs_packet[i].opa_select;
+                rs_is_packet.entries[i].opb_select    = id_ooo_packet.id_rs_packet[i].opb_select;
+                rs_is_packet.entries[i].cond_branch   = id_ooo_packet.id_rs_packet[i].cond_branch;
+                rs_is_packet.entries[i].uncond_branch = id_ooo_packet.id_rs_packet[i].uncond_branch;
 
-            rs_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
-            rs_is_packet.entries[i].robn     = rob_tail_entries[i];
+                rs_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
+                rs_is_packet.entries[i].robn     = rob_tail_entries[i];
+            end
         end
 
         // commit

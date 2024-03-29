@@ -605,7 +605,7 @@ typedef struct packed {
 //     logic valid;
 //     ADDR PC;
 //     ADDR target_addr;
-// } CDB_PREDICTOR_PACKET;
+// } CDB_PREDICTOR_PfACKET;
 
 typedef struct packed {
     logic success;
