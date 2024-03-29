@@ -23,7 +23,7 @@ module cdb #(
 
     FU_STATE_PACKET cdb_state;
 
-    logic [`NUM_FU_ALU-1:0] alu_selected;
+    logic [`NUM_FU_ALU-1:0]  alu_selected;
     logic [`NUM_FU_MULT-1:0] mult_selected;
     logic [`NUM_FU_LOAD-1:0] load_selected;
 
@@ -148,7 +148,24 @@ module cdb #(
         if (reset) begin
             cdb_state <= 0;
         end else begin
-            cdb_state <= fu_state_packet;
+            for (int i = 0; i < `NUM_FU_ALU; i++) begin
+                if (alu_avail[i]) begin
+                    cdb_state.alu_prepared[i] <= fu_state_packet.alu_prepared[i];
+                    cdb_state.alu_packet[i] <= fu_state_packet.alu_packet[i];
+                end
+            end
+            for (int i = 0; i < `NUM_FU_MULT; i++) begin
+                if (mult_avail[i]) begin
+                    cdb_state.mult_prepared[i] <= fu_state_packet.mult_prepared[i];
+                    cdb_state.mult_packet[i] <= fu_state_packet.mult_packet[i];
+                end
+            end
+            for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+                if (load_avail[i]) begin
+                    cdb_state.load_prepared[i] <= fu_state_packet.load_prepared[i];
+                    cdb_state.load_packet[i] <= fu_state_packet.load_packet[i];
+                end
+            end
         end
     end
 

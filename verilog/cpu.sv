@@ -51,6 +51,11 @@ module cpu (
     output PRN   [`ARCH_REG_SZ-1:0]         rat_table_out,
     // rrat
     output PRN   [`ARCH_REG_SZ-1:0]         rrat_entries,
+    // fu_packet (rs output state)
+    output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet_debug,
+    output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug,
+    output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug,
+    output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -198,6 +203,11 @@ module cpu (
         , .rat_table_out(rat_table_out)
         // rrat
         , .rrat_entries(rrat_entries)
+        // fu_state_packet
+        , .fu_alu_packet_debug(fu_alu_packet_debug)
+        , .fu_mult_packet_debug(fu_mult_packet_debug)
+        , .fu_load_packet_debug(fu_load_packet_debug)
+        , .fu_store_packet_debug(fu_store_packet_debug)
     `endif
     );
 

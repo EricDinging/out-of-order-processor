@@ -80,7 +80,12 @@ module testbench;
     // rs
     RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out;
     logic [`RS_CNT_WIDTH-1:0]      rs_counter_out;
+    
     logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;
+    FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet_debug;
+    FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug;
+    FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug;
+    FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug;
     
     // rat
     PRN                              rat_head, rat_tail;
@@ -113,7 +118,7 @@ module testbench;
     endtask
 
     task print_rob_if_debug;
-        $display("--- ROB IF OUTPUT:");
+        $display("--- ROB IF OUTPUT");
         $display("  Squash? %b", squash_debug);
         for (int i = 0; i < `N; ++i) begin
             $display("  success? %0d, predict_taken? %0d, predict_target: %0d", rob_if_packet_debug.entries[i].success, rob_if_packet_debug.entries[i].predict_taken, rob_if_packet_debug.entries[i].predict_target); 
@@ -122,7 +127,7 @@ module testbench;
     endtask
 
     task print_cdb_packet;
-        $display("--- CDB PACKET:");
+        $display("--- CDB PACKET");
         for (int i = 0; i < `N; ++i) begin
             $display("PRN[%2d]=%2d, value[%2d]=%2d", i, cdb_packet_debug[i].dest_prn, i, cdb_packet_debug[i].value);
         end
@@ -143,15 +148,20 @@ module testbench;
     
     task print_rob;
         $display("### ROB ENTRIES");
-        $display("rob_counter_out=%2d, rob_head_out=%2d, rob_tail_out=%2d", rob_counter_out, rob_head_out, rob_tail_out);
+        $display("counter=%2d, head=%2d, tail=%2d", rob_counter_out, rob_head_out, rob_tail_out);
         for (int i = 0; i < `ROB_SZ; i++) begin
-            $display("rob[%2d].executed=%b, .success=%b, .dest_prn=%2d, .dest_arn=%2d, .PC=%d", i, rob_entries_out[i].executed, rob_entries_out[i].success, rob_entries_out[i].dest_prn, rob_entries_out[i].dest_arn, rob_entries_out[i].PC);
+            $display(
+                "ROB[%2d].executed=%b, .success=%b, .dest_prn=%2d, .dest_arn=%2d, .PC=%d %s",
+                i, rob_entries_out[i].executed, rob_entries_out[i].success,
+                rob_entries_out[i].dest_prn, rob_entries_out[i].dest_arn, rob_entries_out[i].PC,
+                i == rob_head_out ? "h" : i == rob_tail_out ? "t" : " "
+            );
         end
     endtask
 
     task print_rs;
         $display("### RS ENTRIES");
-        $display("rs_counter_out=%0d", rs_counter_out);
+        $display("counter=%2d", rs_counter_out);
         for (int i = 0; i < `RS_SZ; i++) begin
             if (rs_entries_out[i].valid)
                 $display("RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d", //, .cond_branch=%d, .uncond_branch=%d",
@@ -160,6 +170,15 @@ module testbench;
                         //,rs_entries_out[i].cond_branch, rs_entries_out[i].uncond_branch);
             else
                 $display("RS[%2d]: invalid", i);
+        end
+        // alu packet
+        $display("--- ALU PACKETS");
+        for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+            if (fu_alu_packet_debug[i].valid)
+                $display("ALU[%2d]: .robn=%2d, .dest_prn=%2d, .op1=%2d, .op2=%2d, .PC=%2d",
+                        i, rs_entries_out[i].robn, rs_entries_out[i].dest_prn, rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].PC);
+            else
+                $display("ALU[%2d]: invalid", i);
         end
     endtask
 
@@ -221,6 +240,12 @@ module testbench;
         // rs
         .rs_entries_out(rs_entries_out),
         .rs_counter_out(rs_counter_out),
+        .fu_alu_packet_debug(fu_alu_packet_debug),
+        .fu_mult_packet_debug(fu_mult_packet_debug),
+        .fu_load_packet_debug(fu_load_packet_debug),
+        .fu_store_packet_debug(fu_store_packet_debug),
+        // rrat
+        .rrat_entries(rrat_entries),
         // prf
         .prf_entries_debug(prf_entries_debug),
         // rat
@@ -229,8 +254,8 @@ module testbench;
         .rat_counter(rat_counter),
         .rat_free_list(rat_free_list),
         .rat_table_out(rat_table_out),
-        // rrat
-        .rrat_entries(rrat_entries),
+        
+        
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),

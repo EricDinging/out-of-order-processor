@@ -35,6 +35,10 @@ module ooo # (
     , output logic [`FREE_LIST_CTR_WIDTH-1:0] rat_counter
     , output PRN   [`PHYS_REG_SZ_R10K-1:0]    rat_free_list
     , output PRN   [`ARCH_REG_SZ-1:0]         rat_table_out
+    , output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet_debug
+    , output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug
+    , output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug
+    , output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug
     // rrat
 `endif
 );
@@ -65,6 +69,13 @@ module ooo # (
     FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet;
     FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet;
     FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet;
+
+    `ifdef CPU_DEBUG_OUT
+        assign fu_alu_packet_debug   = fu_alu_packet;
+        assign fu_mult_packet_debug  = fu_mult_packet;
+        assign fu_load_packet_debug  = fu_load_packet;
+        assign fu_store_packet_debug = fu_store_packet;
+    `endif
     
     // output of fu_cdb, connect to rs
     logic [`NUM_FU_ALU-1:0]   alu_avail;
