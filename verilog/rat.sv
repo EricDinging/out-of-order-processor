@@ -1,5 +1,11 @@
 `include "sys_defs.svh"
 
+// `ifdef CPU_DEBUG_OUT
+// `ifndef DEBUG_OUT
+// `define DEBUG_OUT
+// `endif
+// `endif
+
 module rat #(
     parameter SIZE = `ARCH_REG_SZ
 ) (
@@ -8,13 +14,13 @@ module rat #(
     input RAT_IS_INPUT rat_is_input,
     input RRAT_CT_OUTPUT rrat_ct_output,
     output RAT_IS_OUTPUT rat_is_output
-    `ifdef DEBUG_OUT
+
+`ifdef CPU_DEBUG_OUT
     , output PRN                              head, tail
     , output logic [`FREE_LIST_CTR_WIDTH-1:0] counter
     , output PRN   [`PHYS_REG_SZ_R10K-1:0]    free_list
     , output PRN   [SIZE-1:0]                 rat_table_out
-    `endif
-
+`endif
 );
     PRN [SIZE-1:0] rat_table, next_rat_table;
 
@@ -33,7 +39,7 @@ module rat #(
         .rat_squash(rrat_ct_output.squash),
         // output
         .pop_packet(pop_packet)
-        `ifdef DEBUG_OUT
+        `ifdef CPU_DEBUG_OUT
         , .head(head)
         , .tail(tail)
         , .counter(counter)
@@ -69,7 +75,7 @@ module rat #(
         end
     end
 
-    `ifdef DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT
         assign rat_table_out = rat_table;
     `endif
 

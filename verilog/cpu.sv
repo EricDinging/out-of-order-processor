@@ -21,6 +21,7 @@ module cpu (
     output logic [1:0] proc2mem_command, // Command sent to memory
     output ADDR        proc2mem_addr,    // Address sent to memory
     output MEM_BLOCK   proc2mem_data,    // Data sent to memory
+
 `ifndef CACHE_MODE // no longer sending size to memory
     output MEM_SIZE    proc2mem_size,    // Data size sent to memory
 `endif
@@ -33,6 +34,23 @@ module cpu (
     output CDB_PACKET    [`N-1:0] cdb_packet_debug,
     output FU_STATE_PACKET fu_state_packet_debug,
     output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug,
+    // rob
+    output ROB_ENTRY [`ROB_SZ-1:0]        rob_entries_out,
+    output logic     [`RS_CNT_WIDTH-1:0]  rob_counter_out,
+    output logic     [`ROB_PTR_WIDTH-1:0] rob_head_out,
+    output logic     [`ROB_PTR_WIDTH-1:0] rob_tail_out,
+    // rs
+    output RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out,
+    output logic     [`RS_CNT_WIDTH-1:0]  rs_counter_out,
+    // prf
+    output PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug,
+    // rat
+    output PRN                              rat_head, rat_tail,
+    output logic [`FREE_LIST_CTR_WIDTH-1:0] rat_counter,
+    output PRN   [`PHYS_REG_SZ_R10K-1:0]    rat_free_list,
+    output PRN   [`ARCH_REG_SZ-1:0]         rat_table_out,
+    // rrat
+    output PRN   [`ARCH_REG_SZ-1:0]         rrat_entries,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -158,11 +176,29 @@ module cpu (
         .rob_if_packet(rob_if_packet),
         .squash(squash),
         .ooo_ct_packet(ooo_ct_packet)
-        `ifdef CPU_DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT
         , .cdb_packet_debug(cdb_packet_debug)
         , .fu_state_packet_debug(fu_state_packet_debug)
         , .select_debug(select_debug)
-        `endif
+        // prf
+        , .prf_entries_debug(prf_entries_debug)
+        // rob
+        , .rob_entries_out(rob_entries_out)
+        , .rob_counter_out(rob_counter_out)
+        , .rob_head_out(rob_head_out)
+        , .rob_tail_out(rob_tail_out)
+        // rs
+        , .rs_entries_out(rs_entries_out)
+        , .rs_counter_out(rs_counter_out)
+        // rat
+        , .rat_head(rat_head)
+        , .rat_tail(rat_tail)
+        , .rat_counter(rat_counter)
+        , .rat_free_list(rat_free_list)
+        , .rat_table_out(rat_table_out)
+        // rrat
+        , .rrat_entries(rrat_entries)
+    `endif
     );
 
     // Outputs from MEM-Stage to memory

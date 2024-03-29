@@ -14,12 +14,12 @@ module rob #(
     output ROB_CT_PACKET rob_ct_packet, 
     output ROBN [`N-1:0] tail_entries,
     output logic         squash
-    `ifdef DEBUG_OUT
+`ifdef CPU_DEBUG_OUT
     , output ROB_ENTRY [SIZE-1:0]           entries_out
     , output logic     [`RS_CNT_WIDTH-1:0]  counter_out
     , output logic     [`ROB_PTR_WIDTH-1:0] head_out
     , output logic     [`ROB_PTR_WIDTH-1:0] tail_out
-    `endif
+`endif
 );
 
     logic [`ROB_CNT_WIDTH-1:0] counter, next_counter;
@@ -107,7 +107,7 @@ module rob #(
 
     assign almost_full = (counter > SIZE - ALERT_DEPTH);
     
-    `ifdef DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT
     assign entries_out = rob_entries;
     assign counter_out = counter;
     assign head_out = head;

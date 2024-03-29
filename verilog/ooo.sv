@@ -14,11 +14,29 @@ module ooo # (
     output logic         squash,
     output ROB_IF_PACKET rob_if_packet,
     output OOO_CT_PACKET ooo_ct_packet
-    `ifdef CPU_DEBUG_OUT
+`ifdef CPU_DEBUG_OUT
     , output CDB_PACKET [`N-1:0] cdb_packet_debug
     , output FU_STATE_PACKET fu_state_packet_debug
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug
-    `endif
+    // rob
+    , output ROB_ENTRY [`ROB_SZ-1:0]        rob_entries_out
+    , output logic     [`RS_CNT_WIDTH-1:0]  rob_counter_out
+    , output logic     [`ROB_PTR_WIDTH-1:0] rob_head_out
+    , output logic     [`ROB_PTR_WIDTH-1:0] rob_tail_out
+    // rs
+    , output RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out
+    , output logic     [`RS_CNT_WIDTH-1:0]  rs_counter_out
+    // prf
+    , output PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug
+    // rra
+    , output PRN       [`ARCH_REG_SZ-1:0] rrat_entries
+    // rat
+    , output PRN                              rat_head, rat_tail
+    , output logic [`FREE_LIST_CTR_WIDTH-1:0] rat_counter
+    , output PRN   [`PHYS_REG_SZ_R10K-1:0]    rat_free_list
+    , output PRN   [`ARCH_REG_SZ-1:0]         rat_table_out
+    // rrat
+`endif
 );
 
     RS_IS_PACKET rs_is_packet;
@@ -57,9 +75,11 @@ module ooo # (
     // cdb output
     CDB_PACKET    [`N-1:0] cdb_packet;
 
-    `ifdef CPU_DEBUG_OUT
-        assign cdb_packet_debug = cdb_packet;
-    `endif
+`ifdef CPU_DEBUG_OUT
+    assign cdb_packet_debug = cdb_packet;
+    assign rrat_entries = rrat_ct_output.entries;
+`endif
+
     // prf input, connect to cpu output
     PRN [`N-1:0] wb_read_prn;
 
@@ -77,7 +97,11 @@ module ooo # (
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
         .fu_store_packet(fu_store_packet),
-        .almost_full(rs_almost_full)
+        .almost_full(rs_almost_full),
+    `ifdef CPU_DEBUG_OUT
+        .entries_out(rs_entries_out),
+        .counter_out(rs_counter_out)
+    `endif
     );
 
     fu_cdb fu_cdb_inst(
@@ -108,6 +132,9 @@ module ooo # (
         .prn_invalid(prn_invalid),
         .wb_read_prn(wb_read_prn),
         .wb_prf_out(ooo_ct_packet.wr_data)
+        `ifdef CPU_DEBUG_OUT
+        , .entries_out(prf_entries_debug)
+        `endif
     );
 
     rob rob_inst (
@@ -120,6 +147,12 @@ module ooo # (
         .rob_ct_packet(rob_ct_packet),
         .tail_entries(rob_tail_entries),
         .squash(squash)
+    `ifdef CPU_DEBUG_OUT
+        ,.entries_out(rob_entries_out)
+        ,.counter_out(rob_counter_out)
+        ,.head_out(rob_head_out)
+        ,.tail_out(rob_tail_out)
+    `endif
     ); 
 
     rat rat_inst(
@@ -129,6 +162,13 @@ module ooo # (
         .rrat_ct_output(rrat_ct_output),
         // output
         .rat_is_output(rat_is_output)
+    `ifdef CPU_DEBUG_OUT
+        , .head(rat_head)
+        , .tail(rat_tail)
+        , .counter(rat_counter)
+        , .free_list(rat_free_list)
+        , .rat_table_out(rat_table_out)
+    `endif
     );
 
     rrat rrat_inst(

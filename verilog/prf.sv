@@ -34,7 +34,7 @@ module prf #(
     input PRN [`N-1:0] wb_read_prn,
     output DATA [`N-1:0] wb_prf_out
 
-    `ifdef DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT
     , output PRF_ENTRY [SIZE-1:0] entries_out
     , output PRN counter
     `endif
@@ -42,7 +42,7 @@ module prf #(
     // State
     PRF_ENTRY [SIZE-1:0] entries, next_entries;
 
-    `ifdef DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT
     assign entries_out = entries;
     PRN next_counter;
     `endif

@@ -103,7 +103,8 @@ module rat_free_list #(
     input  logic                            rat_squash,
 
     output FREE_LIST_PACKET   [`N-1:0] pop_packet
-    `ifdef DEBUG_OUT
+
+    `ifdef CPU_DEBUG_OUT
     , output PRN                              head, tail
     , output logic [`FREE_LIST_CTR_WIDTH-1:0] counter
     , output PRN                   [SIZE-1:0] free_list
@@ -121,7 +122,7 @@ module rat_free_list #(
         .counter_in(counter_in),
         .rat_squash(rat_squash),
         .pop_packet(pop_packet)
-        `ifdef DEBUG_OUT
+        `ifdef CPU_DEBUG_OUT
         , .output_free_list(free_list)
         , .head_out(head)
         , .tail_out(tail)

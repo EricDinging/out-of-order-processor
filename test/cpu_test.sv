@@ -71,28 +71,32 @@ module testbench;
     CDB_PACKET    [`N-1:0] cdb_packet_debug;   
     FU_STATE_PACKET        fu_state_packet_debug;
 
-    logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;     
+    // ROB
+    ROB_ENTRY [`ROB_SZ-1:0]    rob_entries_out;
+    logic [`ROB_CNT_WIDTH-1:0] rob_counter_out;
+    logic [`ROB_PTR_WIDTH-1:0] rob_head_out;
+    logic [`ROB_PTR_WIDTH-1:0] rob_tail_out;
+
+    // rs
+    RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out;
+    logic [`RS_CNT_WIDTH-1:0]      rs_counter_out;
+    logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;
+    
+    // rat
+    PRN                              rat_head, rat_tail;
+    logic [`FREE_LIST_CTR_WIDTH-1:0] rat_counter;
+    PRN   [`PHYS_REG_SZ_R10K-1:0]    rat_free_list;
+    PRN   [`ARCH_REG_SZ-1:0]         rat_table_out;
+
+    // rrat
+    PRN   [`ARCH_REG_SZ-1:0]         rrat_entries;
+
+    // prf
+    PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug;
 `endif
 
-    // ADDR  if_NPC_dbg;
-    // DATA  if_inst_dbg;
-    // logic if_valid_dbg;
-    // ADDR  if_id_NPC_dbg;
-    // DATA  if_id_inst_dbg;
-    // logic if_id_valid_dbg;
-    // ADDR  id_ex_NPC_dbg;
-    // DATA  id_ex_inst_dbg;
-    // logic id_ex_valid_dbg;
-    // ADDR  ex_mem_NPC_dbg;
-    // DATA  ex_mem_inst_dbg;
-    // logic ex_mem_valid_dbg;
-    // ADDR  mem_wb_NPC_dbg;
-    // DATA  mem_wb_inst_dbg;
-    // logic mem_wb_valid_dbg;
-
-
     task print_if_id_reg;
-        $display("IF/ID Register:");
+        $display("### IF/ID REG:");
         for (int i = 0; i < `N; ++i) begin
             $display("  PC[%0d]: %0d", i, if_id_reg_debug[i].PC);
             $display("  Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
@@ -101,7 +105,7 @@ module testbench;
     endtask
 
     task print_id_ooo_reg;
-        $display("ID/EX Register:");
+        $display("### ID/OOO REG:");
         for (int i = 0; i < `N; ++i) begin
             $display("  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
             $display("  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
@@ -109,37 +113,80 @@ module testbench;
     endtask
 
     task print_rob_if_debug;
-        $display("ROB IF Output:");
+        $display("--- ROB IF OUTPUT:");
         $display("  Squash? %b", squash_debug);
         for (int i = 0; i < `N; ++i) begin
-            $display("  success? %d, predict_taken? %d, predict_target: %0d", rob_if_packet_debug.entries[i].success, rob_if_packet_debug.entries[i].predict_taken, rob_if_packet_debug.entries[i].predict_target); 
-            $display("  resolve_taken? %d, resolve_target: %0d", rob_if_packet_debug.entries[i].resolve_taken, rob_if_packet_debug.entries[i].resolve_target);
+            $display("  success? %0d, predict_taken? %0d, predict_target: %0d", rob_if_packet_debug.entries[i].success, rob_if_packet_debug.entries[i].predict_taken, rob_if_packet_debug.entries[i].predict_target); 
+            $display("  resolve_taken? %0d, resolve_target: %0d", rob_if_packet_debug.entries[i].resolve_taken, rob_if_packet_debug.entries[i].resolve_target);
         end
     endtask
 
     task print_cdb_packet;
-        $display("CDB Packet:");
+        $display("--- CDB PACKET:");
         for (int i = 0; i < `N; ++i) begin
-            $display("PRN[%d]=%d, value[%d]=%d", i, cdb_packet_debug[i].dest_prn, i, cdb_packet_debug[i].value);
+            $display("PRN[%2d]=%2d, value[%2d]=%2d", i, cdb_packet_debug[i].dest_prn, i, cdb_packet_debug[i].value);
         end
     endtask
 
     task print_fu_state_packet;
-        $display("FU State Alu Packet:");
+        $display("### FU STATE ALU PACKET:");
         for (int i = 0; i < `NUM_FU_ALU; ++i) begin
-            $display("Prepared[%d]=%b, robn[%d]=%d", i, fu_state_packet_debug.alu_prepared[i], i, fu_state_packet_debug.alu_packet[i].basic.robn);
-            $display("result[%d]=%b, dest_prn[%d]=%d", i, fu_state_packet_debug.alu_packet[i].basic.result, i, fu_state_packet_debug.alu_packet[i].basic.dest_prn);
+            $display("Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.alu_prepared[i], i, fu_state_packet_debug.alu_packet[i].basic.robn);
+            $display("result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.alu_packet[i].basic.result, i, fu_state_packet_debug.alu_packet[i].basic.dest_prn);
         end
-        $display("FU State Mult Packet:");
+        $display("### FU STATE MULT PACKET:");
         for (int i = 0; i < `NUM_FU_MULT; ++i) begin
-            $display("Prepared[%d]=%b, robn[%d]=%d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
-            $display("result[%d]=%b, dest_prn[%d]=%d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
+            $display("Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
+            $display("result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
+        end
+    endtask
+    
+    task print_rob;
+        $display("### ROB ENTRIES");
+        $display("rob_counter_out=%2d, rob_head_out=%2d, rob_tail_out=%2d", rob_counter_out, rob_head_out, rob_tail_out);
+        for (int i = 0; i < `ROB_SZ; i++) begin
+            $display("rob[%2d].executed=%b, .success=%b, .dest_prn=%2d, .dest_arn=%2d, .PC=%d", i, rob_entries_out[i].executed, rob_entries_out[i].success, rob_entries_out[i].dest_prn, rob_entries_out[i].dest_arn, rob_entries_out[i].PC);
+        end
+    endtask
+
+    task print_rs;
+        $display("### RS ENTRIES");
+        $display("rs_counter_out=%0d", rs_counter_out);
+        for (int i = 0; i < `RS_SZ; i++) begin
+            if (rs_entries_out[i].valid)
+                $display("RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d", //, .cond_branch=%d, .uncond_branch=%d",
+                        i, rs_entries_out[i].PC, rs_entries_out[i].op1_ready, rs_entries_out[i].op2_ready, 
+                        rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].dest_prn, rs_entries_out[i].robn);
+                        //,rs_entries_out[i].cond_branch, rs_entries_out[i].uncond_branch);
+            else
+                $display("RS[%2d]: invalid", i);
         end
     endtask
 
 
+    task print_rat;
+        $display("### RAT ENTRIES");
+        for (int i = 0; i < `ARCH_REG_SZ; ++i) begin
+            $display("RAT[%2d] = %2d", i, rat_table_out[i]);
+        end
+    endtask
+
+    task print_rrat;
+        $display("### RRAT ENTRIES");
+        for (int i = 0; i < `ARCH_REG_SZ; ++i) begin
+            $display("RRAT[%2d] = %2d", i, rrat_entries[i]);
+        end
+    endtask
+    
     task print_select;
-        $display("select:%b", select_debug);
+        $display("--- FU_CDB SELECT:%b", select_debug);
+    endtask
+
+    task print_prf_entries;
+        $display("### PRF ENTRIES");
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; i++) begin
+            $display("prf[%2d].valid = %b, .value = 0x%08x", i, prf_entries_debug[i].valid, prf_entries_debug[i].value);
+        end
     endtask
 
     // Instantiate the Pipeline
@@ -166,6 +213,24 @@ module testbench;
         .cdb_packet_debug(cdb_packet_debug),
         .fu_state_packet_debug(fu_state_packet_debug),
         .select_debug(select_debug),
+        // rob
+        .rob_entries_out(rob_entries_out),
+        .rob_counter_out(rob_counter_out),
+        .rob_head_out(rob_head_out),
+        .rob_tail_out(rob_tail_out),
+        // rs
+        .rs_entries_out(rs_entries_out),
+        .rs_counter_out(rs_counter_out),
+        // prf
+        .prf_entries_debug(prf_entries_debug),
+        // rat
+        .rat_head(rat_head),
+        .rat_tail(rat_tail),
+        .rat_counter(rat_counter),
+        .rat_free_list(rat_free_list),
+        .rat_table_out(rat_table_out),
+        // rrat
+        .rrat_entries(rrat_entries),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -244,6 +309,7 @@ module testbench;
             $fclose(cpi_fileno);
         end
     endtask // task output_cpi_file
+    
 
 
     // Show contents of a range of Unified Memory, in both hex and decimal
@@ -337,14 +403,20 @@ module testbench;
     always @(negedge clock) begin
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
-            print_if_id_reg();
-            print_id_ooo_reg();
-            print_rob_if_debug();
+            $display("============= Cycle %d", clock_count);
+            // print_if_id_reg();
+            // print_id_ooo_reg();
+            // print_rob_if_debug();
             print_cdb_packet();
             print_fu_state_packet();
             print_select();
-
-            $display("======");
+            print_rs();
+            print_rob();
+            print_rat();
+            print_rrat();
+            print_prf_entries();
+        
+            $display("=========");
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);
@@ -371,7 +443,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000000000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 2000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status

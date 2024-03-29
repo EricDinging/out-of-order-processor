@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define DEBUG_OUT
+`define CPU_DEBUG_OUT
 
 module testbench;
     parameter SIZE = `ARCH_REG_SZ;
