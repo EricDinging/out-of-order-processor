@@ -36,8 +36,8 @@ module testbench;
     // and the testbench will display to stdout the final memory state of the
     // processor
     string program_memory_file, output_name;
-    string cpi_output_file, writeback_output_file; //, pipeline_output_file;
-    int cpi_fileno, wb_fileno; // verilog uses integer file handles with $fopen and $fclose
+    string cpi_output_file, writeback_output_file, pipeline_output_file;
+    int cpi_fileno, wb_fileno, ppln_fileno; // verilog uses integer file handles with $fopen and $fclose
 
     // variables used in the testbench
     logic        clock;
@@ -101,56 +101,56 @@ module testbench;
 `endif
 
     task print_if_id_reg;
-        $display("### IF/ID REG:");
+        $fdisplay(ppln_fileno, "### IF/ID REG:");
         for (int i = 0; i < `N; ++i) begin
-            $display("  PC[%0d]: %0d", i, if_id_reg_debug[i].PC);
-            $display("  Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
-            $display("  Valid[%0d]: %x", i, if_id_reg_debug[i].valid);
+            $fdisplay(ppln_fileno, "  PC[%0d]: %0d", i, if_id_reg_debug[i].PC);
+            $fdisplay(ppln_fileno, "  Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
+            $fdisplay(ppln_fileno, "  Valid[%0d]: %x", i, if_id_reg_debug[i].valid);
         end
     endtask
 
     task print_id_ooo_reg;
-        $display("### ID/OOO REG:");
+        $fdisplay(ppln_fileno, "### ID/OOO REG:");
         for (int i = 0; i < `N; ++i) begin
-            $display("  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
-            $display("  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
+            $fdisplay(ppln_fileno, "  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
+            $fdisplay(ppln_fileno, "  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
         end
     endtask
 
     task print_rob_if_debug;
-        $display("--- ROB IF OUTPUT");
-        $display("  Squash? %b", squash_debug);
+        $fdisplay(ppln_fileno, "--- ROB IF OUTPUT");
+        $fdisplay(ppln_fileno, "  Squash? %b", squash_debug);
         for (int i = 0; i < `N; ++i) begin
-            $display("  success? %0d, predict_taken? %0d, predict_target: %0d", rob_if_packet_debug.entries[i].success, rob_if_packet_debug.entries[i].predict_taken, rob_if_packet_debug.entries[i].predict_target); 
-            $display("  resolve_taken? %0d, resolve_target: %0d", rob_if_packet_debug.entries[i].resolve_taken, rob_if_packet_debug.entries[i].resolve_target);
+            $fdisplay(ppln_fileno, "  success? %0d, predict_taken? %0d, predict_target: %0d", rob_if_packet_debug.entries[i].success, rob_if_packet_debug.entries[i].predict_taken, rob_if_packet_debug.entries[i].predict_target); 
+            $fdisplay(ppln_fileno, "  resolve_taken? %0d, resolve_target: %0d", rob_if_packet_debug.entries[i].resolve_taken, rob_if_packet_debug.entries[i].resolve_target);
         end
     endtask
 
     task print_cdb_packet;
-        $display("--- CDB PACKET");
+        $fdisplay(ppln_fileno, "--- CDB PACKET");
         for (int i = 0; i < `N; ++i) begin
-            $display("PRN[%2d]=%2d, value[%2d]=%2d", i, cdb_packet_debug[i].dest_prn, i, cdb_packet_debug[i].value);
+            $fdisplay(ppln_fileno, "PRN[%2d]=%2d, value[%2d]=%2d", i, cdb_packet_debug[i].dest_prn, i, cdb_packet_debug[i].value);
         end
     endtask
 
     task print_fu_state_packet;
-        $display("### FU STATE ALU PACKET:");
+        $fdisplay(ppln_fileno, "### FU STATE ALU PACKET:");
         for (int i = 0; i < `NUM_FU_ALU; ++i) begin
-            $display("Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.alu_prepared[i], i, fu_state_packet_debug.alu_packet[i].basic.robn);
-            $display("result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.alu_packet[i].basic.result, i, fu_state_packet_debug.alu_packet[i].basic.dest_prn);
+            $fdisplay(ppln_fileno, "Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.alu_prepared[i], i, fu_state_packet_debug.alu_packet[i].basic.robn);
+            $fdisplay(ppln_fileno, "result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.alu_packet[i].basic.result, i, fu_state_packet_debug.alu_packet[i].basic.dest_prn);
         end
-        $display("### FU STATE MULT PACKET:");
+        $fdisplay(ppln_fileno, "### FU STATE MULT PACKET:");
         for (int i = 0; i < `NUM_FU_MULT; ++i) begin
-            $display("Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
-            $display("result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
+            $fdisplay(ppln_fileno, "Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
+            $fdisplay(ppln_fileno, "result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
         end
     endtask
     
     task print_rob;
-        $display("### ROB ENTRIES");
-        $display("counter=%2d, head=%2d, tail=%2d", rob_counter_out, rob_head_out, rob_tail_out);
+        $fdisplay(ppln_fileno, "### ROB ENTRIES");
+        $fdisplay(ppln_fileno, "counter=%2d, head=%2d, tail=%2d", rob_counter_out, rob_head_out, rob_tail_out);
         for (int i = 0; i < `ROB_SZ; i++) begin
-            $display(
+            $fdisplay(ppln_fileno, 
                 "ROB[%2d]: .executed=%b, .success=%b, .dest_prn=%2d, .dest_arn=%2d, .PC=%d %s",
                 i, rob_entries_out[i].executed, rob_entries_out[i].success,
                 rob_entries_out[i].dest_prn, rob_entries_out[i].dest_arn, rob_entries_out[i].PC,
@@ -160,51 +160,51 @@ module testbench;
     endtask
 
     task print_rs;
-        $display("### RS ENTRIES");
-        $display("counter=%2d", rs_counter_out);
+        $fdisplay(ppln_fileno, "### RS ENTRIES");
+        $fdisplay(ppln_fileno, "counter=%2d", rs_counter_out);
         for (int i = 0; i < `RS_SZ; i++) begin
             if (rs_entries_out[i].valid)
-                $display("RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d", //, .cond_branch=%d, .uncond_branch=%d",
+                $fdisplay(ppln_fileno, "RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d", //, .cond_branch=%d, .uncond_branch=%d",
                         i, rs_entries_out[i].PC, rs_entries_out[i].op1_ready, rs_entries_out[i].op2_ready, 
                         rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].dest_prn, rs_entries_out[i].robn);
                         //,rs_entries_out[i].cond_branch, rs_entries_out[i].uncond_branch);
             else
-                $display("RS[%2d]: invalid", i);
+                $fdisplay(ppln_fileno, "RS[%2d]: invalid", i);
         end
         // alu packet
-        $display("--- ALU PACKETS");
+        $fdisplay(ppln_fileno, "--- RS ALU PACKETS");
         for (int i = 0; i < `NUM_FU_ALU; ++i) begin
             if (fu_alu_packet_debug[i].valid)
-                $display("ALU[%2d]: .robn=%2d, .dest_prn=%2d, .op1=%2d, .op2=%2d, .PC=%2d",
+                $fdisplay(ppln_fileno, "ALU[%2d]: .robn=%2d, .dest_prn=%2d, .op1=%2d, .op2=%2d, .PC=%2d",
                         i, rs_entries_out[i].robn, rs_entries_out[i].dest_prn, rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].PC);
             else
-                $display("ALU[%2d]: invalid", i);
+                $fdisplay(ppln_fileno, "ALU[%2d]: invalid", i);
         end
     endtask
 
 
     task print_rat;
-        $display("### RAT ENTRIES");
+        $fdisplay(ppln_fileno, "### RAT ENTRIES");
         for (int i = 0; i < `ARCH_REG_SZ; ++i) begin
-            $display("RAT[%2d] = %2d", i, rat_table_out[i]);
+            $fdisplay(ppln_fileno, "RAT[%2d] = %2d", i, rat_table_out[i]);
         end
     endtask
 
     task print_rrat;
-        $display("### RRAT ENTRIES");
+        $fdisplay(ppln_fileno, "### RRAT ENTRIES");
         for (int i = 0; i < `ARCH_REG_SZ; ++i) begin
-            $display("RRAT[%2d] = %2d", i, rrat_entries[i]);
+            $fdisplay(ppln_fileno, "RRAT[%2d] = %2d", i, rrat_entries[i]);
         end
     endtask
     
     task print_select;
-        $display("--- FU_CDB SELECT:%b", select_debug);
+        $fdisplay(ppln_fileno, "--- FU_CDB SELECT:%b", select_debug);
     endtask
 
     task print_prf;
-        $display("### PRF ENTRIES");
+        $fdisplay(ppln_fileno, "### PRF ENTRIES");
         for (int i = 0; i < `PHYS_REG_SZ_R10K; i++) begin
-            $display(
+            $fdisplay(ppln_fileno, 
                 "PRF[%2d] = 0x%08x %s", i, prf_entries_debug[i].value,
                 prf_entries_debug[i].valid ? "valid" : ""
             );
@@ -389,10 +389,10 @@ module testbench;
         // P4 TODO: You must keep cpi and memory output the same for the autograder,
         //          but you should add new output files to print your own data structures.
         if ($value$plusargs("OUTPUT=%s", output_name)) begin
-            $display("Using output files : %s.{cpi, wb}"/*, ppln}*/, output_name);
+            $display("Using output files : %s.{cpi, wb, ppln}", output_name);
             cpi_output_file       = {output_name,".cpi"}; // this is how you concatenate strings in verilog
             writeback_output_file = {output_name,".wb"};
-            // pipeline_output_file  = {output_name,".ppln"};
+            pipeline_output_file  = {output_name,".ppln"};
         end else begin
             $display("\nDid not receive '+OUTPUT=' argument. Exiting.\n");
             $finish;
@@ -421,7 +421,8 @@ module testbench;
         $fdisplay(wb_fileno, "Register writeback output");
 
         // Open pipeline output file AFTER throwing the reset otherwise the reset state is displayed
-        // open_pipeline_output_file(pipeline_output_file);
+        ppln_fileno = $fopen(pipeline_output_file);
+        $fdisplay(ppln_fileno, "Out of order pipeline output");
         // print_header();
 
         $display("  %16t : Running Processor", $realtime);
@@ -431,7 +432,7 @@ module testbench;
     always @(negedge clock) begin
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
-            $display("============= Cycle %d", clock_count);
+            $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
             // print_if_id_reg();
             // print_id_ooo_reg();
             // print_rob_if_debug();
@@ -444,7 +445,7 @@ module testbench;
             print_rrat();
             print_prf();
         
-            $display("=========");
+            $fdisplay(ppln_fileno, "=========");
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);
@@ -479,7 +480,7 @@ module testbench;
                     // output the final CPI
                     output_cpi_file();
                     // close the writeback and pipeline output files
-                    // close_pipeline_output_file();
+                    $fclose(ppln_fileno);
                     $fclose(wb_fileno);
 
                     $display("\n---- Finished CPU Testbench ----\n");
