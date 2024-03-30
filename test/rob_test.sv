@@ -84,24 +84,8 @@ module testbench;
         correct_squash  = 0;
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
-                0, // executed;
-                1, // success;
-                0, // is_store;
-                0, // cond_branch;
-                0, // uncond_branch;
-                0, // resolve_taken;
-                0, // predict_taken;
-                0, // predict_target;
-                0, // resolve_target;
-                0, // dest_prn;
-                0, // dest_arn;
-                0, // PC;
-                0, // NPC;
-                0, // halt;
-                0, // illegal;
-                0 // csr_op; 
-            };
+            rob_is_packet.entries[i] = 0;
+            rob_is_packet.entries[i].success = `TRUE;
             rob_is_packet.valid[i] = `FALSE;
         end
 

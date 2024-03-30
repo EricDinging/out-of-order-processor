@@ -151,7 +151,7 @@ module testbench;
         $display("counter=%2d, head=%2d, tail=%2d", rob_counter_out, rob_head_out, rob_tail_out);
         for (int i = 0; i < `ROB_SZ; i++) begin
             $display(
-                "ROB[%2d].executed=%b, .success=%b, .dest_prn=%2d, .dest_arn=%2d, .PC=%d %s",
+                "ROB[%2d]: .executed=%b, .success=%b, .dest_prn=%2d, .dest_arn=%2d, .PC=%d %s",
                 i, rob_entries_out[i].executed, rob_entries_out[i].success,
                 rob_entries_out[i].dest_prn, rob_entries_out[i].dest_arn, rob_entries_out[i].PC,
                 i == rob_head_out ? "h" : i == rob_tail_out ? "t" : " "
@@ -201,10 +201,13 @@ module testbench;
         $display("--- FU_CDB SELECT:%b", select_debug);
     endtask
 
-    task print_prf_entries;
+    task print_prf;
         $display("### PRF ENTRIES");
         for (int i = 0; i < `PHYS_REG_SZ_R10K; i++) begin
-            $display("prf[%2d].valid = %b, .value = 0x%08x", i, prf_entries_debug[i].valid, prf_entries_debug[i].value);
+            $display(
+                "PRF[%2d] = 0x%08x %s", i, prf_entries_debug[i].value,
+                prf_entries_debug[i].valid ? "valid" : ""
+            );
         end
     endtask
 
@@ -439,7 +442,7 @@ module testbench;
             print_rob();
             print_rat();
             print_rrat();
-            print_prf_entries();
+            print_prf();
         
             $display("=========");
 

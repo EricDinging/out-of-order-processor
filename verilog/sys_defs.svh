@@ -498,7 +498,6 @@ typedef struct packed {
     ADDR     resolve_target;
     PRN      dest_prn; // debug only
     REG_IDX  dest_arn;
-    DATA     data;
     ADDR     PC;
     ADDR     NPC;     // PC + 4
     logic    halt;    // Is this a halt?

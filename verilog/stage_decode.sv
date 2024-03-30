@@ -73,11 +73,12 @@ module stage_decode #(
             // rat
             // assign id_ooo_packet.rat_is_input.entries[i].dest_arn =
             //     has_dest[i] ? if_id_packet[i].inst.r.rd : `ZERO_REG;
-            assign id_ooo_packet.rat_is_input.entries[i].dest_arn = if_id_packet[i].inst.r.rd;
+            assign id_ooo_packet.rat_is_input.entries[i].dest_arn =
+                has_dest[i] ? if_id_packet[i].inst.r.rd : `ZERO_REG;
             assign id_ooo_packet.rat_is_input.entries[i].op1_arn  =
-                (opa_select[i] == OPA_IS_RS1 || cond_branch[i]) ? if_id_packet[i].inst.r.rs1 : `ZERO_REG;
+                ~halt[i] && (opa_select[i] == OPA_IS_RS1 || cond_branch[i]) ? if_id_packet[i].inst.r.rs1 : `ZERO_REG;
             assign id_ooo_packet.rat_is_input.entries[i].op2_arn  =
-                (cond_branch[i] || opb_select[i] == OPB_IS_RS2) ? if_id_packet[i].inst.r.rs2 : `ZERO_REG;
+                ~halt[i] && (opb_select[i] == OPB_IS_RS2 || cond_branch[i]) ? if_id_packet[i].inst.r.rs2 : `ZERO_REG;
         end
     endgenerate
 

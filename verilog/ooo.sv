@@ -196,6 +196,8 @@ module ooo # (
         // rob input
         for (int i = 0; i < `N; ++i) begin
             rob_is_packet.valid[i] = `FALSE;
+            rob_is_packet.entries[i] = 0;
+            rob_is_packet.entries[i].success = `TRUE;
         end
         if (~structural_hazard) begin
             rob_is_packet = id_ooo_packet.rob_is_packet;
@@ -205,9 +207,7 @@ module ooo # (
         end
 
         // rs input
-        for (int i = 0; i < `N; ++i) begin
-            rs_is_packet.entries[i].valid = `FALSE;
-        end
+        rs_is_packet = 0;
         if (~structural_hazard) begin
             for (int i = 0; i < `N; ++i) begin
                 // consecutive prf entry belongs to the same insn
