@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 // fu_cdb, prf, rat, rrat, rob, rs
 // decoder output - ooo: rob, rs, rat
 // output: rs, rob almost_full
@@ -108,10 +109,10 @@ module ooo # (
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
         .fu_store_packet(fu_store_packet),
-        .almost_full(rs_almost_full),
+        .almost_full(rs_almost_full)
     `ifdef CPU_DEBUG_OUT
-        .entries_out(rs_entries_out),
-        .counter_out(rs_counter_out)
+        , .entries_out(rs_entries_out)
+        , .counter_out(rs_counter_out)
     `endif
     );
 

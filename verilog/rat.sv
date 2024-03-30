@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 // `ifdef CPU_DEBUG_OUT
 // `ifndef DEBUG_OUT
@@ -82,7 +83,7 @@ module rat #(
     always_ff @(posedge clock) begin
         if (reset) begin
             for (int i = 0; i < SIZE; i++) begin
-                rat_table[i] = i;
+                rat_table[i] <= i;
             end
         end else begin
             rat_table <= next_rat_table;

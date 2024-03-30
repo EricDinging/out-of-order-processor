@@ -59,7 +59,7 @@ module rrat #(
         if (reset) begin
             success <= `TRUE;
             for (int i = 0; i < SIZE; i++) begin
-                rrat_table[i] = i;
+                rrat_table[i] <= i;
             end
         end else begin
             success    <= next_success;

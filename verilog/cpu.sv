@@ -9,6 +9,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 module cpu (
     input clock, // System clock

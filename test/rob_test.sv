@@ -33,11 +33,13 @@ module testbench;
         .almost_full(almost_full),
         .rob_ct_packet(rob_ct_packet),
         .tail_entries(tail_entries),
-        .entries_out(entries_out),
-        .counter_out(counter_out),
-        .head_out(head_out),
-        .tail_out(tail_out),
         .squash(squash)
+        `ifdef CPU_DEBUG_OUT
+        , .entries_out(entries_out)
+        , .counter_out(counter_out)
+        , .head_out(head_out)
+        , .tail_out(tail_out)
+        `endif
     );
 
     always begin

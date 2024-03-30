@@ -79,12 +79,11 @@ module icache (
     assign {current_tag, current_index} = proc2Icache_addr[0][15:3];
 
     genvar i;
-    generate begin
+    generate
         for (i = 1; i < `N; ++i) begin
             assign Icache_data_out[i] = {64{0}};
             assign Icache_valid_out[i] = `FALSE;
         end
-    end
     endgenerate
 
     assign Icache_data_out[0]  = icache_data[current_index].data;

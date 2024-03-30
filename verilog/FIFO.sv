@@ -21,7 +21,9 @@ module FIFO #(
     // - Write to the tail when wr_en == 1 and the fifo isn't full
     // - Read from the head when rd_en == 1 and the fifo isn't empty
 
-    parameter PTR_WIDTH = $clog2(SIZE + 1);
+`ifndef PTR_WIDTH
+`define PTR_WIDTH $clog2(SIZE + 1)
+`endif
 
     logic next_full, next_almost_full, empty, next_empty;
     // logic next_wr_valid, next_rd_valid;
@@ -29,9 +31,8 @@ module FIFO #(
     logic [SIZE-1:0] [WIDTH-1:0] buffer;
 
 
-    logic [PTR_WIDTH-1:0] head, next_head;
-    logic [PTR_WIDTH-1:0] tail, next_tail;
-
+    logic [`PTR_WIDTH-1:0] head, next_head;
+    logic [`PTR_WIDTH-1:0] tail, next_tail;
 
     always_comb begin
         wr_valid = 1'b0;
