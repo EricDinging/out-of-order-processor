@@ -185,6 +185,8 @@ module load (
     output FU_STATE_BASIC_PACKET fu_state_load_packet
 );
 
+    assign prepared = 0;
+    assign fu_state_load_packet = 0;
 endmodule
 
 
@@ -293,6 +295,8 @@ module fu #(
     );
 
     // TODO store
+    // assign store_avail = 0;
+
 
     always_comb begin
         store_avail = {`NUM_FU_STORE{1'b0}};
