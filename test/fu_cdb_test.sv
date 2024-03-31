@@ -23,7 +23,7 @@ module testbench;
     
     // debug output 
     FU_STATE_PACKET fu_state_packet_debug;
-    logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug;
+    logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;
 
 
     fu_cdb dut(
@@ -77,7 +77,6 @@ module testbench;
     endtask
 
     task init;
-        clock = 1;
         reset = 1;
         correct = 1;
         setInvalid;
@@ -285,6 +284,7 @@ module testbench;
     end
 
     initial begin
+        clock = 0;
         // mixed_alu_w_cond_branch;
         // more_than_n_alu;
         exactly_n_alu;
