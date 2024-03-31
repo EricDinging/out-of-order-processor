@@ -245,9 +245,9 @@ module fu #(
 
 )(
     input clock, reset,
-    input FU_PACKET [`NUM_FU_ALU-1:0] fu_alu_packet,
-    input FU_PACKET [`NUM_FU_MULT-1:0] fu_mult_packet,
-    input FU_PACKET [`NUM_FU_LOAD-1:0] fu_load_packet,
+    input FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
+    input FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
+    input FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
 
     // given back from priority selector
@@ -257,9 +257,9 @@ module fu #(
 
     // TODO: packet for store, to rob and maybe prf
     // tell rs whether it the next value will be accepted
-    output logic [`NUM_FU_STORE-1:0] store_avail,
-    output FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet,
-    output FU_STATE_PACKET fu_state_packet
+    output logic           [`NUM_FU_STORE-1:0] store_avail,
+    output FU_ROB_PACKET   [`NUM_FU_ALU-1:0]   cond_rob_packet,
+    output FU_STATE_PACKET                     fu_state_packet
 );
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
@@ -267,6 +267,7 @@ module fu #(
         .reset(reset), // not needed for 1-cycle alu
         .fu_alu_packet(fu_alu_packet),
         .avail(alu_avail), // not needed for 1-cycle alu
+        //output
         .prepared(fu_state_packet.alu_prepared),
         .fu_state_alu_packet(fu_state_packet.alu_packet)
     );
@@ -276,6 +277,7 @@ module fu #(
         .reset(reset),
         .fu_mult_packet(fu_mult_packet),
         .avail(mult_avail),
+        //output
         .prepared(fu_state_packet.mult_prepared),
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     );
@@ -285,16 +287,21 @@ module fu #(
         .reset(reset),
         .fu_load_packet(fu_load_packet),
         .avail(load_avail),
+        //output
         .prepared(fu_state_packet.load_prepared),
         .fu_state_load_packet(fu_state_packet.load_packet)
     );
 
+    // TODO store
+
     always_comb begin
+        store_avail = {`NUM_FU_STORE{1'b0}};
+        
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            cond_rob_packet[i].robn = fu_state_packet.alu_packet[i].basic.robn;
-            cond_rob_packet[i].executed = fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].cond_branch;
+            cond_rob_packet[i].robn         = fu_state_packet.alu_packet[i].basic.robn;
+            cond_rob_packet[i].executed     = fu_state_packet.alu_prepared[i] && fu_state_packet.alu_packet[i].cond_branch;
             cond_rob_packet[i].branch_taken = fu_state_packet.alu_packet[i].take_branch;
-            cond_rob_packet[i].target_addr = fu_state_packet.alu_packet[i].basic.result;
+            cond_rob_packet[i].target_addr  = fu_state_packet.alu_packet[i].basic.result;
         end
     end
 

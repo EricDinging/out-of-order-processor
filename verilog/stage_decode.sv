@@ -63,7 +63,7 @@ module stage_decode #(
             assign id_ooo_packet.rob_is_packet.entries[i].predict_taken  = if_id_packet[i].predict_taken;
             assign id_ooo_packet.rob_is_packet.entries[i].predict_target = if_id_packet[i].predict_target;
             assign id_ooo_packet.rob_is_packet.entries[i].resolve_target = 32'hB0BACAFE;  // undefined
-            assign id_ooo_packet.rob_is_packet.entries[i].dest_prn       = `PRN_WIDTH{1'b0};             // undefined
+            assign id_ooo_packet.rob_is_packet.entries[i].dest_prn       = {`PRN_WIDTH{1'b0}};             // undefined
             assign id_ooo_packet.rob_is_packet.entries[i].dest_arn       = has_dest[i] ? if_id_packet[i].inst.r.rd : `ZERO_REG;
             assign id_ooo_packet.rob_is_packet.entries[i].PC             = if_id_packet[i].PC;
             assign id_ooo_packet.rob_is_packet.entries[i].NPC            = if_id_packet[i].NPC;

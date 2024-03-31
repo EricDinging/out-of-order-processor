@@ -52,9 +52,9 @@ module rat #(
         next_rat_table = rat_table;
 
         for (int i = 0; i < `N; ++i) begin
-            rat_is_output.entries[i].dest_prn = `PRN_WIDTH{1'b0};
-            rat_is_output.entries[i].op1_prn = `PRN_WIDTH{1'b0};
-            rat_is_output.entries[i].op2_prn = `PRN_WIDTH{1'b0};
+            rat_is_output.entries[i].dest_prn = {`PRN_WIDTH{1'b0}};
+            rat_is_output.entries[i].op1_prn  = {`PRN_WIDTH{1'b0}};
+            rat_is_output.entries[i].op2_prn  = {`PRN_WIDTH{1'b0}};
         end
         
         pop_en = {`N{`FALSE}};

@@ -278,6 +278,12 @@ build/stage_fetch.simv: $(STAGE_FETCH_FILES)
 build/stage_fetch.cov.simv: $(STAGE_FETCH_FILES)
 synth/stage_fetch.vg: $(STAGE_FETCH_FILES)
 
+#ONEHOT_MUX
+ONEHHOT_MUX_FILES = verilog/sys_defs.svh verilog/onehot_mux.sv
+build/onehot_mux.simv: $(ONEHHOT_MUX_FILES)
+build/onehot_mux.cov.simv: $(ONEHHOT_MUX_FILES)
+build/onehot_mux.vg: $(ONEHHOT_MUX_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################
@@ -297,23 +303,23 @@ CPU_TESTBENCH = test/pipeline_print.c \
 CPU_SOURCES = verilog/regfile.sv \
               verilog/icache.sv \
               verilog/mult.sv \
-							verilog/cdb.sv \
-							verilog/decoder.sv \
-							verilog/FIFO.sv \
-							verilog/free_list.sv \
-							verilog/fu_cdb.sv \
-							verilog/fu.sv \
-							verilog/icache.sv \
-							verilog/ooo.sv \
-							verilog/prf.sv \
-							verilog/psel_gen.sv \
-							verilog/rat.sv \
-							verilog/rob.sv \
-							verilog/rrat.sv \
-							verilog/rs.sv \
-							verilog/stage_decode.sv \
-							verilog/stage_fetch.sv \
-							verilog/onehot_mux.sv
+				verilog/cdb.sv \
+				verilog/decoder.sv \
+				verilog/FIFO.sv \
+				verilog/free_list.sv \
+				verilog/fu_cdb.sv \
+				verilog/fu.sv \
+				verilog/icache.sv \
+				verilog/ooo.sv \
+				verilog/prf.sv \
+				verilog/psel_gen.sv \
+				verilog/rat.sv \
+				verilog/rob.sv \
+				verilog/rrat.sv \
+				verilog/rs.sv \
+				verilog/stage_decode.sv \
+				verilog/stage_fetch.sv \
+				verilog/onehot_mux.sv
 
 
 

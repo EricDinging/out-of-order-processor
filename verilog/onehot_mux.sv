@@ -1,10 +1,10 @@
 module onehot_mux #(
-    parameter SIZE=10,
-    parameter WIDTH=10
+    parameter SIZE,
+    parameter WIDTH
 ) (
     input logic [WIDTH-1:0][SIZE-1:0] in,
     input logic [WIDTH-1:0] select,
-    output wor [SIZE-1:0] out
+    output wor  [SIZE-1:0] out
 );
 
     genvar i;

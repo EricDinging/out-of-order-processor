@@ -5,17 +5,18 @@ module testbench;
 
     logic clock, reset, correct;
 
-    FU_PACKET [`NUM_FU_ALU-1:0] fu_alu_packet;
-    FU_PACKET [`NUM_FU_MULT-1:0] fu_mult_packet;
-    FU_PACKET [`NUM_FU_LOAD-1:0] fu_load_packet;
+    FU_PACKET   [`NUM_FU_ALU-1:0] fu_alu_packet;
+    FU_PACKET  [`NUM_FU_MULT-1:0] fu_mult_packet;
+    FU_PACKET  [`NUM_FU_LOAD-1:0] fu_load_packet;
     FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet;
-    logic [`NUM_FU_ALU-1:0]  alu_avail;
-    logic [`NUM_FU_MULT-1:0] mult_avail;
-    logic [`NUM_FU_LOAD-1:0] load_avail;
-    logic [`NUM_FU_STORE-1:0] store_avail;
+    logic       [`NUM_FU_ALU-1:0]  alu_avail;
+    logic      [`NUM_FU_MULT-1:0] mult_avail;
+    logic      [`NUM_FU_LOAD-1:0] load_avail;
+    logic     [`NUM_FU_STORE-1:0] store_avail;
+
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet;
-    FU_ROB_PACKET [`N-1:0] cdb_rob_packet;
-    CDB_PACKET    [`N-1:0] cdb_output;
+    FU_ROB_PACKET [`N-1:0]          cdb_rob_packet;
+    CDB_PACKET    [`N-1:0]          cdb_output;
 
     // testing parameters
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] correct_cond_rob_packet;
@@ -103,14 +104,26 @@ module testbench;
     task set_n_alu;
         input int n;
         for (int i = 0; i < n; ++i) begin
-            fu_alu_packet[i].valid      = 1;
-            fu_alu_packet[i].inst       = `RV32_ADD;
-            fu_alu_packet[i].func.alu   = ALU_ADD;
-            fu_alu_packet[i].op1        = 1;
-            fu_alu_packet[i].op2        = 1;
-            fu_alu_packet[i].dest_prn   = 1;
-            fu_alu_packet[i].opa_select = OPA_IS_RS1;
-            fu_alu_packet[i].opb_select = OPB_IS_RS2;
+            fu_alu_packet[i].valid         = `TRUE;
+            fu_alu_packet[i].inst          = `RV32_ADD;
+            fu_alu_packet[i].PC            = 0;
+            fu_alu_packet[i].func.alu      = ALU_ADD;
+            fu_alu_packet[i].op1           = 1;
+            fu_alu_packet[i].op2           = 1;
+            fu_alu_packet[i].dest_prn      = 1;
+            fu_alu_packet[i].opa_select    = OPA_IS_RS1;
+            fu_alu_packet[i].opb_select    = OPB_IS_RS2;
+            fu_alu_packet[i].cond_branch   = `FALSE;
+            fu_alu_packet[i].uncond_branch = `FALSE;
+        end
+    endtask
+
+    task print_cdb;
+        for (int i = 0; i < `N; ++i) begin
+            $display(
+                "cdb_output[%1d].dest_prn = %2d, cdb_output[%1d].value = 0x%08x",
+                i, cdb_output[i].dest_prn, i, cdb_output[i].value
+            );
         end
     endtask
 
@@ -187,24 +200,21 @@ module testbench;
         int n;
         int count;
         init;
+        print_cdb;
         count = 0;
         n = `N;
+        @(negedge clock);
         set_n_alu(n);
-         for (int i = 0; i < `N; ++i) begin
-            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
-        end
+        print_cdb;
 
         @(negedge clock);
-         for (int i = 0; i < `N; ++i) begin
-            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
-        end
+        print_cdb;
         @(negedge clock);
         $display("alu_avail = %0d, mult_avail = %0d", alu_avail, mult_avail);
         correct = &alu_avail && &mult_avail;
+        print_cdb;
         for (int i = 0; i < `N; ++i) begin
-            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
-            if (cdb_output[i].dest_prn == 1 && cdb_output[i].value == 2)
-                ++count;
+            if (cdb_output[i].dest_prn == 1 && cdb_output[i].value == 2) ++count;
         end
         correct = count == n;
     endtask

@@ -592,11 +592,11 @@ typedef struct packed {
 
 typedef struct packed {
     // prepared and actual packet splitted for simplicity in input of priority selectors
-    logic [`NUM_FU_ALU-1:0] alu_prepared;
-    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
-    logic [`NUM_FU_MULT-1:0] mult_prepared;
+    logic                 [`NUM_FU_ALU-1:0]  alu_prepared;
+    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0]  alu_packet;
+    logic                 [`NUM_FU_MULT-1:0] mult_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic [`NUM_FU_LOAD-1:0] load_prepared;
+    logic                 [`NUM_FU_LOAD-1:0] load_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
 } FU_STATE_PACKET;
 

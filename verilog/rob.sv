@@ -71,9 +71,9 @@ module rob #(
                     next_counter = next_counter - 1;
                 end else begin
                     squash = 1'b1;
-                    next_head = `ROB_PTR_WIDTH{1'b0};
-                    next_tail = `ROB_PTR_WIDTH{1'b0};
-                    next_counter = `ROB_PTR_WIDTH{1'b0};
+                    next_head    = {`ROB_PTR_WIDTH{1'b0}};
+                    next_tail    = {`ROB_PTR_WIDTH{1'b0}};
+                    next_counter = {`ROB_PTR_WIDTH{1'b0}};
                 end
             end else begin
                 is_block = `TRUE;
@@ -124,9 +124,9 @@ module rob #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            counter <= `ROB_PTR_WIDTH{1'b0};
-            head    <= `ROB_PTR_WIDTH{1'b0};
-            tail    <= `ROB_PTR_WIDTH{1'b0};
+            counter <= {`ROB_PTR_WIDTH{1'b0}};
+            head    <= {`ROB_PTR_WIDTH{1'b0}};
+            tail    <= {`ROB_PTR_WIDTH{1'b0}};
             for (int i = 0; i < SIZE; ++i) begin
                 rob_entries[i] <= '{
                     1'b0, // executed;
