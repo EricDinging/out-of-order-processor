@@ -44,21 +44,21 @@ module rob #(
         for (int i = 0; i < `N; ++i) begin
             rob_ct_packet.entries[i] = '{
                     1'b0, // executed;
-                    1, // success;
-                    0, // is_store;
-                    0, // cond_branch;
-                    0, // uncond_branch;
-                    0, // resolve_taken;
-                    0, // predict_taken;
-                    0, // predict_target;
-                    0, // resolve_target;
-                    0, // dest_prn;
-                    0, // dest_arn;
-                    0, // PC;
-                    0, // NPC;
-                    0, // halt;
-                    0, // illegal;
-                    0  // csr_op; 
+                    1'b1, // success;
+                    1'b0, // is_store;
+                    1'b0, // cond_branch;
+                    1'b0, // uncond_branch;
+                    1'b0, // resolve_taken;
+                    1'b0, // predict_taken;
+                    32'b0, // predict_target;
+                    32'b0, // resolve_target;
+                    {`PRN_WIDTH{1'b0}}, // dest_prn;
+                    5'b0, // dest_arn;
+                    32'b0, // PC;
+                    32'b0, // NPC;
+                    1'b0, // halt;
+                    1'b0, // illegal;
+                    1'b0  // csr_op; 
                 };
         end
 
@@ -70,10 +70,10 @@ module rob #(
                     next_head = (next_head + 1) % SIZE;
                     next_counter = next_counter - 1;
                 end else begin
-                    squash = 1;
-                    next_head = 0;
-                    next_tail = 0;
-                    next_counter = 0;
+                    squash = 1'b1;
+                    next_head = `ROB_PTR_WIDTH{1'b0};
+                    next_tail = `ROB_PTR_WIDTH{1'b0};
+                    next_counter = `ROB_PTR_WIDTH{1'b0};
                 end
             end else begin
                 is_block = `TRUE;
@@ -94,9 +94,9 @@ module rob #(
         // CDB update
         for (int i = 0; i < `FU_ROB_PACKET_SZ; ++i) begin
             if (fu_rob_packet[i].executed) begin
-                next_rob_entries[fu_rob_packet[i].robn].executed       = 1;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_taken  = fu_rob_packet[i].branch_taken;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].branch_taken? fu_rob_packet[i].target_addr : next_rob_entries[fu_rob_packet[i].robn].NPC;
+                next_rob_entries[fu_rob_packet[i].robn].executed = 1'b1;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_taken = fu_rob_packet[i].branch_taken;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].target_addr;
                 if (rob_entries[fu_rob_packet[i].robn].cond_branch || rob_entries[fu_rob_packet[i].robn].uncond_branch) begin
                     next_rob_entries[fu_rob_packet[i].robn].success = (next_rob_entries[fu_rob_packet[i].robn].resolve_taken  == next_rob_entries[fu_rob_packet[i].robn].predict_taken)
                                                                    && (next_rob_entries[fu_rob_packet[i].robn].resolve_target == next_rob_entries[fu_rob_packet[i].robn].predict_target);
@@ -124,27 +124,27 @@ module rob #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            counter <= 0;
-            head    <= 0;
-            tail    <= 0;
+            counter <= `ROB_PTR_WIDTH{1'b0};
+            head    <= `ROB_PTR_WIDTH{1'b0};
+            tail    <= `ROB_PTR_WIDTH{1'b0};
             for (int i = 0; i < SIZE; ++i) begin
                 rob_entries[i] <= '{
-                    0, // executed;
-                    1, // success;
-                    0, // is_store;
-                    0, // cond_branch;
-                    0, // uncond_branch;
-                    0, // resolve_taken;
-                    0, // predict_taken;
-                    0, // predict_target;
-                    0, // resolve_target;
-                    0, // dest_prn;
-                    0, // dest_arn;
-                    0, // PC;
-                    0, // NPC;
-                    0, // halt;
-                    0, // illegal;
-                    0  // csr_op; 
+                    1'b0, // executed;
+                    1'b1, // success;
+                    1'b0, // is_store;
+                    1'b0, // cond_branch;
+                    1'b0, // uncond_branch;
+                    1'b0, // resolve_taken;
+                    1'b0, // predict_taken;
+                    32'b0, // predict_target;
+                    32'b0, // resolve_target;
+                    {`PRN_WIDTH{1'b0}}, // dest_prn;
+                    5'b0, // dest_arn;
+                    32'b0, // PC;
+                    32'b0, // NPC;
+                    1'b0, // halt;
+                    1'b0, // illegal;
+                    1'b0  // csr_op; 
                 };
             end
         end else begin

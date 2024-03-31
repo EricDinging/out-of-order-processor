@@ -91,14 +91,7 @@ module testbench;
             rob_is_packet.valid[i] = `FALSE;
         end
 
-        for (int i = 0; i < `CDB_SZ; ++i) begin
-            fu_rob_packet[i] = '{
-                0,   // robn
-                0,   // executed
-                0,   // branch_taken
-                0    // target_addr
-            };
-        end
+        fu_rob_packet = 0;
 
         @(negedge clock);
         reset = 0;
@@ -108,12 +101,13 @@ module testbench;
         parameter ITER = `ROB_SZ / `N;
         init();
         @(negedge clock);
+        print_entries_out();
         correct = almost_full == `FALSE;
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
-                0,           // executed;
-                0,           // success;
+            rob_is_packet.entries[i] = '{
+                1'b0,           // executed;
+                1'b0,           // success;
                 $random % 2, // is_store;
                 $random % 2, // cond_branch;
                 $random % 2, // uncond_branch;
@@ -164,7 +158,7 @@ module testbench;
         init();
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
+            rob_is_packet.entries[i] = '{
                 1,           // executed;
                 1,           // success;
                 $random % 2, // is_store;
@@ -235,7 +229,7 @@ module testbench;
         init();
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
+            rob_is_packet.entries[i] = '{
                 0,           // executed;
                 1,           // success;
                 $random % 2, // is_store;
@@ -308,7 +302,7 @@ module testbench;
         init();
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
+            rob_is_packet.entries[i] = '{
                 0,           // executed;
                 1,           // success;
                 $random % 2, // is_store;
@@ -391,7 +385,7 @@ module testbench;
         init();
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
+            rob_is_packet.entries[i] = '{
                 0,           // executed;
                 1,           // success;
                 $random % 2, // is_store;
@@ -414,6 +408,7 @@ module testbench;
 
         for (int i = 0; i < ITER; ++i) begin
             @(negedge clock);
+            print_entries_out();
             correct_counter += `N;
             correct_tail = (correct_tail + `N) % `ROB_SZ;
             correct_head = 0;
@@ -438,6 +433,7 @@ module testbench;
                 };
             end
             @(negedge clock);
+            print_entries_out();
             correct_counter = ITER * `N - i * `N;
             correct_tail = correct_tail;
             correct_head = i * `N;
@@ -491,7 +487,7 @@ module testbench;
         init();
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
+            rob_is_packet.entries[i] = '{
                 0,           // executed;
                 1,           // success;
                 $random % 2, // is_store;
@@ -557,7 +553,7 @@ module testbench;
         init();
 
         for (int i = 0; i < `N; ++i) begin
-            rob_is_packet.entries[i] <= '{
+            rob_is_packet.entries[i] = '{
                 0,           // executed;
                 1,           // success;
                 $random % 2, // is_store;
@@ -597,9 +593,9 @@ module testbench;
             for (int j = 0; j < `N; ++j) begin
                 fu_rob_packet[j] = '{
                     i * `N + j,   // robn
-                    1,            // executed
-                    1,            // branch_taken
-                    1             // target_addr
+                    1'b1,         // executed
+                    1'b1,         // branch_taken
+                    32'b1         // target_addr
                 };
                 if (i * `N + j == rob_idx) begin
                     fu_rob_packet[j].branch_taken = 0;
@@ -651,17 +647,17 @@ module testbench;
     initial begin
         clock = 0;
 
-        // test_almost_full_counter();
-        // test_dummy_commit();
-        // test_naive_cdb_commit();
-        // test_cdb_full();
+        test_almost_full_counter();
+        test_dummy_commit();
+        test_naive_cdb_commit();
+        test_cdb_full();
         test_wrap_around();
-        // for (int i = 0; i < 10; ++i) begin
-        //     test_cdb_random_blocking();
-        // end
-        // for (int i = 0; i < 10; ++i) begin
-        //     test_random_squash();
-        // end
+        for (int i = 0; i < 10; ++i) begin
+            test_cdb_random_blocking();
+        end
+        for (int i = 0; i < 10; ++i) begin
+            test_random_squash();
+        end
         $display("@@@ Passed");
         $finish;
     end

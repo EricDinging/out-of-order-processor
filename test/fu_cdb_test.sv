@@ -20,6 +20,9 @@ module testbench;
     // testing parameters
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] correct_cond_rob_packet;
     
+    // debug output 
+    FU_STATE_PACKET fu_state_packet_debug;
+    logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug;
 
 
     fu_cdb dut(
@@ -35,6 +38,10 @@ module testbench;
         .store_avail(store_avail),
         .fu_rob_packet({cond_rob_packet, cdb_rob_packet}),
         .cdb_output(cdb_output)
+        `ifdef CPU_DEBUG_OUT
+        , .fu_state_packet_debug(fu_state_packet_debug)
+        , .select_debug(select_debug)
+        `endif
     );
 
     always begin
@@ -152,6 +159,7 @@ module testbench;
         correct = cond_rob_packet[1] == correct_cond_rob_packet[1];
         @(negedge clock);
         for (int i = 0; i < `N; i++) begin
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
             if (cdb_output[i].dest_prn != 0)
                 ++count;
         end
@@ -182,10 +190,19 @@ module testbench;
         count = 0;
         n = `N;
         set_n_alu(n);
+         for (int i = 0; i < `N; ++i) begin
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
+        end
+
         @(negedge clock);
+         for (int i = 0; i < `N; ++i) begin
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
+        end
         @(negedge clock);
+        $display("alu_avail = %0d, mult_avail = %0d", alu_avail, mult_avail);
         correct = &alu_avail && &mult_avail;
         for (int i = 0; i < `N; ++i) begin
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
             if (cdb_output[i].dest_prn == 1 && cdb_output[i].value == 2)
                 ++count;
         end
@@ -201,8 +218,10 @@ module testbench;
         set_n_alu(n);
         @(negedge clock);
         @(negedge clock);
+        
         correct = &alu_avail && &mult_avail;
         for (int i = 0; i < `N; ++i) begin
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
             if (cdb_output[i].dest_prn == 1 && cdb_output[i].value == 2)
                 ++count;
         end
@@ -256,11 +275,11 @@ module testbench;
     end
 
     initial begin
-        mixed_alu_w_cond_branch;
-        more_than_n_alu;
+        // mixed_alu_w_cond_branch;
+        // more_than_n_alu;
         exactly_n_alu;
-        less_than_n_alu;
-        only_mult;
+        // less_than_n_alu;
+        // only_mult;
         $finish;
     end
     

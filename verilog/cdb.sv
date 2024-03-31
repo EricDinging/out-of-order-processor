@@ -86,7 +86,7 @@ module cdb #(
             };
             alu_cdb_packet[i] = cdb_state.alu_prepared[i] ?
             '{cdb_state.alu_packet[i].basic.dest_prn, cdb_state.alu_packet[i].basic.result}
-            : 0;
+            : '{{`PRN_WIDTH{1'b0}}, 32'b0};
         end
 
         // load
@@ -97,7 +97,6 @@ module cdb #(
                 1'b0,  // not taken
                 32'b0  // null address
             };
-            other_cdb_packet[i] = 0;
         end
 
         // mult
@@ -110,7 +109,7 @@ module cdb #(
             };
             other_cdb_packet[`NUM_FU_LOAD + i] = cdb_state.mult_prepared[i] ?
             '{cdb_state.mult_packet[i].dest_prn, cdb_state.mult_packet[i].result}
-            : 0;
+            : '{{`PRN_WIDTH{1'b0}}, 32'b0};
             // other_cdb_packet[i] = '{5'b1, 32'hdeadbeef};
             // other_cdb_packet[i].dest_prn = 5'b1;
             // other_cdb_packet[i].value = 32'hdeadbeef;
@@ -147,7 +146,20 @@ module cdb #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            cdb_state <= 0;
+            cdb_state.alu_prepared <= {`NUM_FU_ALU{1'b0}};
+            cdb_state.mult_prepared <= {`NUM_FU_MULT{1'b0}};
+            cdb_state.load_prepared <= {`NUM_FU_LOAD{1'b0}};
+
+            for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+                cdb_state.alu_packet[i] <= '{'{{`ROB_CNT_WIDTH{1'b0}}, {`PRN_WIDTH{1'b0}}, 32'b0}, 1'b0, 1'b0, 1'b0};
+            end
+            for (int i = 0; i < `NUM_FU_MULT; ++i) begin
+                cdb_state.mult_packet[i] <= '{{`ROB_CNT_WIDTH{1'b0}}, {`PRN_WIDTH{1'b0}}, 32'b0};
+            end
+            for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+                cdb_state.load_packet[i] <= '{{`ROB_CNT_WIDTH{1'b0}}, {`PRN_WIDTH{1'b0}}, 32'b0};
+            end
+
         end else begin
             for (int i = 0; i < `NUM_FU_ALU; i++) begin
                 if (alu_avail[i]) begin

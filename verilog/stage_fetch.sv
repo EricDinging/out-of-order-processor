@@ -145,7 +145,7 @@ module stage_fetch (
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            pc_start <= 0;
+            pc_start <= 32'b0;
         end else begin
             pc_start <= next_pc_start;
         end

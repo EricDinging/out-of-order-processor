@@ -27,7 +27,7 @@ module regfile (
     // Read port 1
     always_comb begin
         if (read_idx_1 == `ZERO_REG) begin
-            read_out_1 = 0;
+            read_out_1 = 32'b0;
         end else if (write_en && (write_idx == read_idx_1)) begin
             read_out_1 = write_data; // internal forwarding
         end else begin
@@ -38,7 +38,7 @@ module regfile (
     // Read port 2
     always_comb begin
         if (read_idx_2 == `ZERO_REG) begin
-            read_out_2 = 0;
+            read_out_2 = 32'b0;
         end else if (write_en && (write_idx == read_idx_2)) begin
             read_out_2 = write_data; // internal forwarding
         end else begin

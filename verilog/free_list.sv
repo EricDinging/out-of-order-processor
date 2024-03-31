@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 module free_list #(
     parameter SIZE = `PHYS_REG_SZ_R10K
@@ -26,8 +27,6 @@ module free_list #(
     logic [`FREE_LIST_PTR_WIDTH-1:0] head, next_head, tail, next_tail;
     // FREE_LIST_PACKET        [`N-1:0] next_pop_packet;
 
-    
-    
     // always_comb begin
     always_comb begin
         next_head              = head;

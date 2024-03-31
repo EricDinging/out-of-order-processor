@@ -4,9 +4,7 @@
 // decoder output - ooo: rob, rs, rat
 // output: rs, rob almost_full
 // rob: ROB_IF_PACKET
-module ooo # (
-
-)(
+module ooo (
     input clock, reset,
 
     input ID_OOO_PACKET id_ooo_packet,

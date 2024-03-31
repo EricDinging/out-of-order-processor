@@ -50,6 +50,13 @@ module testbench;
         write_data[i] = '{entry.value, prn};
     endtask
 
+    task print_entries_out;
+        $display("PRF entries");
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; ++i) begin
+            $display("PRN: %2d, valid: %b, value: %d", i, entries_out[i].valid, entries_out[i].value);
+        end
+    endtask
+
     task write_invalid(int i, PRN prn);
         // ground truth
         if (prn != 0) begin
@@ -73,6 +80,7 @@ module testbench;
     task read_and_write;
         write_invalid($random % 2, 4);
         @(negedge clock);
+        print_entries_out();
         for (int i = 0; i < `N; i++) begin
             write(i, i, {`TRUE, $random});
             read_prn[i] = i;
@@ -80,6 +88,7 @@ module testbench;
         #(`CLOCK_PERIOD/5.0);
         check_read;
         @(negedge clock);
+        print_entries_out();
         $display("@@@ Passed: read_and_write\n");
     endtask
 
@@ -98,6 +107,7 @@ module testbench;
         correct = output_value[0].value == 32'hdeadbeef;
         correct &= output_value[0].valid;
         @(negedge clock);
+        print_entries_out();
         @(negedge clock);
         $display("@@@ Passed: concurrent\n");
     endtask
@@ -132,6 +142,7 @@ module testbench;
                 write(j, i * `N + j, '{`TRUE, $random});
             end
             @(negedge clock);
+            print_entries_out();
             check_table_match;
         end
         @(negedge clock);
@@ -145,6 +156,7 @@ module testbench;
                 write_invalid(j, $urandom % `PHYS_REG_SZ_R10K);
             end
             @(negedge clock);
+            print_entries_out();
             check_table_match;
         end
         @(negedge clock);
