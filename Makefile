@@ -96,7 +96,7 @@
 # there should be no need to change anything for project 3
 
 # this is a global clock period variable used in the tcl script and referenced in testbenches
-export CLOCK_PERIOD = 10.0
+export CLOCK_PERIOD = 15.0
 
 # the Verilog Compiler command and arguments
 VCS = SW_VCS=2020.12-SP2-1 vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat rat prf free_list fu cdb fu_cdb onehot_mux
+MODULES = cpu mult rob rs rrat rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -237,7 +237,7 @@ build/prf.cov.simv: $(PRF_FILES)
 synth/prf.vg: $(PRF_FILES)
 
 # FU_CDB
-FU_CDB_FILES = verilog/sys_defs.svh verilog/fu.sv verilog/cdb.sv verilog/mult.sv verilog/onehot_mux.sv verilog/psel_gen.sv
+FU_CDB_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/fu.sv verilog/cdb.sv verilog/mult.sv verilog/onehot_mux.sv verilog/psel_gen.sv
 build/fu_cdb.simv: $(FU_CDB_FILES)
 build/fu_cdb.cov.simv: $(FU_CDB_FILES)
 synth/fu_cdb.vg: $(FU_CDB_FILES)
@@ -260,6 +260,30 @@ build/rrat.simv: $(RRAT_FILES)
 build/rrat.cov.simv: $(RRAT_FILES)
 synth/rrat.vg: $(RRAT_FILES)
 
+# OOO
+OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv
+build/ooo.simv: $(OOO_FILES)
+build/ooo.cov.simv: $(OOO_FILES)
+build/ooo.vg: $(OOO_FILES)
+
+# STAGE_DECODE
+STAGE_DECODE_FILES = verilog/sys_defs.svh verilog/stage_decode.sv verilog/decoder.sv
+build/stage_decode.simv: $(STAGE_DECODE_FILES)
+build/stage_decode.cov.simv: $(STAGE_DECODE_FILES)
+synth/stage_decode.vg: $(STAGE_DECODE_FILES)
+
+# STAGE_FETCH
+STAGE_FETCH_FILES = verilog/sys_defs.svh verilog/stage_fetch.sv verilog/icache.sv
+build/stage_fetch.simv: $(STAGE_FETCH_FILES)
+build/stage_fetch.cov.simv: $(STAGE_FETCH_FILES)
+synth/stage_fetch.vg: $(STAGE_FETCH_FILES)
+
+#ONEHOT_MUX
+ONEHHOT_MUX_FILES = verilog/sys_defs.svh verilog/onehot_mux.sv
+build/onehot_mux.simv: $(ONEHHOT_MUX_FILES)
+build/onehot_mux.cov.simv: $(ONEHHOT_MUX_FILES)
+build/onehot_mux.vg: $(ONEHHOT_MUX_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################
@@ -278,7 +302,28 @@ CPU_TESTBENCH = test/pipeline_print.c \
 # verilog/cpu.sv is implicit
 CPU_SOURCES = verilog/regfile.sv \
               verilog/icache.sv \
-              verilog/mult.sv
+              verilog/mult.sv \
+				verilog/cdb.sv \
+				verilog/decoder.sv \
+				verilog/FIFO.sv \
+				verilog/free_list.sv \
+				verilog/fu_cdb.sv \
+				verilog/fu.sv \
+				verilog/icache.sv \
+				verilog/ooo.sv \
+				verilog/prf.sv \
+				verilog/psel_gen.sv \
+				verilog/rat.sv \
+				verilog/rob.sv \
+				verilog/rrat.sv \
+				verilog/rs.sv \
+				verilog/stage_decode.sv \
+				verilog/stage_fetch.sv \
+				verilog/onehot_mux.sv
+
+
+
+
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 synth/cpu.vg: $(CPU_SOURCES) $(CPU_HEADERS)

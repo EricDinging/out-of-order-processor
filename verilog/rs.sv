@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define DEBUG_OUT
+`define CPU_DEBUG_OUT
 
 module rs #(
     parameter SIZE = `RS_SZ,
@@ -21,7 +21,7 @@ module rs #(
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
     output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
     output logic almost_full
-    `ifdef DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT //DEBUG_OUT
     , output RS_ENTRY [SIZE-1:0]       entries_out
     , output logic [`RS_CNT_WIDTH-1:0] counter_out
     `endif

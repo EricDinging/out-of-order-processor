@@ -16,12 +16,31 @@ module decoder (
     output ALU_OPA_SELECT opa_select,
     output ALU_OPB_SELECT opb_select,
     output logic          has_dest, // if there is a destination register
-    output ALU_FUNC       alu_func,
-    output logic          mult, rd_mem, wr_mem, cond_branch, uncond_branch,
+    output FU_TYPE        fu_type,
+    output FU_FUNC        fu_func,
+    output logic          cond_branch, uncond_branch,
     output logic          csr_op, // used for CSR operations, we only use this as a cheap way to get the return code out
     output logic          halt,   // non-zero on a halt
     output logic          illegal // non-zero on an illegal instruction
 );
+
+
+    ALU_FUNC  alu_func;
+    MULT_FUNC mult_func;
+    logic     mult, rd_mem, wr_mem;
+    
+    always_comb begin
+        if (mult) begin
+            fu_func.mult = mult_func;
+        end else begin
+            fu_func.alu = alu_func;
+        end
+    end
+
+    assign fu_type = mult ? FU_MULT
+                    : rd_mem ? FU_LOAD
+                    : wr_mem ? FU_STORE
+                    : FU_ALU;
 
     // Note: I recommend using an IDE's code folding feature on this block
     always_comb begin
@@ -30,6 +49,7 @@ module decoder (
         opa_select    = OPA_IS_RS1;
         opb_select    = OPB_IS_RS2;
         alu_func      = ALU_ADD;
+        mult_func     = M_MUL;
         has_dest      = `FALSE;
         csr_op        = `FALSE;
         mult          = `FALSE;
@@ -75,6 +95,7 @@ module decoder (
                     has_dest   = `TRUE;
                     mult       = `TRUE;
                     // stage_ex uses inst.r.funct3 as the mult function
+                    mult_func  = {1'b0, inst.r.funct3};
                 end
                 `RV32_LB, `RV32_LH, `RV32_LW,
                 `RV32_LBU, `RV32_LHU: begin

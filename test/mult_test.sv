@@ -102,10 +102,9 @@ module testbench;
         robn = 4;
         @(negedge clock);
         @(negedge clock);
-        avail = 0;
-        for (int i = 0; i < `MULT_STAGES; i++) begin
+        for (int i = 0; i < `MULT_STAGES*2; i++) begin
             @(negedge clock);
-            $display("done: %b, robn: %d", done, output_robn);
+            $display("done: %b, robn: %d, result: %d", done, output_robn, mul_r);
         end
     endtask
 

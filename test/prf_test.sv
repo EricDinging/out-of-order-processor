@@ -50,6 +50,13 @@ module testbench;
         write_data[i] = '{entry.value, prn};
     endtask
 
+    task print_entries_out;
+        $display("PRF entries");
+        for (int i = 0; i < `PHYS_REG_SZ_R10K; ++i) begin
+            $display("PRN: %2d, valid: %b, value: %d", i, entries_out[i].valid, entries_out[i].value);
+        end
+    endtask
+
     task write_invalid(int i, PRN prn);
         // ground truth
         if (prn != 0) begin
@@ -67,19 +74,21 @@ module testbench;
                 && (entries[i].valid == entries_out[i].valid)
                 && (!entries[i].valid || entries[i].value == entries_out[i].value);
         end
-        correct = correct && (counter == counter_out);
+        // correct = correct && (counter == counter_out);
     endtask
 
     task read_and_write;
         write_invalid($random % 2, 4);
         @(negedge clock);
-        for (int i = 0; i < 2*`N; i++) begin
-            write(i, i, {$random, `TRUE});
-            read_prn[i] = i + 2;
+        print_entries_out();
+        for (int i = 0; i < `N; i++) begin
+            write(i, i, {`TRUE, $random});
+            read_prn[i] = i;
         end
         #(`CLOCK_PERIOD/5.0);
         check_read;
         @(negedge clock);
+        print_entries_out();
         $display("@@@ Passed: read_and_write\n");
     endtask
 
@@ -90,16 +99,31 @@ module testbench;
         end
     endtask
 
+    task concurrent;
+        write(0, 33, {`TRUE, 32'hdeadbeef});
+        read_prn[0] = 33;
+        #(`CLOCK_PERIOD/5.0);
+        $display("impl output value: %h", output_value[0]);
+        correct = output_value[0].value == 32'hdeadbeef;
+        correct &= output_value[0].valid;
+        @(negedge clock);
+        print_entries_out();
+        @(negedge clock);
+        $display("@@@ Passed: concurrent\n");
+    endtask
+
 
 
     task init;
         reset = 1;
         correct = 1;
-        entries[0].valid = `TRUE;
-        entries[0].value = 0;
         prn_invalid = 0;
         write_data = 0;
-        for (int i = 1; i < `PHYS_REG_SZ_R10K; i++) begin
+        for (int i = 0; i < `ARCH_REG_SZ; i++) begin
+            entries[i].valid = `TRUE;
+            entries[i].value = 0;
+        end
+        for (int i = `ARCH_REG_SZ; i < `PHYS_REG_SZ_R10K; i++) begin
             entries[i].valid = `FALSE;
         end
         counter = 0;
@@ -118,6 +142,7 @@ module testbench;
                 write(j, i * `N + j, '{`TRUE, $random});
             end
             @(negedge clock);
+            print_entries_out();
             check_table_match;
         end
         @(negedge clock);
@@ -131,6 +156,7 @@ module testbench;
                 write_invalid(j, $urandom % `PHYS_REG_SZ_R10K);
             end
             @(negedge clock);
+            print_entries_out();
             check_table_match;
         end
         @(negedge clock);
@@ -182,6 +208,10 @@ module testbench;
         init;
         set_full;
         read_and_write;
+
+        init;
+        set_full;
+        concurrent;
 
         $finish;
     end

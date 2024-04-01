@@ -1,4 +1,4 @@
- /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
 //                                                                     //
@@ -21,10 +21,11 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 2
+`define N 1
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
+`define FU_ROB_PACKET_SZ `NUM_FU_ALU + `N
 
 // sizes
 `define ROB_SZ 16
@@ -45,7 +46,7 @@
 `define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
-`define NUM_FU_ALU 3
+`define NUM_FU_ALU 2
 `define NUM_FU_MULT 2
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
@@ -313,6 +314,8 @@ typedef struct packed {
     ADDR  PC;
     ADDR  NPC; // PC + 4
     logic valid;
+    logic predict_taken;
+    ADDR  predict_target;
 } IF_ID_PACKET;
 
 /**
@@ -429,6 +432,28 @@ typedef struct packed {
 typedef struct packed {
     RS_ENTRY [`N-1:0] entries;
 } RS_IS_PACKET;
+
+typedef struct packed {
+    INST     inst; // Opcode & Immediate
+    logic    valid;
+    ADDR     PC;
+    FU_TYPE  fu;
+    FU_FUNC  func;
+    ALU_OPA_SELECT opa_select; // used for select signal in FU, 2 bits
+    ALU_OPB_SELECT opb_select; // same as above, 4 bits
+    logic cond_branch;
+    logic uncond_branch;
+} ID_RS_PACKET;
+
+
+typedef struct packed {
+    logic          [`N_CNT_WIDTH-1:0] completed_inst;
+    EXCEPTION_CODE           [`N-1:0] exception_code;
+    REG_IDX                  [`N-1:0] wr_idx;
+    DATA                     [`N-1:0] wr_data;
+    logic                    [`N-1:0] wr_en;
+    ADDR                     [`N-1:0] NPC;
+} OOO_CT_PACKET;
 
 /**
  * FU Packet:
@@ -552,7 +577,6 @@ typedef struct packed {
     PRN  prn;
 } PRF_WRITE;
 
-
 typedef struct packed {
     ROBN robn;
     PRN dest_prn;
@@ -568,18 +592,43 @@ typedef struct packed {
 
 typedef struct packed {
     // prepared and actual packet splitted for simplicity in input of priority selectors
-    logic [`NUM_FU_ALU-1:0] alu_prepared;
-    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
-    logic [`NUM_FU_MULT-1:0] mult_prepared;
+    logic                 [`NUM_FU_ALU-1:0]  alu_prepared;
+    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0]  alu_packet;
+    logic                 [`NUM_FU_MULT-1:0] mult_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic [`NUM_FU_LOAD-1:0] load_prepared;
+    logic                 [`NUM_FU_LOAD-1:0] load_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
 } FU_STATE_PACKET;
 
+// typedef struct packed {
+//     logic valid;
+//     ADDR PC;
+//     ADDR target_addr;
+// } CDB_PREDICTOR_PfACKET;
+
 typedef struct packed {
+    logic success;
+    logic predict_taken;
+    ADDR  predict_target;
+    logic resolve_taken;
+    ADDR  resolve_target;
+} ROB_IF_ENTRY;
+
+typedef struct packed {
+    ROB_IF_ENTRY [`N-1:0] entries;
+} ROB_IF_PACKET;
+
+typedef struct packed {
+    logic taken;
     logic valid;
-    ADDR PC;
-    ADDR target_addr;
-} CDB_PREDICTOR_PACKET;
+    ADDR  pc;
+} PC_ENTRY;
+
+typedef struct packed {
+    ID_RS_PACKET  [`N-1:0] id_rs_packet;
+    ROB_IS_PACKET rob_is_packet;
+    RAT_IS_INPUT  rat_is_input;
+} ID_OOO_PACKET;
+
 
 `endif // __SYS_DEFS_SVH__

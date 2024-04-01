@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 module free_list #(
     parameter SIZE = `PHYS_REG_SZ_R10K
@@ -26,8 +27,6 @@ module free_list #(
     logic [`FREE_LIST_PTR_WIDTH-1:0] head, next_head, tail, next_tail;
     // FREE_LIST_PACKET        [`N-1:0] next_pop_packet;
 
-    
-    
     // always_comb begin
     always_comb begin
         next_head              = head;
@@ -103,7 +102,8 @@ module rat_free_list #(
     input  logic                            rat_squash,
 
     output FREE_LIST_PACKET   [`N-1:0] pop_packet
-    `ifdef DEBUG_OUT
+
+    `ifdef CPU_DEBUG_OUT
     , output PRN                              head, tail
     , output logic [`FREE_LIST_CTR_WIDTH-1:0] counter
     , output PRN                   [SIZE-1:0] free_list
@@ -121,7 +121,7 @@ module rat_free_list #(
         .counter_in(counter_in),
         .rat_squash(rat_squash),
         .pop_packet(pop_packet)
-        `ifdef DEBUG_OUT
+        `ifdef CPU_DEBUG_OUT
         , .output_free_list(free_list)
         , .head_out(head)
         , .tail_out(tail)
@@ -154,10 +154,10 @@ module rrat_free_list #(
         .reset(reset),
         .push_packet(push_packet),
         .pop_en(pop_en),
-        .input_free_list(0),
-        .head_in(0),
-        .tail_in(0),
-        .counter_in(0),
+        .input_free_list({`PRN_WIDTH*SIZE{1'b0}}),
+        .head_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
+        .tail_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
+        .counter_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
         .rat_squash(`FALSE),
         .pop_packet(pop_packet),
         .output_free_list(output_free_list),

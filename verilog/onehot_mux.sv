@@ -4,7 +4,7 @@ module onehot_mux #(
 ) (
     input logic [WIDTH-1:0][SIZE-1:0] in,
     input logic [WIDTH-1:0] select,
-    output wor [SIZE-1:0] out
+    output wor  [SIZE-1:0] out
 );
 
     genvar i;

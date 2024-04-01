@@ -37,7 +37,7 @@ module mult (
     mult_stage mstage [`MULT_STAGES-1:0] (
         .clock (clock),
         .reset (reset),
-        .avail (avail), // TODO: check that it actually expands
+        .avail (avail),
         .func        ({internal_funcs,   func}),
         .start       ({internal_dones,   start}), // forward prev done as next start
         .prev_sum    ({internal_sums,    64'h0}), // start the sum at 0

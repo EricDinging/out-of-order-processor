@@ -34,7 +34,7 @@ module rrat #(
         pop_en          = {`N{`FALSE}};
         for (int i = 0; i < `N; i++) begin
             rrat_ct_output.free_packet[i].valid = `FALSE;
-            rrat_ct_output.free_packet[i].prn   = 0;
+            rrat_ct_output.free_packet[i].prn   = {`PRN_WIDTH{1'b0}};
         end
 
         for (int i = 0; i < `N; i++) begin
@@ -59,7 +59,7 @@ module rrat #(
         if (reset) begin
             success <= `TRUE;
             for (int i = 0; i < SIZE; i++) begin
-                rrat_table[i] = i;
+                rrat_table[i] <= i;
             end
         end else begin
             success    <= next_success;
