@@ -62,9 +62,9 @@ module conditional_branch (
 endmodule // conditional_branch
 
 module alu_cond (
-    input logic clock, reset, // unused, purely combinational
-    input FU_PACKET fu_alu_packet,
-    input logic avail, // unused, purely combinational
+    input  logic clock, reset, // unused, purely combinational
+    input  FU_PACKET fu_alu_packet,
+    input  logic avail, // unused, purely combinational
     output logic prepared,
     output FU_STATE_ALU_PACKET fu_state_alu_packet
 );

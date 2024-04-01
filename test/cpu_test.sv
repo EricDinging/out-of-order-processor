@@ -386,8 +386,6 @@ module testbench;
             $finish;
         end
 
-        // P4 TODO: You must keep cpi and memory output the same for the autograder,
-        //          but you should add new output files to print your own data structures.
         if ($value$plusargs("OUTPUT=%s", output_name)) begin
             $display("Using output files : %s.{cpi, wb, ppln}", output_name);
             cpi_output_file       = {output_name,".cpi"}; // this is how you concatenate strings in verilog

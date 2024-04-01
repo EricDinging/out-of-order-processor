@@ -9,7 +9,7 @@ module testbench;
     FU_PACKET  [`NUM_FU_MULT-1:0] fu_mult_packet;
     FU_PACKET  [`NUM_FU_LOAD-1:0] fu_load_packet;
     FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet;
-    logic       [`NUM_FU_ALU-1:0]  alu_avail;
+    logic       [`NUM_FU_ALU-1:0] alu_avail;
     logic      [`NUM_FU_MULT-1:0] mult_avail;
     logic      [`NUM_FU_LOAD-1:0] load_avail;
     logic     [`NUM_FU_STORE-1:0] store_avail;
@@ -207,6 +207,7 @@ module testbench;
         print_cdb;
 
         @(negedge clock);
+        print_fu_state;
         print_cdb;
         @(negedge clock);
         $display("alu_avail = %0d, mult_avail = %0d", alu_avail, mult_avail);
@@ -214,8 +215,16 @@ module testbench;
         print_cdb;
         for (int i = 0; i < `N; ++i) begin
             if (cdb_output[i].dest_prn == 1 && cdb_output[i].value == 2) ++count;
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value)
         end
+        
         correct = count == n;
+    endtask
+
+    task print_fu_state;
+        $display("fu_state_packet: alu_prep = %0d, mult_prep = %0d, load_prep = %0d", fu_state_packet_debug.alu_prep, fu_state_packet_debug.mult_prep, fu_state_packet_debug.load_prep);
+        $display("alu_packet: robn = %0d, dest_prn = %0d, result = %0d", fu_state_packet_debug.alu_packet.basic.robn, fu_state_packet_debug.alu_packet.basic.dest_prn, fu_state_packet_debug.alu_packet.basic.result);
+        $display("mult_packet: robn = %0d, dest_prn = %0d, result = %0d", fu_state_packet_debug.mult_packet.robn, fu_state_packet_debug.mult_packet.dest_prn, fu_state_packet_debug.mult_packet.result);
     endtask
 
     task less_than_n_alu;
@@ -285,11 +294,11 @@ module testbench;
 
     initial begin
         clock = 0;
-        // mixed_alu_w_cond_branch;
-        // more_than_n_alu;
+        mixed_alu_w_cond_branch;
+        more_than_n_alu;
         exactly_n_alu;
-        // less_than_n_alu;
-        // only_mult;
+        less_than_n_alu;
+        only_mult;
         $finish;
     end
     

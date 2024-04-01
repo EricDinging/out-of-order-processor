@@ -58,7 +58,7 @@ module rob #(
                     32'b0, // NPC;
                     1'b0, // halt;
                     1'b0, // illegal;
-                    1'b0  // csr_op; 
+                    1'b0  // csr_op;
                 };
         end
 
@@ -94,9 +94,9 @@ module rob #(
         // CDB update
         for (int i = 0; i < `FU_ROB_PACKET_SZ; ++i) begin
             if (fu_rob_packet[i].executed) begin
-                next_rob_entries[fu_rob_packet[i].robn].executed = 1'b1;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_taken = fu_rob_packet[i].branch_taken;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].target_addr;
+                next_rob_entries[fu_rob_packet[i].robn].executed       = `TRUE;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_taken  = fu_rob_packet[i].branch_taken;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].branch_taken? fu_rob_packet[i].target_addr : next_rob_entries[fu_rob_packet[i].robn].NPC;
                 if (rob_entries[fu_rob_packet[i].robn].cond_branch || rob_entries[fu_rob_packet[i].robn].uncond_branch) begin
                     next_rob_entries[fu_rob_packet[i].robn].success = (next_rob_entries[fu_rob_packet[i].robn].resolve_taken  == next_rob_entries[fu_rob_packet[i].robn].predict_taken)
                                                                    && (next_rob_entries[fu_rob_packet[i].robn].resolve_target == next_rob_entries[fu_rob_packet[i].robn].predict_target);

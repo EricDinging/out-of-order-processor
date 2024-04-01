@@ -108,9 +108,6 @@ module cdb #(
             other_cdb_packet[`NUM_FU_LOAD + i] = cdb_state.mult_prepared[i] ?
             '{cdb_state.mult_packet[i].dest_prn, cdb_state.mult_packet[i].result}
             : '{{`PRN_WIDTH{1'b0}}, 32'b0};
-            // other_cdb_packet[i] = '{5'b1, 32'hdeadbeef};
-            // other_cdb_packet[i].dest_prn = 5'b1;
-            // other_cdb_packet[i].value = 32'hdeadbeef;
         end
 
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
@@ -197,13 +194,6 @@ module select_insn (
     output FU_ROB_PACKET [`N-1:0] fu_rob_packet,
     output CDB_PACKET    [`N-1:0] cdb_packet
 );
-    // mux_cdb mux_cdb_inst[`N-1:0] (
-    //     .rob_packets(rob_packets),
-    //     .cdb_packets(cdb_packets),
-    //     .select(mux_select),  // TODO: check field match
-    //     .fu_rob_packet(fu_rob_packet),
-    //     .cdb_packet(cdb_packet)
-    // );
 
     genvar i;
     generate
