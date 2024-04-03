@@ -27,9 +27,13 @@ module imshr (
     output logic [`CACHE_LINE_BITS-1:0]  cache_index,
     output logic [12-`CACHE_LINE_BITS]   cache_tag,
     output logic ready
+`ifdef CPU_DEBUG_OUT
+    , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
+`endif
 );
 
     IMSHR_ENTRY [`N-1:0] imshr_entries, next_imshr_entries;
+
     wire        [`N-1:0] entries_free;
     wire        [`N-1:0] entries_pending;
     wor         [`N-1:0] imshr_hit;
@@ -64,6 +68,9 @@ module imshr (
         end
     endgenerate
 
+`ifdef CPU_DEBUG_OUT
+    assign imshr_entries_debug = imshr_entries;
+`endif
 
     psel_gen #(
       .WIDTH(`N),
@@ -135,7 +142,7 @@ module imshr (
             end
         end
 
-        if (outstanding_request_valid) begin
+        if (outstanding_request_valid && Imem2proc_transaction_tag != 0) begin
             next_imshr_entries[outstanding_request_index].transaction_tag = Imem2proc_transaction_tag;
             next_imshr_entries[outstanding_request_index].state = IMSHR_WAIT_DATA;
         end
@@ -173,6 +180,9 @@ module icache (
     // To fetch
     output MEM_BLOCK [`N-1:0] Icache_data_out,
     output logic     [`N-1:0] Icache_valid_out
+`ifdef CPU_DEBUG_OUT
+    , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
+`endif
 );
 
     ICACHE_ENTRY [`CACHE_LINES-1:0] icache_data, next_icache_data;
@@ -200,13 +210,16 @@ module icache (
         .cache_index(cache_index),
         .cache_tag(cache_tag),
         .ready(ready)
+    `ifdef CPU_DEBUG_OUT
+        , .imshr_entries_debug(imshr_entries_debug)
+    `endif
     );
 
     always_comb begin
         next_icache_data = icache_data;
         // Handle cache queries
         for (int i = 0; i < `N; ++i) begin
-            miss_cache_valid    = `FALSE;
+            miss_cache_valid[i] = `FALSE;
             Icache_valid_out[i] = `FALSE;
             Icache_data_out[i]  = 0;
             {miss_cache_tags[i], miss_cache_indexes[i]} = proc2Icache_addr[i][15:3];
