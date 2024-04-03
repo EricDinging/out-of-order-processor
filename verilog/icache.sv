@@ -1,17 +1,4 @@
-/////////////////////////////////////////////////////////////////////////
-//                                                                     //
-//   Modulename :  icache.sv                                           //
-//                                                                     //
-//  Description :  The instruction cache module that reroutes memory   //
-//                 accesses to decrease misses.                        //
-//                                                                     //
-/////////////////////////////////////////////////////////////////////////
-
 `include "verilog/sys_defs.svh"
-
-// Internal macros, no other file should need these
-`define CACHE_LINES 32
-`define CACHE_LINE_BITS $clog2(`CACHE_LINES)
 
 typedef struct packed {
     MEM_BLOCK                     data;
@@ -20,121 +7,234 @@ typedef struct packed {
     logic                         valid;
 } ICACHE_ENTRY;
 
-/**
- * A quick overview of the cache and memory:
- *
- * We've increased the memory latency from 1 cycle to 100ns. which will be
- * multiple cycles for any reasonable processor. Thus, memory can have multiple
- * transactions pending and coordinates them via memory tags (different meaning
- * than cache tags) which represent a transaction it's working on. Memory tags
- * are 4 bits long since 15 mem accesses can be live at one time, and only one
- * access happens per cycle.
- *
- * On a request, memory responds with the tag it will use for that transaction.
- * Then, ceiling(100ns/clock period) cycles later, it will return the data with
- * the corresponding tag. The 0 tag is a sentinel value and unused. It would be
- * very difficult to push your clock period past 100ns/15=6.66ns, so 15 tags is
- * sufficient.
- *
- * This cache coordinates those memory tags to speed up fetching reused data.
- *
- * Note that this cache is blocking, and will wait on one memory request before
- * sending another (unless the input address changes, in which case it abandons
- * that request). Implementing a non-blocking cache can count towards simple
- * feature points, but will require careful management of memory tags.
- */
+module imshr (
+    input clock,
+    input reset,
+    // From dcache
+    input logic  dcache_request,
+    // From memory
+    input MEM_TAG   Imem2proc_transaction_tag,
+    input MEM_TAG   Imem2proc_data_tag,
+    // From icache
+    input logic [`N-1:0][`CACHE_LINE_BITS-1:0] miss_cache_indexes,
+    input logic [`N-1:0][12-`CACHE_LINE_BITS]  miss_cache_tags,
+    input logic [`N-1:0]                       miss_cache_valid,
+
+    // Output to memory via cache
+    output ADDR        proc2Imem_addr,
+    output MEM_COMMAND proc2Imem_command,
+    // Output to cache
+    output logic [`CACHE_LINE_BITS-1:0]  cache_index,
+    output logic [12-`CACHE_LINE_BITS]   cache_tag,
+    output logic ready
+);
+
+    IMSHR_ENTRY [`N-1:0] imshr_entries, next_imshr_entries;
+    wire        [`N-1:0] entries_free;
+    wire        [`N-1:0] entries_pending;
+    wor         [`N-1:0] imshr_hit;
+
+    wire [`N-1:0][`N-1:0] entries_free_gnt_bus;
+    wire [`N-1:0]         entries_pending_gnt_bus;
+
+    logic outstanding_request_valid, next_outstanding_request_valid;
+    logic [`N_CNT_WIDTH-1:0] outstanding_request_index, next_outstanding_request_index;
+
+    genvar i;
+    generate
+        for (i = 0; i < `N; ++i) begin
+            assign entries_free[i] = imshr_entries[i].state == IMSHR_INVALID;
+            assign entries_pending[i] = imshr_entries[i].state == IMSHR_PENDING;
+        end
+    endgenerate
+
+    genvar j;
+    generate
+        for (i = 0; i < `N; ++i) begin
+            for (j = 0; j < i; ++j) begin
+                assign imshr_hit[i] = miss_cache_valid[i] && miss_cache_valid[j]
+                                 && miss_cache_indexes[i] == miss_cache_indexes[j]
+                                 && miss_cache_tags[i]    == miss_cache_tags[j];
+            end
+            for (j = 0; j < `N; ++j) begin
+                assign imshr_hit[i] = imshr_entries[j].index == miss_cache_indexes[i]
+                                   && imshr_entries[j].tag   == miss_cache_tags[i]
+                                   && imshr_entries[j].state != IMSHR_INVALID;
+            end
+        end
+    endgenerate
+
+
+    psel_gen #(
+      .WIDTH(`N),
+      .REQS(`N)
+    ) free_entry_selector (
+      .req(entries_free),
+      .gnt(),
+      .gnt_bus(entries_free_gnt_bus),
+      .empty()
+    );
+
+    psel_gen #(
+      .WIDTH(`N),
+      .REQS(1)
+    ) request_selector (
+      .req(entries_pending),
+      .gnt(),
+      .gnt_bus(entries_pending_gnt_bus),
+      .empty()
+    );
+
+    always_comb begin
+        next_imshr_entries             = imshr_entries;
+        next_outstanding_request_valid = `FALSE;
+        next_outstanding_request_index = 0;
+
+        // Handle memory returns
+        cache_index = 0;
+        cache_tag   = 0;
+        ready       = `FALSE;
+        for (int i = 0; i < `N; ++i) begin
+            if (imshr_entries[i].state == IMSHR_WAIT_DATA
+             && imshr_entries[i].transaction_tag == Imem2proc_data_tag) begin
+                cache_index                 = imshr_entries[i].index;
+                cache_tag                   = imshr_entries[i].tag;
+                ready                       = `TRUE;
+                next_imshr_entries[i].state = IMSHR_INVALID;
+            end
+        end
+
+        // Allocate new entries for cache miss
+        for (int i = 0; i < `N; ++i) begin
+            if (miss_cache_valid[i] && ~imshr_hit[i]) begin
+                for (int j = 0; j < `N; ++j) begin
+                    if (entries_free_gnt_bus[i][j]) begin
+                        next_imshr_entries[j].state = IMSHR_PENDING;
+                        next_imshr_entries[j].index = miss_cache_indexes[i];
+                        next_imshr_entries[j].tag   = miss_cache_tags[i];
+                    end
+                end
+            end
+        end
+        
+        proc2Imem_addr    = 0;
+        proc2Imem_command = MEM_NONE;
+        if (~dcache_request) begin
+            for (int i = 0; i < `N; ++i) begin
+                if (entries_pending_gnt_bus[i]) begin
+                    proc2Imem_addr = {
+                        next_imshr_entries[i].tag,
+                        next_imshr_entries[i].index,
+                        3'b0
+                    };
+                    proc2Imem_command              = MEM_LOAD;
+                    next_outstanding_request_valid = `TRUE;
+                    next_outstanding_request_index = i;
+                    next_imshr_entries[i].state    = IMSHR_WAIT_TAG;
+                end
+            end
+        end
+
+        if (outstanding_request_valid) begin
+            next_imshr_entries[outstanding_request_index].transaction_tag = Imem2proc_transaction_tag;
+            next_imshr_entries[outstanding_request_index].state = IMSHR_WAIT_DATA;
+        end
+    end
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            imshr_entries <= 0;
+            outstanding_request_valid <= `FALSE;
+            outstanding_request_index <= 0;
+        end else begin
+            imshr_entries <= next_imshr_entries;
+            outstanding_request_valid <= next_outstanding_request_valid;
+            outstanding_request_index <= next_outstanding_request_index;
+        end
+    end
+endmodule
 
 module icache (
     input clock,
     input reset,
-
+    input squash,
     // From memory
-    input MEM_TAG   Imem2proc_transaction_tag, // Should be zero unless there is a response
+    input MEM_TAG   Imem2proc_transaction_tag,
     input MEM_BLOCK Imem2proc_data,
     input MEM_TAG   Imem2proc_data_tag,
-
     // From fetch stage
-    input ADDR [`N-1:0] proc2Icache_addr,
-    // TODO add valid check
+    input ADDR  [`N-1:0] proc2Icache_addr,
     input logic [`N-1:0] valid,
+    // From Dcache
+    input logic  dcache_request,
     // To memory
     output MEM_COMMAND proc2Imem_command,
     output ADDR        proc2Imem_addr,
-
-    // To fetch stage
-    output MEM_BLOCK [`N-1:0] Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [`N-1:0] Icache_valid_out // When valid is high
+    // To fetch
+    output MEM_BLOCK [`N-1:0] Icache_data_out,
+    output logic     [`N-1:0] Icache_valid_out
 );
 
-    // ---- Cache data ---- //
+    ICACHE_ENTRY [`CACHE_LINES-1:0] icache_data, next_icache_data;
 
-    ICACHE_ENTRY [`CACHE_LINES-1:0] icache_data;
+    logic [`N-1:0][12-`CACHE_LINE_BITS]  miss_cache_tags;
+    logic [`N-1:0][`CACHE_LINE_BITS-1:0] miss_cache_indexes;
+    logic [`N-1:0]                       miss_cache_valid;
 
-    // ---- Addresses and final outputs ---- //
+    logic [`CACHE_LINE_BITS-1:0] cache_index;
+    logic [12-`CACHE_LINE_BITS]  cache_tag;
+    logic ready;
 
-    // Note: cache tags, not memory tags
-    logic [12-`CACHE_LINE_BITS:0] current_tag, last_tag;
-    logic [`CACHE_LINE_BITS - 1:0] current_index, last_index;
+    imshr mshr (
+        .clock(clock),
+        .reset(reset || squash),
+        .dcache_request(dcache_request),
+        .Imem2proc_transaction_tag(Imem2proc_transaction_tag),
+        .Imem2proc_data_tag(Imem2proc_data_tag),
+        .miss_cache_indexes(miss_cache_indexes),
+        .miss_cache_tags(miss_cache_tags),
+        .miss_cache_valid(miss_cache_valid),
+        // output
+        .proc2Imem_addr(proc2Imem_addr),
+        .proc2Imem_command(proc2Imem_command),
+        .cache_index(cache_index),
+        .cache_tag(cache_tag),
+        .ready(ready)
+    );
 
-    assign {current_tag, current_index} = proc2Icache_addr[0][15:3];
+    always_comb begin
+        next_icache_data = icache_data;
+        // Handle cache queries
+        for (int i = 0; i < `N; ++i) begin
+            miss_cache_valid    = `FALSE;
+            Icache_valid_out[i] = `FALSE;
+            Icache_data_out[i]  = 0;
+            {miss_cache_tags[i], miss_cache_indexes[i]} = proc2Icache_addr[i][15:3];
 
-    genvar i;
-    generate
-        for (i = 1; i < `N; ++i) begin
-            assign Icache_data_out[i] = {64{0}};
-            assign Icache_valid_out[i] = `FALSE;
+            if (valid[i]) begin
+                if (icache_data[miss_cache_indexes[i]].tags == miss_cache_tags[i]
+                 && icache_data[miss_cache_indexes[i]].valid) begin
+                    Icache_data_out[i]  = icache_data[miss_cache_indexes[i]].data;
+                    Icache_valid_out[i] = `TRUE;
+                end else begin
+                    miss_cache_valid[i] = `TRUE;
+                end
+            end
         end
-    endgenerate
-
-    assign Icache_data_out[0]  = icache_data[current_index].data;
-    assign Icache_valid_out[0] = valid[0] && icache_data[current_index].valid &&
-                              (icache_data[current_index].tags == current_tag);
-
-    // ---- Main cache logic ---- //
-
-    MEM_TAG current_mem_tag; // The current memory tag we might be waiting on
-    logic miss_outstanding; // Whether a miss has received its response tag to wait on
-
-    wire got_mem_data = (current_mem_tag == Imem2proc_data_tag) && (current_mem_tag != 0);
-
-    wire changed_addr = (current_index != last_index) || (current_tag != last_tag);
-
-    // Set mem tag to zero if we changed_addr, and keep resetting while there is
-    // a miss_outstanding. Then set to zero when we got_mem_data.
-    // (this relies on Imem2proc_response being zero when there is no request)
-    wire update_mem_tag = changed_addr || miss_outstanding || got_mem_data;
-
-    // If we have a new miss or still waiting for the response tag, we might
-    // need to wait for the response tag because dcache has priority over icache
-    wire unanswered_miss = changed_addr ? !Icache_valid_out[0]
-                                        : miss_outstanding && (Imem2proc_transaction_tag == 0);
-
-    // Keep sending memory requests until we receive a response tag or change addresses
-    assign proc2Imem_command = (miss_outstanding && !changed_addr) ? MEM_LOAD : MEM_NONE;
-    assign proc2Imem_addr    = {proc2Icache_addr[0][31:3],3'b0};
-
-    // ---- Cache state registers ---- //
-
-    always_ff @(posedge clock) begin
-        if (reset) begin
-            last_index       <= -1; // These are -1 to get ball rolling when
-            last_tag         <= -1; // reset goes low because addr "changes"
-            current_mem_tag  <= 0;
-            miss_outstanding <= 0;
-            icache_data      <= 0; // Set all cache data to 0 (including valid bits)
-        end else begin
-            last_index       <= current_index;
-            last_tag         <= current_tag;
-            miss_outstanding <= unanswered_miss;
-            if (update_mem_tag) begin
-                current_mem_tag <= Imem2proc_transaction_tag; //FIXED
-            end
-            if (got_mem_data) begin // If data came from memory, meaning tag matches
-                icache_data[current_index].data  <= Imem2proc_data;
-                icache_data[current_index].tags  <= current_tag;
-                icache_data[current_index].valid <= 1;
-            end
+        // Update cache
+        if (ready) begin
+            next_icache_data[cache_index].valid = `TRUE;
+            next_icache_data[cache_index].tags  = cache_tag;
+            next_icache_data[cache_index].data  = Imem2proc_data;
         end
     end
 
-endmodule // icache
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            icache_data <= 0;
+        end else begin
+            icache_data <= next_icache_data;
+        end
+    end
+
+endmodule

@@ -54,6 +54,10 @@
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
 
+// cache
+`define CACHE_LINES 32
+`define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
 ///////////////////////////////
 // ---- Basic Constants ---- //
 ///////////////////////////////
@@ -137,9 +141,10 @@ typedef enum logic [2:0] {
 } MEM_FUNC;
 
 typedef enum logic [1:0] {
-    IMSHR_INVALID = 2'h0,
-    IMSHR_MISS    = 2'h1,
-    IMSHR_WAIT    = 2'h2
+    IMSHR_INVALID   = 2'h0,
+    IMSHR_PENDING   = 2'h1, // not sent request
+    IMSHR_WAIT_TAG  = 2'h2,
+    IMSHR_WAIT_DATA = 2'h3
 } IMSHR_STATE;
 
 ///////////////////////////////
