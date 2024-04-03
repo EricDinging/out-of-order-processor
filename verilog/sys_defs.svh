@@ -136,6 +136,11 @@ typedef enum logic [2:0] {
     MEM_HALFU = 3'h5
 } MEM_FUNC;
 
+typedef enum logic {
+    MISS = 1'b0,
+    WAIT = 1'b1
+} IMSHR_STATE;
+
 ///////////////////////////////
 // ---- Exception Codes ---- //
 ///////////////////////////////
@@ -629,6 +634,14 @@ typedef struct packed {
     ROB_IS_PACKET rob_is_packet;
     RAT_IS_INPUT  rat_is_input;
 } ID_OOO_PACKET;
+
+typedef struct packed {
+    logic valid;
+    logic [12-`CACHE_LINE_BITS]  index;             // cache index
+    logic [`CACHE_LINE_BITS-1:0] tag;               // cache tag
+    MEM_TAG                      transaction_tag;   // tag returned from memory
+    IMSHR_STATE                  state;             // MISS, WAIT
+} IMSHR_ENTRY;
 
 
 `endif // __SYS_DEFS_SVH__
