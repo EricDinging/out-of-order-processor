@@ -136,9 +136,10 @@ typedef enum logic [2:0] {
     MEM_HALFU = 3'h5
 } MEM_FUNC;
 
-typedef enum logic {
-    MISS = 1'b0,
-    WAIT = 1'b1
+typedef enum logic [1:0] {
+    IMSHR_INVALID = 2'h0,
+    IMSHR_MISS    = 2'h1,
+    IMSHR_WAIT    = 2'h2
 } IMSHR_STATE;
 
 ///////////////////////////////
@@ -636,7 +637,6 @@ typedef struct packed {
 } ID_OOO_PACKET;
 
 typedef struct packed {
-    logic valid;
     logic [12-`CACHE_LINE_BITS]  index;             // cache index
     logic [`CACHE_LINE_BITS-1:0] tag;               // cache tag
     MEM_TAG                      transaction_tag;   // tag returned from memory
