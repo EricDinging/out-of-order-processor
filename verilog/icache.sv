@@ -16,16 +16,16 @@ module imshr (
     input MEM_TAG   Imem2proc_transaction_tag,
     input MEM_TAG   Imem2proc_data_tag,
     // From icache
-    input logic [`N-1:0][`CACHE_LINE_BITS-1:0] miss_cache_indexes,
-    input logic [`N-1:0][12-`CACHE_LINE_BITS]  miss_cache_tags,
-    input logic [`N-1:0]                       miss_cache_valid,
+    input logic [`N-1:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes,
+    input logic [`N-1:0][12-`CACHE_LINE_BITS:0] miss_cache_tags,
+    input logic [`N-1:0]                        miss_cache_valid,
 
     // Output to memory via cache
     output ADDR        proc2Imem_addr,
     output MEM_COMMAND proc2Imem_command,
     // Output to cache
     output logic [`CACHE_LINE_BITS-1:0]  cache_index,
-    output logic [12-`CACHE_LINE_BITS]   cache_tag,
+    output logic [12-`CACHE_LINE_BITS:0] cache_tag,
     output logic ready
 `ifdef CPU_DEBUG_OUT
     , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
@@ -130,8 +130,9 @@ module imshr (
             for (int i = 0; i < `N; ++i) begin
                 if (entries_pending_gnt_bus[i]) begin
                     proc2Imem_addr = {
-                        next_imshr_entries[i].tag,
-                        next_imshr_entries[i].index,
+                        16'b0,
+                        imshr_entries[i].tag,
+                        imshr_entries[i].index,
                         3'b0
                     };
                     proc2Imem_command              = MEM_LOAD;
@@ -187,12 +188,12 @@ module icache (
 
     ICACHE_ENTRY [`CACHE_LINES-1:0] icache_data, next_icache_data;
 
-    logic [`N-1:0][12-`CACHE_LINE_BITS]  miss_cache_tags;
-    logic [`N-1:0][`CACHE_LINE_BITS-1:0] miss_cache_indexes;
-    logic [`N-1:0]                       miss_cache_valid;
+    logic [`N-1:0][12-`CACHE_LINE_BITS:0] miss_cache_tags;
+    logic [`N-1:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes;
+    logic [`N-1:0]                        miss_cache_valid;
 
-    logic [`CACHE_LINE_BITS-1:0] cache_index;
-    logic [12-`CACHE_LINE_BITS]  cache_tag;
+    logic [`CACHE_LINE_BITS-1:0]  cache_index;
+    logic [12-`CACHE_LINE_BITS:0] cache_tag;
     logic ready;
 
     imshr mshr (

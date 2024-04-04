@@ -369,8 +369,11 @@ module testbench;
             @(negedge clock);
             load_n_inst();
         end
-        
+
         @(negedge clock);
+        $display("=========CLOCK : %2d, finish filling ========", clock_cycle);
+        correct_Icache_valid_out = {`N{`FALSE}};
+        print_imshr_entries_debug();
 
         valid = {`N{`FALSE}};
         valid[0] = `TRUE;
@@ -379,7 +382,9 @@ module testbench;
         @(negedge clock);
         correct_proc2Imem_command = MEM_LOAD;
         correct_proc2Imem_addr = moving_addr;
+        $display("moving_addr: %d", moving_addr);
         correct = correct && correct_proc2Imem_command === proc2Imem_command && correct_proc2Imem_addr === proc2Imem_addr;
+        print_imshr_entries_debug();
 
         @(negedge clock);
         Imem2proc_transaction_tag = 1;
@@ -387,9 +392,11 @@ module testbench;
         correct = correct && correct_proc2Imem_command === proc2Imem_command;
 
         for(int i = 0; i < 10; i++) begin
-            Imem2proc_transaction_tag = 0;
             @(negedge clock);
+            Imem2proc_transaction_tag = 0;
         end
+        print_imshr_entries_debug();
+        
         
         Imem2proc_data_tag = 1;
         Imem2proc_data = 123456765432;
@@ -398,6 +405,7 @@ module testbench;
         Imem2proc_data_tag = 0;
         correct_Icache_data_out[0] = 123456765432;
         correct_Icache_valid_out[0] = `TRUE;
+        print_imshr_entries_debug();
         check_Icache_out();
         
         @(negedge clock);
@@ -405,12 +413,14 @@ module testbench;
         proc2Icache_addr[0] = 0;
         #1;
         correct_Icache_valid_out[0] = `FALSE;
+        print_imshr_entries_debug();
         check_Icache_out();
 
         @(negedge clock);
         correct_proc2Imem_command = MEM_LOAD;
         correct_proc2Imem_addr = 0;
         correct = correct && correct_proc2Imem_command === proc2Imem_command && correct_proc2Imem_addr === proc2Icache_addr;
+        print_imshr_entries_debug();
         check_Icache_out();
 
         $display("@@@ Passed test_evict");
@@ -423,7 +433,7 @@ module testbench;
         // test_cache_miss();
         // test_non_blocking();
         // test_sequential_load();
-        test_task_evict();
+        test_evict();
 
         $display("@@@ Passed");
         $finish;

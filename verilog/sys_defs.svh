@@ -642,8 +642,8 @@ typedef struct packed {
 } ID_OOO_PACKET;
 
 typedef struct packed {
-    logic [12-`CACHE_LINE_BITS]  index;             // cache index
-    logic [`CACHE_LINE_BITS-1:0] tag;               // cache tag
+    logic [`CACHE_LINE_BITS-1:0]  index;             // cache index
+    logic [12-`CACHE_LINE_BITS:0] tag;               // cache tag
     MEM_TAG                      transaction_tag;   // tag returned from memory
     IMSHR_STATE                  state;             // MISS, WAIT
 } IMSHR_ENTRY;
