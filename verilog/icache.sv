@@ -1,4 +1,5 @@
 `include "verilog/sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 typedef struct packed {
     MEM_BLOCK                     data;

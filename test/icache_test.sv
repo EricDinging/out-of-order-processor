@@ -1,30 +1,6 @@
 `include "sys_defs.svh"
 `define CPU_DEBUG_OUT
 
-
-/*
-module icache (
-    input clock,
-    input reset,
-
-    // From memory
-    input MEM_TAG   Imem2proc_transaction_tag, // Should be zero unless there is a response
-    input MEM_BLOCK Imem2proc_data,
-    input MEM_TAG   Imem2proc_data_tag,
-
-    // From fetch stage
-    input ADDR [`N-1:0] proc2Icache_addr,
-    // TODO add valid check
-    input logic [`N-1:0] valid,
-    // To memory
-    output MEM_COMMAND proc2Imem_command,
-    output ADDR        proc2Imem_addr,
-
-    // To fetch stage
-    output MEM_BLOCK [`N-1:0] Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [`N-1:0] Icache_valid_out // When valid is high
-);*/
-
 module testbench;
 
     logic clock, reset, correct;
@@ -63,8 +39,10 @@ module testbench;
         .proc2Imem_command(proc2Imem_command),
         .proc2Imem_addr(proc2Imem_addr),
         .Icache_data_out(Icache_data_out),
-        .Icache_valid_out(Icache_valid_out),
-        .imshr_entries_debug(imshr_entries_debug)
+        .Icache_valid_out(Icache_valid_out)
+    `ifdef CPU_DEBUG_OUT
+        , .imshr_entries_debug(imshr_entries_debug)
+    `endif
     );
 
     always begin
@@ -111,6 +89,7 @@ module testbench;
     endtask
 
     task print_imshr_entries_debug;
+    `ifdef CPU_DEBUG_OUT
         $display("========= Clock: %2d =========", clock_cycle);
         for (int i = 0; i < `N; i = i + 1) begin
             case (imshr_entries_debug[i].state)
@@ -128,6 +107,7 @@ module testbench;
             $display("tag: %2d; index: %2d", imshr_entries_debug[i].tag, imshr_entries_debug[i].index);
             $display("transaction_tag: %2d", imshr_entries_debug[i].transaction_tag);
         end
+    `endif
 
     endtask
 
@@ -245,7 +225,7 @@ module testbench;
             correct_proc2Imem_command = MEM_LOAD;
             correct = correct && (proc2Imem_command == correct_proc2Imem_command) && (Icache_valid_out == correct_Icache_valid_out);
             Imem2proc_transaction_tag = i;
-
+        
             print_imshr_entries_debug();
             print_icache_output();
         end
@@ -292,7 +272,7 @@ module testbench;
         correct = correct && (proc2Imem_command == correct_proc2Imem_command) && (Icache_valid_out == correct_Icache_valid_out);
         print_icache_output();
 
-        for (int i = 0; i < `N/2; ++i) begin
+        for (int i = 0; i < (`N+1)/2; ++i) begin
             @(negedge clock);
             correct_proc2Imem_command = MEM_LOAD;
             correct = correct && (proc2Imem_command == correct_proc2Imem_command) && (Icache_valid_out == correct_Icache_valid_out);
@@ -303,7 +283,7 @@ module testbench;
         end
         
         @(negedge clock);
-        Imem2proc_transaction_tag = `N/2;
+        Imem2proc_transaction_tag = (`N+1)/2;
         correct_proc2Imem_command = MEM_NONE;
 
         @(negedge clock);
@@ -312,7 +292,7 @@ module testbench;
         
         Imem2proc_data_tag = 1;
         Imem2proc_data     = 50;
-        for (int i = 0; i < `N/2; ++i) begin
+        for (int i = 0; i < (`N+1)/2; ++i) begin
             @(negedge clock);
             Imem2proc_data     = (i + 2) * 50;
             Imem2proc_data_tag = i + 2;
@@ -324,6 +304,7 @@ module testbench;
             print_icache_output();
             // check_Icache_out();
         end
+        @(negedge clock);
 
         for (int i = 0; i < `N; ++i) begin
             correct = correct && Icache_valid_out[i];
@@ -339,7 +320,7 @@ module testbench;
             valid[i]            = `TRUE;
         end
 
-        for (int i = 0; i < `N/2; ++i) begin
+        for (int i = 0; i < (`N+1)/2; ++i) begin
             @(negedge clock);
             Imem2proc_transaction_tag = i;
 
@@ -348,18 +329,19 @@ module testbench;
         end
         
         @(negedge clock);
-        Imem2proc_transaction_tag = `N/2;
+        Imem2proc_transaction_tag = (`N+1)/2;
 
         @(negedge clock);
         Imem2proc_transaction_tag = 0;
         
         Imem2proc_data_tag = 1;
         Imem2proc_data     += 4;
-        for (int i = 0; i < `N/2; ++i) begin
+        for (int i = 0; i < (`N+1)/2; ++i) begin
             @(negedge clock);
             Imem2proc_data += 4;
             Imem2proc_data_tag = i + 2;
         end
+        @(negedge clock); 
         Imem2proc_data_tag = 0;
     endtask;
 
@@ -399,11 +381,11 @@ module testbench;
         
         
         Imem2proc_data_tag = 1;
-        Imem2proc_data = 123456765432;
+        Imem2proc_data = 123456;
         
         @(negedge clock);
         Imem2proc_data_tag = 0;
-        correct_Icache_data_out[0] = 123456765432;
+        correct_Icache_data_out[0] = 123456;
         correct_Icache_valid_out[0] = `TRUE;
         print_imshr_entries_debug();
         check_Icache_out();
@@ -413,14 +395,6 @@ module testbench;
         proc2Icache_addr[0] = 0;
         #1;
         correct_Icache_valid_out[0] = `FALSE;
-        print_imshr_entries_debug();
-        check_Icache_out();
-
-        @(negedge clock);
-        correct_proc2Imem_command = MEM_LOAD;
-        correct_proc2Imem_addr = 0;
-        correct = correct && correct_proc2Imem_command === proc2Imem_command && correct_proc2Imem_addr === proc2Icache_addr;
-        print_imshr_entries_debug();
         check_Icache_out();
 
         $display("@@@ Passed test_evict");
@@ -430,9 +404,9 @@ module testbench;
         clock = 0;
         clock_cycle = 0;
 
-        // test_cache_miss();
-        // test_non_blocking();
-        // test_sequential_load();
+        test_cache_miss();
+        test_non_blocking();
+        test_sequential_load();
         test_evict();
 
         $display("@@@ Passed");

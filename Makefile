@@ -96,7 +96,7 @@
 # there should be no need to change anything for project 3
 
 # this is a global clock period variable used in the tcl script and referenced in testbenches
-export CLOCK_PERIOD = 15.0
+export CLOCK_PERIOD = 10.0
 
 # the Verilog Compiler command and arguments
 VCS = SW_VCS=2020.12-SP2-1 vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
@@ -278,7 +278,7 @@ build/stage_decode.cov.simv: $(STAGE_DECODE_FILES)
 synth/stage_decode.vg: $(STAGE_DECODE_FILES)
 
 # STAGE_FETCH
-STAGE_FETCH_FILES = verilog/sys_defs.svh verilog/stage_fetch.sv verilog/icache.sv
+STAGE_FETCH_FILES = verilog/sys_defs.svh verilog/stage_fetch.sv verilog/icache.sv verilog/psel_gen.sv
 build/stage_fetch.simv: $(STAGE_FETCH_FILES)
 build/stage_fetch.cov.simv: $(STAGE_FETCH_FILES)
 synth/stage_fetch.vg: $(STAGE_FETCH_FILES)
