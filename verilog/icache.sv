@@ -42,14 +42,15 @@ module imshr (
     wire [`N-1:0][`N-1:0] entries_free_gnt_bus;
     wire [`N-1:0]         entries_pending_gnt_bus;
 
-    logic outstanding_request_valid, next_outstanding_request_valid;
-    logic [`N_CNT_WIDTH-1:0] outstanding_request_index, next_outstanding_request_index;
+    // logic outstanding_request_valid, next_outstanding_request_valid;
+    // logic [`N_CNT_WIDTH-1:0] outstanding_request_index, next_outstanding_request_index;
 
     genvar i;
     generate
         for (i = 0; i < `N; ++i) begin
             assign entries_free[i] = imshr_entries[i].state == IMSHR_INVALID;
-            assign entries_pending[i] = imshr_entries[i].state == IMSHR_PENDING;
+            // assign entries_pending[i] = imshr_entries[i].state == IMSHR_PENDING;
+            assign entries_pending[i] = imshr_entries[i].state == IMSHR_WAIT_TAG;
         end
     endgenerate
 
@@ -95,8 +96,8 @@ module imshr (
 
     always_comb begin
         next_imshr_entries             = imshr_entries;
-        next_outstanding_request_valid = `FALSE;
-        next_outstanding_request_index = 0;
+        // next_outstanding_request_valid = `FALSE;
+        // next_outstanding_request_index = 0;
 
         // Handle memory returns
         cache_index = 0;
@@ -117,7 +118,8 @@ module imshr (
             if (miss_cache_valid[i] && ~imshr_hit[i]) begin
                 for (int j = 0; j < `N; ++j) begin
                     if (entries_free_gnt_bus[i][j]) begin
-                        next_imshr_entries[j].state = IMSHR_PENDING;
+                        // next_imshr_entries[j].state = IMSHR_PENDING;
+                        next_imshr_entries[j].state = IMSHR_WAIT_TAG;
                         next_imshr_entries[j].index = miss_cache_indexes[i];
                         next_imshr_entries[j].tag   = miss_cache_tags[i];
                     end
@@ -137,28 +139,32 @@ module imshr (
                         3'b0
                     };
                     proc2Imem_command              = MEM_LOAD;
-                    next_outstanding_request_valid = `TRUE;
-                    next_outstanding_request_index = i;
-                    next_imshr_entries[i].state    = IMSHR_WAIT_TAG;
+                    // next_outstanding_request_valid = `TRUE;
+                    // next_outstanding_request_index = i;
+                    // next_imshr_entries[i].state    = IMSHR_WAIT_TAG;
+                    if (Imem2proc_transaction_tag != 0) begin
+                        next_imshr_entries[i].transaction_tag = Imem2proc_transaction_tag;
+                        next_imshr_entries[i].state = IMSHR_WAIT_DATA;
+                    end
                 end
             end
         end
 
-        if (outstanding_request_valid && Imem2proc_transaction_tag != 0) begin
-            next_imshr_entries[outstanding_request_index].transaction_tag = Imem2proc_transaction_tag;
-            next_imshr_entries[outstanding_request_index].state = IMSHR_WAIT_DATA;
-        end
+        // if (outstanding_request_valid && Imem2proc_transaction_tag != 0) begin
+        //     next_imshr_entries[outstanding_request_index].transaction_tag = Imem2proc_transaction_tag;
+        //     next_imshr_entries[outstanding_request_index].state = IMSHR_WAIT_DATA;
+        // end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
             imshr_entries <= 0;
-            outstanding_request_valid <= `FALSE;
-            outstanding_request_index <= 0;
+            // outstanding_request_valid <= `FALSE;
+            // outstanding_request_index <= 0;
         end else begin
             imshr_entries <= next_imshr_entries;
-            outstanding_request_valid <= next_outstanding_request_valid;
-            outstanding_request_index <= next_outstanding_request_index;
+            // outstanding_request_valid <= next_outstanding_request_valid;
+            // outstanding_request_index <= next_outstanding_request_index;
         end
     end
 endmodule

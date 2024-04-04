@@ -162,20 +162,19 @@ module testbench;
         print_icache_output();
 
         @(negedge clock);
-        #1;
-        print_icache_output();
+        // print_icache_output();
         correct_proc2Imem_command = MEM_LOAD;
         correct_proc2Imem_addr    = 0;
         correct = correct && (proc2Imem_command == correct_proc2Imem_command)
               && (proc2Imem_addr == correct_proc2Imem_addr)
               && (Icache_valid_out == correct_Icache_valid_out);
 
-        @(negedge clock);
+        // @(negedge clock);
         print_icache_output();
         Imem2proc_transaction_tag = 1;
-        correct_proc2Imem_command = MEM_NONE;
         correct_Icache_valid_out  = {`N{`FALSE}};
         correct = correct && (proc2Imem_command == correct_proc2Imem_command) && (Icache_valid_out == correct_Icache_valid_out);
+        correct_proc2Imem_command = MEM_NONE;
 
         for (int i = 0; i < 10; ++i) begin
             @(negedge clock);
@@ -224,14 +223,14 @@ module testbench;
             @(negedge clock);
             correct_proc2Imem_command = MEM_LOAD;
             correct = correct && (proc2Imem_command == correct_proc2Imem_command) && (Icache_valid_out == correct_Icache_valid_out);
-            Imem2proc_transaction_tag = i;
+            Imem2proc_transaction_tag = i + 1;
         
             print_imshr_entries_debug();
             print_icache_output();
         end
         
-        @(negedge clock);
-        Imem2proc_transaction_tag = `N;
+        // @(negedge clock);
+        // Imem2proc_transaction_tag = `N;
         correct_proc2Imem_command = MEM_NONE;
 
         @(negedge clock);
@@ -276,14 +275,14 @@ module testbench;
             @(negedge clock);
             correct_proc2Imem_command = MEM_LOAD;
             correct = correct && (proc2Imem_command == correct_proc2Imem_command) && (Icache_valid_out == correct_Icache_valid_out);
-            Imem2proc_transaction_tag = i;
+            Imem2proc_transaction_tag = i + 1;
 
             print_imshr_entries_debug();
             print_icache_output();
         end
         
-        @(negedge clock);
-        Imem2proc_transaction_tag = (`N+1)/2;
+        // @(negedge clock);
+        // Imem2proc_transaction_tag = (`N+1)/2;
         correct_proc2Imem_command = MEM_NONE;
 
         @(negedge clock);
@@ -322,14 +321,14 @@ module testbench;
 
         for (int i = 0; i < (`N+1)/2; ++i) begin
             @(negedge clock);
-            Imem2proc_transaction_tag = i;
+            Imem2proc_transaction_tag = i + 1;
 
-            print_imshr_entries_debug();
-            print_icache_output();
+            // print_imshr_entries_debug();
+            // print_icache_output();
         end
         
-        @(negedge clock);
-        Imem2proc_transaction_tag = (`N+1)/2;
+        // @(negedge clock);
+        // Imem2proc_transaction_tag = (`N+1)/2;
 
         @(negedge clock);
         Imem2proc_transaction_tag = 0;
@@ -368,10 +367,9 @@ module testbench;
         correct = correct && correct_proc2Imem_command === proc2Imem_command && correct_proc2Imem_addr === proc2Imem_addr;
         print_imshr_entries_debug();
 
-        @(negedge clock);
+        // @(negedge clock);
         Imem2proc_transaction_tag = 1;
         correct_proc2Imem_command = MEM_NONE;
-        correct = correct && correct_proc2Imem_command === proc2Imem_command;
 
         for(int i = 0; i < 10; i++) begin
             @(negedge clock);
