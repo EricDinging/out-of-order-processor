@@ -93,6 +93,9 @@ module ooo (
     // prf input, connect to cpu output
     PRN [`N-1:0] wb_read_prn;
 
+    // for error status
+    logic halt;
+
     rs rs_inst(
         .clock(clock),
         .reset(reset || squash),
@@ -256,11 +259,13 @@ module ooo (
 
         // rob ct output
         ooo_ct_packet.completed_inst = 0;
+        halt = `FALSE;
         for (int i = 0; i < `N; ++i) begin
-            ooo_ct_packet.completed_inst += rob_ct_packet.entries[i].executed;
+            ooo_ct_packet.completed_inst += rob_ct_packet.entries[i].executed && !halt;
             ooo_ct_packet.exception_code[i] = 
                 rob_ct_packet.entries[i].illegal ? ILLEGAL_INST :
                 rob_ct_packet.entries[i].halt    ? HALTED_ON_WFI : NO_ERROR;
+            halt |= ooo_ct_packet.exception_code[i] != NO_ERROR;
             wb_read_prn[i]          = rob_ct_packet.entries[i].dest_prn;
             ooo_ct_packet.wr_idx[i] = rob_ct_packet.entries[i].dest_arn;
             ooo_ct_packet.wr_en[i]  = ooo_ct_packet.wr_idx[i] != `ZERO_REG;
