@@ -68,6 +68,11 @@ module prf #(
                     output_value[i].valid = `TRUE;
                 end
             end
+            for (int j = 0; j < i / 2; j++) begin
+                if (prn_invalid[j] == read_prn[i]) begin
+                    output_value[i].valid = `FALSE;
+                end
+            end
         end
 
         `ifdef DEBUG_OUT
