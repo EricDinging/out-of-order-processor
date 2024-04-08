@@ -14,18 +14,18 @@ module testbench;
     LQ_DCACHE_PACKET [`N-1:0] lq_dcache_packet;
     SQ_DCACHE_PACKET [`N-1:0] sq_dcache_packet;
     // To memory
-    MEM_COMMAND proc2Dmem_command;
-    ADDR        proc2Dmem_addr;
-    MEM_BLOCK   proc2Dmem_data;
+    MEM_COMMAND proc2Dmem_command, correct_proc2Dmem_command;
+    ADDR        proc2Dmem_addr, correct_proc2Dmem_addr;
+    MEM_BLOCK   proc2Dmem_data, correct_proc2Dmem_data;
     // To LSQ current result
-    logic      [`N-1:0] store_req_accept;
-    logic      [`N-1:0] load_req_accept;
-    DATA       [`N-1:0] load_req_data;
-    logic      [`N-1:0] load_req_data_valid;
+    logic      [`N-1:0] store_req_accept, correct_store_req_accept;
+    logic      [`N-1:0] load_req_accept, correct_load_req_accept;
+    DATA       [`N-1:0] load_req_data, correct_load_req_data;
+    logic      [`N-1:0] load_req_data_valid, correct_load_req_data_valid;
     // To LSQ future result
-    DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet;
+    DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet, correct_dcache_lq_packet;
     // To Icache
-    logic dcache_request;
+    logic dcache_request, correct_dcache_request;
 
 
     dcache dut(
@@ -126,17 +126,67 @@ module testbench;
         Dmem2proc_data   = 0;
         Dmem2proc_data_tag        = 0;
         Dmem2proc_transaction_tag = 0;
+        correct_store_req_accept = 0;
+        correct_load_req_accept  = 0;
+        correct_load_req_data    = 0;
+        correct_load_req_data_valid = 0;
+        correct_dcache_lq_packet = 0;
 
         @(negedge clock);
         reset = 0;
         @(negedge clock);
     endtask
 
+    task test_cache_miss;
+        init();
+
+        lq_dcache_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){4}}, // lq_idx
+            {(32){8}},  // addr
+            MEM_WORD    // mem_func
+        };
+
+        #(`CLOCK_PERIOD/5);
+        correct_load_req_accept[0] = `TRUE;
+        correct = correct && (load_req_accept == correct_load_req_accept);
+
+        @(negedge clock);
+        correct_proc2Dmem_command = MEM_LOAD;
+        correct_proc2Dmem_addr    = 8;
+        correct_dcache_request    = `TRUE;
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) && (dcache_request == correct_dcache_request);
+
+        Dmem2proc_transaction_tag = 1;
+
+        for (int i = 0; i < 10; ++i) begin
+            @(negedge clock);
+            correct_proc2Dmem_command = MEM_NONE;
+            correct_dcache_request    = `FALSE;
+            correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (dcache_request == correct_dcache_request);
+        end
+
+        Dmem2proc_data_tag = 1;
+        Dmem2proc_data = 32'h12345678;
+
+        @(negedge clock);
+        correct_dcache_lq_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){4}},
+            32'h12345678
+        };
+        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
+        
+        print_ld_packet();
+
+        $display("@@@ Passed test_cache_miss");
+    endtask
+
     initial begin
         clock = 0;
         clock_cycle = 0;
 
-        init();
+        test_cache_miss();
 
         $display("@@@ Passed");
         $finish;

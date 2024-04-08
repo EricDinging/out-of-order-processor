@@ -340,7 +340,7 @@ module dcache #(
 
     wire [`N-1:0][`DCACHE_INDEX_BITS-1:0]        load_index, store_index;
     wire [`N-1:0][`DCACHE_TAG_BITS-1:0]          load_tag, store_tag;
-    wire [`N-1:0][`DCACHE_BLOCK_OFFSET_BITS-1:0] store_offset;
+    wire [`N-1:0][`DCACHE_BLOCK_OFFSET_BITS-1:0] load_offset, store_offset;
 
     genvar i;
     generate
@@ -432,7 +432,7 @@ module dcache #(
                         dcache_lq_packet[i] = '{
                             `TRUE, // valid
                             dmshr_flush_packet[i].lq_idx, // lq_idx
-                            next_dcache_data[cache_index].data // data
+                            next_dcache_data[cache_index].data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
                         };
                     end else if (dmshr_flush_packet[i].inst_command == INST_STORE) begin
                         next_dcache_data[cache_index].dirty = `TRUE;
@@ -456,10 +456,11 @@ module dcache #(
         // load
         for (int i = 0; i < `N; ++i) begin
             if (lq_dcache_packet[i].valid) begin
-                if (next_dcache_data[load_index[i]].tag == load_tag[i]) begin
+                if (next_dcache_data[load_index[i]].tag == load_tag[i] && next_dcache_data[load_index[i]].valid) begin
                     // hit
                     load_req_accept[i]     = `TRUE;
-                    load_req_data[i]       = next_dcache_data[load_index[i]].data;
+                    // TODO mask data based on load type (signed or not)
+                    load_req_data[i]       = next_dcache_data[load_index[i]].data.word_level[load_offset[2]];
                     load_req_data_valid[i] = `TRUE;
                 end else begin
                     // miss
@@ -472,7 +473,7 @@ module dcache #(
         // store
         for (int i = 0; i < `N; ++i) begin
             if (sq_dcache_packet[i].valid) begin
-                if (next_dcache_data[store_index[i]].tag == store_tag[i]) begin
+                if (next_dcache_data[store_index[i]].tag == store_tag[i] && next_dcache_data[store_index[i]].valid) begin
                     // hit
                     store_req_accept[i]                    = `TRUE;
                     next_dcache_data[store_index[i]].dirty = `TRUE;
