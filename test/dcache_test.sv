@@ -175,9 +175,11 @@ module testbench;
             {(`LOAD_Q_INDEX_WIDTH){4}},
             32'h12345678
         };
-        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
-        
+        $display("!!!!!correct_dcache_lq_packet[0].data = %h", correct_dcache_lq_packet[0].data);
+        $display("!!!!!dcache_lq_packet[0].data = %h", dcache_lq_packet[0].data);
+        correct = correct && (dcache_lq_packet[0].data === correct_dcache_lq_packet[0].data);
         print_ld_packet();
+
 
         $display("@@@ Passed test_cache_miss");
     endtask
