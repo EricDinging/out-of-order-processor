@@ -64,8 +64,8 @@
 // dcache
 `define DCACHE_LINES 32
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_LINES)
-
-`define DATA_WIDTH 32
+`define DCACHE_BLOCK_OFFSET_BITS 3
+`define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
 
 ///////////////////////////////
 // ---- Basic Constants ---- //
@@ -671,7 +671,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic [`DCACHE_INDEX_BITS-1:0]  index;           // cache index
-    logic [25-`DCACHE_INDEX_BITS:0] tag;             // cache tag
+    logic [`DCACHE_TAG_BITS-1:0]    tag;             // cache tag
     MEM_TAG                         transaction_tag; // tag returned from memory
     DMSHR_STATE                     state;           // MISS, WAIT
 } DMSHR_ENTRY;
@@ -679,8 +679,8 @@ typedef struct packed {
 typedef struct packed {
     INST_COMMAND inst_command;
     MEM_SIZE     mem_size;
-    DATA_WIDTH   data;
-    logic [5:0]  block_offset;
+    DATA         data;
+    logic [`DCACHE_BLOCK_OFFSET_BITS-1:0]  block_offset;
 } DMSHR_Q_PACKET;
 
 typedef struct packed {
