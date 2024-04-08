@@ -15,7 +15,7 @@ module rs #(
     input logic [`NUM_FU_MULT-1:0]  fu_mult_avail,
     input logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
     input logic [`NUM_FU_STORE-1:0] fu_store_avail,
-    
+
     output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
     output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,

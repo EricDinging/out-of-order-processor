@@ -141,6 +141,11 @@ typedef enum logic [1:0] {
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
 
+typedef enum logic {
+    INST_LOAD   = 1'h0,
+    INST_STORE  = 1'h1
+} INST_COMMAND;
+
 typedef enum logic [2:0] {
     MEM_BYTE  = 3'h0,
     MEM_HALF  = 3'h1,
@@ -155,6 +160,13 @@ typedef enum logic [1:0] {
     IMSHR_WAIT_TAG  = 2'h2,
     IMSHR_WAIT_DATA = 2'h3
 } IMSHR_STATE;
+
+typedef enum logic [1:0] {
+    DMSHR_INVALID   = 2'h0,
+    DMSHR_PENDING   = 2'h1, // not sent request
+    DMSHR_WAIT_TAG  = 2'h2,
+    DMSHR_WAIT_DATA = 2'h3
+} DMSHR_STATE;
 
 ///////////////////////////////
 // ---- Exception Codes ---- //
@@ -651,11 +663,25 @@ typedef struct packed {
 } ID_OOO_PACKET;
 
 typedef struct packed {
-    logic [`CACHE_LINE_BITS-1:0]  index;             // cache index
-    logic [12-`CACHE_LINE_BITS:0] tag;               // cache tag
-    MEM_TAG                       transaction_tag;   // tag returned from memory
-    IMSHR_STATE                   state;             // MISS, WAIT
+    logic [`CACHE_LINE_BITS-1:0]  index;           // cache index
+    logic [12-`CACHE_LINE_BITS:0] tag;             // cache tag
+    MEM_TAG                       transaction_tag; // tag returned from memory
+    IMSHR_STATE                   state;           // MISS, WAIT
 } IMSHR_ENTRY;
+
+typedef struct packed {
+    logic [`DCACHE_INDEX_BITS-1:0]  index;           // cache index
+    logic [25-`DCACHE_INDEX_BITS:0] tag;             // cache tag
+    MEM_TAG                         transaction_tag; // tag returned from memory
+    DMSHR_STATE                     state;           // MISS, WAIT
+} DMSHR_ENTRY;
+
+typedef struct packed {
+    INST_COMMAND inst_command;
+    MEM_SIZE     mem_size;
+    DATA_WIDTH   data;
+    logic [5:0]  block_offset;
+} DMSHR_Q_PACKET;
 
 typedef struct packed {
     logic                               valid;
@@ -672,7 +698,6 @@ typedef struct packed {
 
 typedef struct packed {
     logic                            valid;
-    logic [`STORE_Q_INDEX_WIDTH-1:0] sq_idx;
     ADDR                             addr;
     MEM_SIZE                         size;
     DATA_WIDTH                       data;
