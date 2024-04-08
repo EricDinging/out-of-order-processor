@@ -2,10 +2,10 @@
 `define CPU_DEBUG_OUT
 
 typedef struct packet {
-    MEM_BLOCK                                                   data;
-    logic [32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS-1:0] tag; // 32 - block index bits
-    logic                                                       valid;
-    logic                                                       dirty;
+    MEM_BLOCK                    data;
+    logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
+    logic                        valid;
+    logic                        dirty;
 } DCACHE_ENTRY;
 
 module dmshr_queue (
@@ -78,7 +78,9 @@ module dmshr #(
     input logic     dcache_evict,
     // From cache
     input LQ_DCACHE_PACKET [`N-1:0] lq_dcache_packet,
+    input logic            [`N-1:0] lq_dcache_miss,
     input SQ_DCACHE_PACKET [`N-1:0] sq_dcache_packet,
+    input logic            [`N-1:0] sq_dcache_miss,
     // To memory
     output MEM_COMMAND proc2Dmem_command,
     output ADDR        proc2Dmem_addr,
@@ -112,8 +114,6 @@ module dmshr #(
 
     wire [SIZE-1:0] entries_pending;
     wire [SIZE-1:0] entries_pending_gnt_bus;
-
-    
 
     psel_gen #(
         .WIDTH(SIZE),
@@ -179,8 +179,8 @@ module dmshr #(
                 cache_tag   = dmshr_entries[i].tag;
                 ready       = `TRUE;
                 flushes[i]  = `TRUE;
-                dmshr_flush_packets = flush_packets[i];
-                dmshr_flush_valids  = flush_valids[i];
+                dmshr_flush_packet = flush_packets[i];
+                dmshr_flush_valid  = flush_valids[i];
             end 
         end
 
@@ -192,19 +192,20 @@ module dmshr #(
                                     && lq_dcache_packet[i].valid
                                     && next_dmshr_entries[j].tag == lq_dcache_packet[i].addr[`31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS]
                                     && next_dmshr_entries[j].index == lq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                if (dmshr_load_hit[i][j]) begin
+                if (dmshr_load_hit[i][j] && lq_dcache_miss[i]) begin
                     push_packets[j][i] = `{
                         .inst_command(INST_LOAD),
                         .mem_size(lq_dcache_packet[i].size),
                         .data(0),
-                        .block_offset(lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0])
+                        .block_offset(lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0]),
+                        .lq_idx(lq_dcache_packet[i].lq_idx)
                     };
                     push_valids[j][i] = `TRUE;
                     // read push accept
                     load_req_accept[i] = push_accepts[j][i];
                 end
             end
-            if (~(|dmshr_load_hit[i]) && ~lq_dcache_packet[i].valid) begin
+            if (~(|dmshr_load_hit[i]) && lq_dcache_packet[i].valid && lq_dcache_miss[i]) begin
                 for (int j = 0; j < SIZE; ++j) begin
                     if (next_dmshr_entries[j].state == DMSHR_INVALID && ~dmshr_load_allocate[i]) begin
                         dmshr_load_allocate[i] = `TRUE;
@@ -215,7 +216,8 @@ module dmshr #(
                             .inst_command(INST_LOAD),
                             .mem_size(lq_dcache_packet[i].size),
                             .data(0),
-                            .block_offset(lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0])
+                            .block_offset(lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0]),
+                            .lq_idx(lq_dcache_packet[i].lq_idx)
                         };
                         push_valids[j][i] = `TRUE;
                         // read push accept
@@ -232,18 +234,19 @@ module dmshr #(
                                      && sq_dcache_packet[i].valid
                                      && next_dmshr_entries[j].tag == sq_dcache_packet[i].addr[`31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS]
                                      && next_dmshr_entries[j].index == sq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                if (dmshr_store_hit[i][j]) begin
+                if (dmshr_store_hit[i][j] && sq_dcache_miss[i]) begin
                     push_packets[j][i] = `{
                         .inst_command(INST_STORE),
                         .mem_size(sq_dcache_packet[i].size),
                         .data(sq_dcache_packet[i].data),
-                        .block_offset(sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0])
+                        .block_offset(sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0]),
+                        .lq_idx(0)
                     };
                     push_valids[j][i] = `TRUE;
                     store_req_accept[i] = push_accepts[j][i];
                 end
             end
-            if (~(|dmshr_store_hit[i]) && sq_dcache_packet[i].valid) begin
+            if (~(|dmshr_store_hit[i]) && sq_dcache_packet[i].valid && sq_dcache_miss[i]) begin
                 for (int j = 0; j < SIZE; ++j) begin
                     if (next_dmshr_entries[j].state == DMSHR_INVALID && ~dmshr_store_allocate[i]) begin
                         dmshr_store_allocate[i] = `TRUE;
@@ -254,7 +257,8 @@ module dmshr #(
                             .inst_command(INST_STORE),
                             .mem_size(sq_dcache_packet[i].size),
                             .data(sq_dcache_packet[i].data),
-                            .block_offset(sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0])
+                            .block_offset(sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0]),
+                            .lq_idx(0)
                         };
                         push_valids[j][i] = `TRUE;
                         store_req_accept[i] = push_accepts[j][i];
@@ -295,8 +299,8 @@ endmodule
 module dcache #(
     parameter SIZE = `DCACHE_LINES
 )(
-    input clock,
-    input reset,
+    input logic clock,
+    input logic reset,
     input logic squash,
     // From memory
     input MEM_TAG   Dmem2proc_transaction_tag,
@@ -312,11 +316,204 @@ module dcache #(
     output logic      [`N-1:0] store_req_accept,
     output logic      [`N-1:0] load_req_accept,
     output DATA_WIDTH [`N-1:0] load_req_data,
+    output logic      [`N-1:0] load_req_data_valid,
     // To LSQ future result
     output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet,
     // To Icache
     output logic dcache_request
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
+
+    // DMSHR input
+    logic dcache_evict;
+    logic [`N-1:0] lq_dcache_miss;
+    logic [`N-1:0] sq_dcache_miss;
+    // DMSHR output
+    MEM_COMMAND                    dmshr_proc2Dmem_command;
+    ADDR                           dmshr_proc2Dmem_addr;
+    logic [`N-1:0]                 store_req_accept;
+    logic [`N-1:0]                 load_req_accept;
+    logic                          dmshr_request;
+    logic [`DCACHE_TAG_BITS-1:0]   cache_tag;
+    logic [`DCACHE_INDEX_BITS-1:0] cache_index;
+    logic                          ready;
+    DMSHR_Q_PACKET [`N-1:0]        dmshr_flush_packet;
+    logic [`N-1:0]                 dmshr_flush_valid;
+    logic      [`N-1:0]            dmhsr_store_req_accept;
+    logic      [`N-1:0]            dmhsr_load_req_accept;
+
+    wire [`N-1][`DCACHE_INDEX_BITS-1:0]    load_index, store_index;
+    wire [`N-1][`DCACHE_TAG_BITS-1:0]      load_tag, store_tag;
+    wire [`N-1][`DCACHE_BLOCK_OFFSET_BITS] store_offset;
+
+    genvar i;
+    generate
+        for (i = 0; i < `N; ++i) begin
+            assign load_index[i]   = lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
+            assign store_index[i]  = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
+            assign load_tag[i]     = lq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
+            assign store_tag[i]    = sq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
+            assign store_offset[i] = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
+        end
+    endgenerate
+
+    dmshr mshr (
+        .clock(clock),
+        .reset(reset || squash),
+        // From memory
+        .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
+        .Dmem2proc_data_tag(Dmem2proc_data_tag),
+        // From dcache
+        .dcache_evict(dcache_evict),
+        // From cache
+        .lq_dcache_packet(lq_dcache_packet),
+        .lq_dcache_miss(lq_dcache_miss),
+        .sq_dcache_packet(sq_dcache_packet),
+        .sq_dcache_miss(sq_dcache_miss),
+        // output
+        .proc2Dmem_command(dmshr_proc2Dmem_command),
+        .proc2Dmem_addr(dmshr_proc2Dmem_addr),
+        // To cache current result
+        .store_req_accept(dmhsr_store_req_accept),
+        .load_req_accept(dmhsr_load_req_accept),
+        // To dcache
+        .dmshr_request(dmshr_request), // to icache
+        .cache_tag(cache_tag),
+        .cache_index(cache_index),
+        .ready(ready)
+        .dmshr_flush_packet(dmshr_flush_packet),
+        .dmshr_flush_valid(dmshr_flush_valid)
+    );
+
+    always_comb begin
+        // dcache output
+        proc2Dmem_command = MEM_NONE;
+        proc2Dmem_addr    = 0;
+        load_req_data     = 0;
+        load_req_data_valid = {`N{`FALSE}};
+        dcache_lq_packet  = 0;
+        dcache_request    = `FALSE;
+        load_req_accept = {`N{`FALSE}};
+        store_req_accept = {`N{`FALSE}};
+        // dmshr input
+        dcache_evict      = `FALSE;
+        lq_dcache_miss    = {`N{`FALSE}};
+        sq_dcache_miss    = {`N{`FALSE}};
+
+        next_dcache_data  = dcache_data;
+
+        // memory to dcache
+        if (ready) begin
+            // if dirty evict, set dcache_evict
+            if (dcache_data[cache_index].dirty && dcache_data[cache_index].valid) begin
+                dcache_evict = `TRUE;
+                proc2Dmem_addr = {
+                    dcache_data[cache_index].tag,
+                    cache_index,
+                    {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}
+                };
+                proc2Dmem_command = MEM_STORE;
+            end else begin
+                proc2Dmem_addr    = dmshr_proc2Dmem_addr;
+                proc2Dmem_command = dmshr_proc2Dmem_command;
+            end
+            
+            // directly mapped cache
+            next_dcache_data[cache_index].valid = `TRUE;
+            next_dcache_data[cache_index].tag   = cache_tag;
+            next_dcache_data[cache_index].dirty = `FALSE;
+            next_dcache_data[cache_index].data  = Dmem2proc_data;
+            // update icache data content for store, output load
+            for (int i = 0; i < `N; ++i) begin
+                if (dmshr_flush_valid[i]) begin
+                    if (dmshr_flush_packet[i].inst_command == INST_LOAD) begin
+                        dcache_lq_packet[i] = `{
+                            .addr({
+                                dmshr_flush_packet[i].tag,
+                                dmshr_flush_packet[i].index,
+                                {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}
+                            }),
+                            .lq_idx(dmshr_flush_packet[i].lq_idx),
+                            .data(next_dcache_data[cache_index].data)
+                        };
+                    end else if (dmshr_flush_packet[i].inst_command == INST_STORE) begin
+                        next_dcache_data[cache_index].dirty = `TRUE;
+                        case (dmshr_flush_packet[i].mem_size)
+                            BYTE: 
+                                next_dcache_data[cache_index].data[
+                                    dmshr_flush_packet[i].block_offset+7:dmshr_flush_packet[i].block_offset]
+                                    = dmshr_flush_packet[i].data[7:0];
+                            HALF:
+                                next_dcache_data[cache_index].data[
+                                    dmshr_flush_packet[i].block_offset+15:dmshr_flush_packet[i].block_offset]
+                                    = dmshr_flush_packet[i].data[15:0];
+                            WORD:
+                                next_dcache_data[cache_index].data[
+                                    dmshr_flush_packet[i].block_offset+31:dmshr_flush_packet[i].block_offset]
+                                    = dmshr_flush_packet[i].data[31:0];
+                            DOUBLE:
+                                next_dcache_data[cache_index].data[
+                                    dmshr_flush_packet[i].block_offset+63:dmshr_flush_packet[i].block_offset]
+                                    = dmshr_flush_packet[i].data[63:0];
+                        endcase
+                    end
+                end
+            end
+        end
+
+        // cache hit or miss
+        // load
+        for (int i = 0; i < `N: ++i) begin
+            if (lq_dcache_packet[i].valid) begin
+                if (next_dcache_data[load_index[i]].tag == load_tag[i]) begin
+                    // hit
+                    load_req_accept[i]     = `TRUE;
+                    load_req_data[i]       = next_dcache_data[load_index[i]].data;
+                    load_req_data_valid[i] = `TRUE;
+                end else begin
+                    // miss
+                    lq_dcache_miss[i]  = `TRUE;
+                    load_req_accept[i] = dmhsr_load_req_accept[i];
+                end
+            end
+        end
+
+        // store
+        for (int i = 0; i < `N; ++i) begin
+            if (sq_dcache_packet[i].valid) begin
+                if (next_dcache_data[store_index[i]].tag == store_tag[i]) begin
+                    // hit
+                    store_req_accept[i] = `TRUE;
+                    next_dcache_data[store_index[i]].dirty = `TRUE;
+                    case (sq_dcache_packet[i].mem_size)
+                        BYTE: 
+                            next_dcache_data[store_index[i]].data[store_offset[i]+7:store_offset[i]]
+                                = sq_dcache_packet[i].data[7:0];
+                        HALF:
+                            next_dcache_data[store_index[i]].data[store_offset[i]+15:store_offset[i]]
+                                = sq_dcache_packet[i].data[15:0];
+                        WORD:
+                            next_dcache_data[store_index[i]].data[store_offset[i]+31:store_offset[i]]
+                                = sq_dcache_packet[i].data[31:0];
+                        DOUBLE:
+                            next_dcache_data[store_index[i]].data[store_offset[i]+63:store_offset[i]]
+                                = sq_dcache_packet[i].data[63:0];
+                    endcase
+                end else begin
+                    sq_dcache_miss[i] = `TRUE;
+                    store_req_accept[i] = dmhsr_store_req_accept[i];
+                end
+            end
+        end
+
+    end
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            dcache_data <= 0;
+        end else begin
+            dcache_data <= next_dcache_data;
+        end
+    end
 
 endmodule

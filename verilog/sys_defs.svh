@@ -677,10 +677,11 @@ typedef struct packed {
 } DMSHR_ENTRY;
 
 typedef struct packed {
-    INST_COMMAND inst_command;
-    MEM_SIZE     mem_size;
-    DATA         data;
+    INST_COMMAND                           inst_command;
+    MEM_SIZE                               mem_size;
+    DATA                                   data;
     logic [`DCACHE_BLOCK_OFFSET_BITS-1:0]  block_offset;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0]        lq_idx;
 } DMSHR_Q_PACKET;
 
 typedef struct packed {
