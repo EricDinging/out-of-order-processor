@@ -51,12 +51,21 @@
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
 
+`define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
+`define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
+
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
 
 // cache
 `define CACHE_LINES 32
 `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
+// dcache
+`define DCACHE_LINES 32
+`define DCACHE_INDEX_BITS $clog2(`DCACHE_LINES)
+
+`define DATA_WIDTH 32
 
 ///////////////////////////////
 // ---- Basic Constants ---- //
@@ -73,7 +82,7 @@ typedef logic [31:0] ADDR;
 typedef logic [31:0] DATA;
 typedef logic [4:0] REG_IDX;
 
-typedef logic [`PRN_WIDTH-1:0]           PRN;
+typedef logic [`PRN_WIDTH-1:0]         PRN;
 typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 
 // the zero register
@@ -644,9 +653,29 @@ typedef struct packed {
 typedef struct packed {
     logic [`CACHE_LINE_BITS-1:0]  index;             // cache index
     logic [12-`CACHE_LINE_BITS:0] tag;               // cache tag
-    MEM_TAG                      transaction_tag;   // tag returned from memory
-    IMSHR_STATE                  state;             // MISS, WAIT
+    MEM_TAG                       transaction_tag;   // tag returned from memory
+    IMSHR_STATE                   state;             // MISS, WAIT
 } IMSHR_ENTRY;
 
+typedef struct packed {
+    logic                               valid;
+    logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    DATA_WIDTH                          data;
+} DCACHE_LQ_PACKET;
+
+typedef struct packed {
+    logic                           valid;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    ADDR                            addr;
+    MEM_SIZE                        size;
+} LQ_DCACHE_PACKET;
+
+typedef struct packed {
+    logic                            valid;
+    logic [`STORE_Q_INDEX_WIDTH-1:0] sq_idx;
+    ADDR                             addr;
+    MEM_SIZE                         size;
+    DATA_WIDTH                       data;
+} SQ_DCACHE_PACKET;
 
 `endif // __SYS_DEFS_SVH__

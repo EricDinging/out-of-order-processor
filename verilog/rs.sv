@@ -21,21 +21,21 @@ module rs #(
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
     output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
     output logic almost_full
-    `ifdef CPU_DEBUG_OUT //DEBUG_OUT
+    `ifdef CPU_DEBUG_OUT // DEBUG_OUT
     , output RS_ENTRY [SIZE-1:0]       entries_out
     , output logic [`RS_CNT_WIDTH-1:0] counter_out
     `endif
 );
     // State
     logic [`RS_CNT_WIDTH-1:0] counter;
-    RS_ENTRY [SIZE-1:0]   entries;
+    RS_ENTRY [SIZE-1:0]       entries;
 
     assign entries_out = entries;
     assign counter_out = counter;
     
     // Next state
     logic [`RS_CNT_WIDTH-1:0] next_counter;
-    RS_ENTRY [SIZE-1:0]   next_entries;
+    RS_ENTRY [SIZE-1:0]       next_entries;
 
     wire [SIZE-1:0] wake_ups;
     wire [SIZE-1:0] alu_wake_ups;
