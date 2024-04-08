@@ -419,7 +419,7 @@ module dcache #(
                 proc2Dmem_command = MEM_STORE;
                 dcache_request    = `TRUE;
             end
-            
+
             // directly mapped cache
             next_dcache_data[cache_index].valid = `TRUE;
             next_dcache_data[cache_index].tag   = cache_tag;
