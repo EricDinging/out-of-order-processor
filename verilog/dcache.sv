@@ -19,6 +19,7 @@ module dcache #(
 )(
     input clock,
     input reset,
+    input logic squash,
     // From memory
     input MEM_TAG   Dmem2proc_transaction_tag,
     input MEM_BLOCK Dmem2proc_data,
@@ -33,8 +34,10 @@ module dcache #(
     output logic      [`N-1:0] store_req_accept,
     output logic      [`N-1:0] load_req_accept,
     output DATA_WIDTH [`N-1:0] load_req_data,
-    // To LSQ future request
-    output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet
+    // To LSQ future result
+    output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet,
+    // To Icache
+    output logic dcache_request
 );
 
 endmodule
