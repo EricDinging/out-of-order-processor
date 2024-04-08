@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -217,6 +217,11 @@ ICACHE_FILES = verilog/sys_defs.svh verilog/psel_gen.sv
 build/icache.simv: $(ICACHE_FILES)
 build/icache.cov.simv: $(ICACHE_FILES)
 synth/icache.vg: $(ICACHE_FILES)
+
+DCACHE_FILES = verilog/sys_defs.svh verilog/psel_gen.sv
+build/dcache.simv: $(DCACHE_FILES)
+build/dcache.cov.simv: $(DCACHE_FILES)
+synth/dcache.vg: $(DCACHE_FILES)
 
 MULT_FILES = verilog/sys_defs.svh
 build/mult.simv: $(MULT_FILES)

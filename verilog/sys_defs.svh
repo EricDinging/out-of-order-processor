@@ -678,7 +678,7 @@ typedef struct packed {
 
 typedef struct packed {
     INST_COMMAND                           inst_command;
-    MEM_SIZE                               mem_size;
+    MEM_FUNC                               mem_func;
     DATA                                   data;
     logic [`DCACHE_BLOCK_OFFSET_BITS-1:0]  block_offset;
     logic [`LOAD_Q_INDEX_WIDTH-1:0]        lq_idx;
@@ -694,13 +694,13 @@ typedef struct packed {
     logic                           valid;
     logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
     ADDR                            addr;
-    MEM_SIZE                        size;
+    MEM_FUNC                        mem_func;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
     logic     valid;
     ADDR      addr;
-    MEM_SIZE  size;
+    MEM_FUNC  mem_func;
     DATA      data;
 } SQ_DCACHE_PACKET;
 
