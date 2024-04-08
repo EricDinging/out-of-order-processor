@@ -380,27 +380,31 @@ module dcache #(
         .dmshr_request(dmshr_request), // to icache
         .cache_tag(cache_tag),
         .cache_index(cache_index),
-        .ready(ready)
+        .ready(ready),
         .dmshr_flush_packet(dmshr_flush_packet),
         .dmshr_flush_valid(dmshr_flush_valid)
     );
 
     always_comb begin
         // dcache output
-        proc2Dmem_command = MEM_NONE;
-        proc2Dmem_addr    = 0;
-        load_req_data     = 0;
+        proc2Dmem_command   = MEM_NONE;
+        proc2Dmem_addr      = 0;
+        load_req_data       = 0;
         load_req_data_valid = {`N{`FALSE}};
-        dcache_lq_packet  = 0;
-        dcache_request    = `FALSE;
-        load_req_accept = {`N{`FALSE}};
-        store_req_accept = {`N{`FALSE}};
+        dcache_lq_packet    = 0;
+        dcache_request      = `FALSE;
+        load_req_accept     = {`N{`FALSE}};
+        store_req_accept    = {`N{`FALSE}};
         // dmshr input
         dcache_evict      = `FALSE;
         lq_dcache_miss    = {`N{`FALSE}};
         sq_dcache_miss    = {`N{`FALSE}};
 
         next_dcache_data  = dcache_data;
+
+        proc2Dmem_addr    = dmshr_proc2Dmem_addr;
+        proc2Dmem_command = dmshr_proc2Dmem_command;
+        dcache_request    = dmshr_request;
 
         // memory to dcache
         if (ready) begin
@@ -413,9 +417,7 @@ module dcache #(
                     {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}
                 };
                 proc2Dmem_command = MEM_STORE;
-            end else begin
-                proc2Dmem_addr    = dmshr_proc2Dmem_addr;
-                proc2Dmem_command = dmshr_proc2Dmem_command;
+                dcache_request    = `TRUE;
             end
             
             // directly mapped cache
@@ -423,7 +425,7 @@ module dcache #(
             next_dcache_data[cache_index].tag   = cache_tag;
             next_dcache_data[cache_index].dirty = `FALSE;
             next_dcache_data[cache_index].data  = Dmem2proc_data;
-            // update icache data content for store, output load
+            // update dcache data content for store, output load
             for (int i = 0; i < `N; ++i) begin
                 if (dmshr_flush_valid[i]) begin
                     if (dmshr_flush_packet[i].inst_command == INST_LOAD) begin
@@ -483,7 +485,7 @@ module dcache #(
             if (sq_dcache_packet[i].valid) begin
                 if (next_dcache_data[store_index[i]].tag == store_tag[i]) begin
                     // hit
-                    store_req_accept[i] = `TRUE;
+                    store_req_accept[i]                    = `TRUE;
                     next_dcache_data[store_index[i]].dirty = `TRUE;
                     case (sq_dcache_packet[i].mem_size)
                         BYTE: 
@@ -500,7 +502,7 @@ module dcache #(
                                 = sq_dcache_packet[i].data[63:0];
                     endcase
                 end else begin
-                    sq_dcache_miss[i] = `TRUE;
+                    sq_dcache_miss[i]   = `TRUE;
                     store_req_accept[i] = dmhsr_store_req_accept[i];
                 end
             end
