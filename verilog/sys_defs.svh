@@ -684,9 +684,9 @@ typedef struct packed {
 } DMSHR_Q_PACKET;
 
 typedef struct packed {
-    logic                               valid;
-    logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
-    DATA_WIDTH                          data;
+    logic                           valid;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    DATA                            data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
@@ -697,10 +697,10 @@ typedef struct packed {
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
-    logic                            valid;
-    ADDR                             addr;
-    MEM_SIZE                         size;
-    DATA_WIDTH                       data;
+    logic     valid;
+    ADDR      addr;
+    MEM_SIZE  size;
+    DATA      data;
 } SQ_DCACHE_PACKET;
 
 `endif // __SYS_DEFS_SVH__

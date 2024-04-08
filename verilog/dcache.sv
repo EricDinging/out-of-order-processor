@@ -87,7 +87,7 @@ module dmshr #(
     output logic      [`N-1:0] load_req_accept,
     // To LSQ future result
     output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet,
-    output logic                     dmshr_request,
+    output logic                     dmshr_request, // to icache
     // To dcache
     output logic [25-`DCACHE_INDEX_BITS:0] cache_tag,
     output logic [`DCACHE_INDEX_BITS-1:0]  cache_index,
@@ -95,6 +95,9 @@ module dmshr #(
 );
 
     DMSHR_ENTRY [SIZE-1:0] dmshr_entries, next_dmshr_entries;
+
+    logic [`N-1:0][$clog2(SIZE+1)-1:0] l_mshr_index;
+    logic [`N-1:0][$clog2(SIZE+1)-1:0] s_mshr_index;
 
     // DMSHR input
     logic          [SIZE-1:0][`N-1:0] push_valids;
@@ -152,8 +155,19 @@ module dmshr #(
         end
     endgenerate
 
+
     always_comb begin
         next_dmshr_entries = dmshr_entries;
+
+        cache_index = 0;
+        cache_tag   = 0;
+        ready       = `FALSE;
+        for (int i = 0; i < SIZE; ++i) begin
+            if (dmshr_entries[i].state == DMSHR_WAIT_DATA
+             && dmshr_entries[i].transaction_tag == Dmem2proc_data_tag) begin
+
+            end 
+        end
         
     end
 
