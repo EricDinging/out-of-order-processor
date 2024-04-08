@@ -51,8 +51,8 @@
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
 
-`define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
-`define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
+`define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD+1)
+`define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE+1)
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
@@ -60,6 +60,14 @@
 // cache
 `define CACHE_LINES 32
 `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
+// lsq
+`define NUM_SQ_DCACHE `N
+`define SQ_LEN  2 * `N
+`define SQ_IDX_BITS $clog2(`SQ_LEN + 2)
+
+`define NUM_LQ_DCACHE `N
+`define LU_LEN 2 * `N
 
 // dcache
 `define DCACHE_LINES 32
@@ -658,6 +666,18 @@ typedef struct packed {
 } IMSHR_ENTRY;
 
 typedef struct packed {
+    logic valid;
+    MEM_SIZE byte_info;
+} ID_SQ_PACKET;
+
+typedef struct packed {
+    logic valid;
+    DATA  base;
+    logic [11:0] imm;
+    DATA  data;
+} RS_SQ_PACKET;
+
+typedef struct packed {
     logic                               valid;
     logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
     DATA_WIDTH                          data;
@@ -672,7 +692,6 @@ typedef struct packed {
 
 typedef struct packed {
     logic                            valid;
-    logic [`STORE_Q_INDEX_WIDTH-1:0] sq_idx;
     ADDR                             addr;
     MEM_SIZE                         size;
     DATA_WIDTH                       data;
