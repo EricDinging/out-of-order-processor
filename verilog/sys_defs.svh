@@ -673,9 +673,10 @@ typedef struct packed {
 
 typedef struct packed {
     logic valid;
-    DATA  base;
-    logic [11:0] imm;
+    ADDR  base;
+    logic [11:0] offset
     DATA  data;
+    logic [`SQ_IDX_BITS-1:0] sq_idx;
 } RS_SQ_PACKET;
 
 typedef struct packed {
@@ -701,7 +702,7 @@ typedef struct packed {
 typedef struct packed {
     logic valid;
     MEM_SIZE size;
-    DATA base;
+    ADDR base;
     logic [11:0] offset;
     PRN prn;
     ROBN robn;
@@ -710,9 +711,16 @@ typedef struct packed {
 typedef struct packed {
     logic    valid;
     MEM_SIZE byte_info;
-    ADDR     target;
-    DATA     value;
+    ADDR     addr;
+    DATA     data;
     logic    ready;
 } SQ_ENTRY;
+
+typedef struct packed {
+    logic valid;
+    ADDR  addr;
+    DATA  data;
+    logic [`SQ_IDX_BITS-1:0] sq_idx;
+} SQ_REG;
 
 `endif // __SYS_DEFS_SVH__
