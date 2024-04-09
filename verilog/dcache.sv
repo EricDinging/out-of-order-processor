@@ -1,13 +1,6 @@
 `include "verilog/sys_defs.svh"
 `define CPU_DEBUG_OUT
 
-typedef struct packed {
-    MEM_BLOCK                    data;
-    logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
-    logic                        valid;
-    logic                        dirty;
-} DCACHE_ENTRY;
-
 module dmshr_queue (
     input clock, reset,
     input DMSHR_Q_PACKET  [`N-1:0] push_packet,
@@ -94,6 +87,9 @@ module dmshr #(
     output logic                          ready,
     output DMSHR_Q_PACKET        [`N-1:0] dmshr_flush_packet,
     output logic                 [`N-1:0] dmshr_flush_valid
+    `ifdef CPU_DEBUG_OUT
+    ,output DMSHR_ENTRY [SIZE-1:0] dmshr_entries_debug
+    `endif
 );
 
     DMSHR_ENTRY [SIZE-1:0] dmshr_entries, next_dmshr_entries;
@@ -115,6 +111,10 @@ module dmshr #(
 
     wire [SIZE-1:0] entries_pending;
     wire [SIZE-1:0] entries_pending_gnt_bus;
+
+`ifdef CPU_DEBUG_OUT
+    assign dmshr_entries_debug = dmshr_entries;
+`endif
 
     psel_gen #(
         .WIDTH(SIZE),
@@ -171,14 +171,15 @@ module dmshr #(
         // memory to dmshr
         for (int i = 0; i < SIZE; ++i) begin
             if (dmshr_entries[i].state == DMSHR_WAIT_DATA
-             && dmshr_entries[i].transaction_tag == Dmem2proc_data_tag) begin
+                && dmshr_entries[i].transaction_tag == Dmem2proc_data_tag) begin
                 cache_index = dmshr_entries[i].index;
                 cache_tag   = dmshr_entries[i].tag;
                 ready       = `TRUE;
                 flushes[i]  = `TRUE;
                 dmshr_flush_packet = flush_packets[i];
                 dmshr_flush_valid  = flush_valids[i];
-            end 
+                next_dmshr_entries[i].state = DMSHR_INVALID;
+            end
         end
 
         // load to dmshr
@@ -319,6 +320,10 @@ module dcache #(
     output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet,
     // To Icache
     output logic dcache_request
+`ifdef CPU_DEBUG_OUT
+    , output DMSHR_ENTRY [7:0] dmshr_entries_debug
+    , output DCACHE_ENTRY [SIZE-1:0] dcache_data_debug
+`endif
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
 
@@ -341,6 +346,10 @@ module dcache #(
     wire [`N-1:0][`DCACHE_INDEX_BITS-1:0]        load_index, store_index;
     wire [`N-1:0][`DCACHE_TAG_BITS-1:0]          load_tag, store_tag;
     wire [`N-1:0][`DCACHE_BLOCK_OFFSET_BITS-1:0] load_offset, store_offset;
+
+`ifdef CPU_DEBUG_OUT
+    assign dcache_data_debug = dcache_data;
+`endif
 
     genvar i;
     generate
@@ -381,6 +390,9 @@ module dcache #(
         .ready(ready),
         .dmshr_flush_packet(dmshr_flush_packet),
         .dmshr_flush_valid(dmshr_flush_valid)
+    `ifdef CPU_DEBUG_OUT
+        , .dmshr_entries_debug(dmshr_entries_debug)
+    `endif
     );
 
     always_comb begin
