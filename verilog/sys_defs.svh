@@ -66,8 +66,9 @@
 `define SQ_LEN  2 * `N
 `define SQ_IDX_BITS $clog2(`SQ_LEN + 2)
 
-`define NUM_LQ_DCACHE `N
+`define NUM_LU_DCACHE `N
 `define LU_LEN 2 * `N
+`define LU_IDX_BITS $clog2(`LU_LEN + 1)
 
 // dcache
 `define DCACHE_LINES 32
@@ -680,7 +681,7 @@ typedef struct packed {
 typedef struct packed {
     logic                               valid;
     logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
-    DATA_WIDTH                          data;
+    DATA                          data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
@@ -694,7 +695,24 @@ typedef struct packed {
     logic                            valid;
     ADDR                             addr;
     MEM_SIZE                         size;
-    DATA_WIDTH                       data;
+    DATA                       data;
 } SQ_DCACHE_PACKET;
+
+typedef struct packed {
+    logic valid;
+    MEM_SIZE size;
+    DATA base;
+    logic [11:0] offset;
+    PRN prn;
+    ROBN robn;
+} RS_LQ_PACKET;
+
+typedef struct packed {
+    logic    valid;
+    MEM_SIZE byte_info;
+    ADDR     target;
+    DATA     value;
+    logic    ready;
+} SQ_ENTRY;
 
 `endif // __SYS_DEFS_SVH__
