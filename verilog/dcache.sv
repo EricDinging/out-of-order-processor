@@ -3,16 +3,22 @@
 
 module dmshr_queue (
     input clock, reset,
-    input DMSHR_Q_PACKET  [`N-1:0] push_packet,
-    input logic           [`N-1:0] push_valid,
-    input logic                    flush,
-    output logic          [`N-1:0] push_accept,
-    output DMSHR_Q_PACKET [`N-1:0] flush_packet,
-    output logic          [`N-1:0] flush_valid
+    input DMSHR_Q_PACKET  [2*`N-1:0] push_packet,
+    input logic           [2*`N-1:0] push_valid,
+    input logic                      flush,
+    output logic          [2*`N-1:0] push_accept,
+    output DMSHR_Q_PACKET [`N-1:0]   flush_packet,
+    output logic          [`N-1:0]   flush_valid
+`ifdef CPU_DEBUG_OUT
+    , output logic [`N_CNT_WIDTH-1:0] counter_debug
+`endif
 );
     DMSHR_Q_PACKET  [`N-1:0] dmshr_q_entries, next_dmshr_q_entries;
     logic [`N_CNT_WIDTH-1:0] counter, next_counter;
     logic [`N_CNT_WIDTH-1:0] head, next_head, tail, next_tail;
+`ifdef CPU_DEBUG_OUT
+    assign counter_debug = counter;
+`endif
 
     always_comb begin
         next_head            = head;
@@ -33,7 +39,7 @@ module dmshr_queue (
                 flush_packet[i] = dmshr_q_entries[(head + i) % `N];
             end
         end else begin
-            for (int i = 0; i < `N; ++i) begin
+            for (int i = 0; i < 2*`N; ++i) begin
                 if (push_valid[i] && next_counter < `N) begin
                     next_dmshr_q_entries[next_tail] = push_packet[i];
                     next_tail                       = (next_tail + 1) % `N;
@@ -61,7 +67,7 @@ module dmshr_queue (
 endmodule
 
 module dmshr #(
-    parameter SIZE = 8
+    parameter SIZE = `DMSHR_SIZE
 )(
     input clock, reset,
     // From memory
@@ -88,7 +94,8 @@ module dmshr #(
     output DMSHR_Q_PACKET        [`N-1:0] dmshr_flush_packet,
     output logic                 [`N-1:0] dmshr_flush_valid
     `ifdef CPU_DEBUG_OUT
-    ,output DMSHR_ENTRY [SIZE-1:0] dmshr_entries_debug
+    , output DMSHR_ENTRY [SIZE-1:0] dmshr_entries_debug
+    , output logic [SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     `endif
 );
 
@@ -101,13 +108,13 @@ module dmshr #(
     logic [`N-1:0] dmshr_store_allocate;
     
     // DMSHR Q input
-    logic          [SIZE-1:0][`N-1:0] push_valids;
-    DMSHR_Q_PACKET [SIZE-1:0][`N-1:0] push_packets;
-    logic          [SIZE-1:0]         flushes;
+    logic          [SIZE-1:0][2*`N-1:0] push_valids;
+    DMSHR_Q_PACKET [SIZE-1:0][2*`N-1:0] push_packets;
+    logic          [SIZE-1:0]           flushes;
     // DMSHR Q output
-    logic          [SIZE-1:0][`N-1:0] push_accepts;
-    DMSHR_Q_PACKET [SIZE-1:0][`N-1:0] flush_packets;
-    logic          [SIZE-1:0][`N-1:0] flush_valids;
+    logic          [SIZE-1:0][2*`N-1:0] push_accepts;
+    DMSHR_Q_PACKET [SIZE-1:0][`N-1:0]   flush_packets;
+    logic          [SIZE-1:0][`N-1:0]   flush_valids;
 
     wire [SIZE-1:0] entries_pending;
     wire [SIZE-1:0] entries_pending_gnt_bus;
@@ -139,6 +146,9 @@ module dmshr #(
                 .push_accept(push_accepts[i]),
                 .flush_packet(flush_packets[i]),
                 .flush_valid(flush_valids[i])
+                `ifdef CPU_DEBUG_OUT
+                , .counter_debug(counter_debug[i])
+                `endif
             );
             assign entries_pending[i] = dmshr_entries[i].state == DMSHR_PENDING;
         end
@@ -233,15 +243,15 @@ module dmshr #(
                                      && next_dmshr_entries[j].tag == sq_dcache_packet[i].addr[31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS]
                                      && next_dmshr_entries[j].index == sq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
                 if (dmshr_store_hit[i][j] && sq_dcache_miss[i]) begin
-                    push_packets[j][i] = '{
+                    push_packets[j][i+`N] = '{
                         INST_STORE,               // inst_command
                         sq_dcache_packet[i].mem_func, // mem_func
                         sq_dcache_packet[i].data, // data
                         sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0], // block_offset
                         {`LOAD_Q_INDEX_WIDTH{1'b0}}    // lq_idx
                     };
-                    push_valids[j][i] = `TRUE;
-                    store_req_accept[i] = push_accepts[j][i];
+                    push_valids[j][i+`N] = `TRUE;
+                    store_req_accept[i] = push_accepts[j][i+`N];
                 end
             end
             if (~(|dmshr_store_hit[i]) && sq_dcache_packet[i].valid && sq_dcache_miss[i]) begin
@@ -251,15 +261,15 @@ module dmshr #(
                         next_dmshr_entries[j].state = DMSHR_PENDING;
                         next_dmshr_entries[j].tag = sq_dcache_packet[i].addr[31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS];
                         next_dmshr_entries[j].index = sq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                        push_packets[j][i] = '{
+                        push_packets[j][i+`N] = '{
                             INST_STORE,               // inst_command
                             sq_dcache_packet[i].mem_func, // mem_func
                             sq_dcache_packet[i].data, // data
                             sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0], // block_offset
                             {`LOAD_Q_INDEX_WIDTH{1'b0}}    // lq_idx
                         };
-                        push_valids[j][i] = `TRUE;
-                        store_req_accept[i] = push_accepts[j][i];
+                        push_valids[j][i+`N] = `TRUE;
+                        store_req_accept[i] = push_accepts[j][i+`N];
                     end
                 end
             end
@@ -321,8 +331,9 @@ module dcache #(
     // To Icache
     output logic dcache_request
 `ifdef CPU_DEBUG_OUT
-    , output DMSHR_ENTRY [7:0] dmshr_entries_debug
+    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
     , output DCACHE_ENTRY [SIZE-1:0] dcache_data_debug
+    , output logic [SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
 `endif
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
@@ -392,6 +403,7 @@ module dcache #(
         .dmshr_flush_valid(dmshr_flush_valid)
     `ifdef CPU_DEBUG_OUT
         , .dmshr_entries_debug(dmshr_entries_debug)
+        , .counter_debug(counter_debug)
     `endif
     );
 
@@ -472,7 +484,7 @@ module dcache #(
                     // hit
                     load_req_accept[i]     = `TRUE;
                     // TODO mask data based on load type (signed or not)
-                    load_req_data[i]       = next_dcache_data[load_index[i]].data.word_level[load_offset[2]];
+                    load_req_data[i]       = next_dcache_data[load_index[i]].data.word_level[load_offset[i][2]];
                     load_req_data_valid[i] = `TRUE;
                 end else begin
                     // miss

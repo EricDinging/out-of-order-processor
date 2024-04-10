@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 2
+`define N 5
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -51,8 +51,8 @@
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
 
-`define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
-`define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
+`define LOAD_Q_INDEX_WIDTH 32 // TODO: merge
+`define STORE_Q_INDEX_WIDTH 32 // TODO: merge
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
@@ -66,6 +66,7 @@
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_LINES)
 `define DCACHE_BLOCK_OFFSET_BITS 3
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
+`define DMSHR_SIZE 8
 
 ///////////////////////////////
 // ---- Basic Constants ---- //
