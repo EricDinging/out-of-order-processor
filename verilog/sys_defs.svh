@@ -48,11 +48,11 @@
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 2
 `define NUM_FU_MULT 2
-`define NUM_FU_LOAD 2
-`define NUM_FU_STORE 2
+`define NUM_FU_LOAD 8
+`define NUM_FU_STORE 8
 
-`define LOAD_Q_INDEX_WIDTH 32 // TODO: merge
-`define STORE_Q_INDEX_WIDTH 32 // TODO: merge
+`define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
+`define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
@@ -60,6 +60,15 @@
 // cache
 `define CACHE_LINES 32
 `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
+// lsq
+`define NUM_SQ_DCACHE `N
+`define SQ_LEN  2 * `N
+`define SQ_IDX_BITS $clog2(`SQ_LEN + 2)
+
+`define NUM_LU_DCACHE `N
+`define LU_LEN 2 * `N
+`define LU_IDX_BITS $clog2(`LU_LEN + 1)
 
 // dcache
 `define DCACHE_LINES 32
@@ -629,8 +638,8 @@ typedef struct packed {
     FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0]  alu_packet;
     logic                 [`NUM_FU_MULT-1:0] mult_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic                 [`NUM_FU_LOAD-1:0] load_prepared;
-    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
+    logic                 [`LU_LEN-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`LU_LEN-1:0] load_packet;
 } FU_STATE_PACKET;
 
 // typedef struct packed {
@@ -670,46 +679,43 @@ typedef struct packed {
     IMSHR_STATE                   state;           // MISS, WAIT
 } IMSHR_ENTRY;
 
-typedef struct packed {
-    logic [`DCACHE_INDEX_BITS-1:0]  index;           // cache index
-    logic [`DCACHE_TAG_BITS-1:0]    tag;             // cache tag
-    MEM_TAG                         transaction_tag; // tag returned from memory
-    DMSHR_STATE                     state;           // MISS, WAIT
-} DMSHR_ENTRY;
+typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
+
+typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
 
 typedef struct packed {
-    INST_COMMAND                          inst_command;
-    MEM_FUNC                              mem_func;
-    DATA                                  data;
-    logic [`DCACHE_BLOCK_OFFSET_BITS-1:0] block_offset;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0]       lq_idx;
-} DMSHR_Q_PACKET;
+    logic valid;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+} ID_SQ_PACKET;
 
 typedef struct packed {
-    logic                           valid;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
-    DATA                            data;
+    logic valid;
+    ADDR  base;
+    logic [11:0] offset;
+    DATA  data;
+    logic [`SQ_IDX_BITS-1:0] sq_idx;
+} RS_SQ_PACKET;
+
+typedef struct packed {
+    logic                               valid;
+    logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    DATA_WIDTH                          data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
     logic                           valid;
     logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
     ADDR                            addr;
-    MEM_FUNC                        mem_func;
+    MEM_SIZE                        size;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
-    logic     valid;
-    ADDR      addr;
-    MEM_FUNC  mem_func;
-    DATA      data;
+    logic                            valid;
+    logic [`STORE_Q_INDEX_WIDTH-1:0] sq_idx;
+    ADDR                             addr;
+    MEM_SIZE                         size;
+    DATA_WIDTH                       data;
 } SQ_DCACHE_PACKET;
-
-typedef struct packed {
-    MEM_BLOCK                    data;
-    logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
-    logic                        valid;
-    logic                        dirty;
-} DCACHE_ENTRY;
 
 `endif // __SYS_DEFS_SVH__

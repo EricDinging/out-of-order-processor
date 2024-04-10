@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -288,11 +288,23 @@ build/stage_fetch.simv: $(STAGE_FETCH_FILES)
 build/stage_fetch.cov.simv: $(STAGE_FETCH_FILES)
 synth/stage_fetch.vg: $(STAGE_FETCH_FILES)
 
-#ONEHOT_MUX
+# ONEHOT_MUX
 ONEHHOT_MUX_FILES = verilog/sys_defs.svh verilog/onehot_mux.sv
 build/onehot_mux.simv: $(ONEHHOT_MUX_FILES)
 build/onehot_mux.cov.simv: $(ONEHHOT_MUX_FILES)
 build/onehot_mux.vg: $(ONEHHOT_MUX_FILES)
+
+# STORE_QUEUE
+STORE_QUEUE_FILES = verilog/sys_defs.svh verilog/store_queue.sv
+build/store_queue.simv: $(STORE_QUEUE_FILES)
+build/store_queue.cov.simv: $(STORE_QUEUE_FILES)
+build/store_queue.vg: $(STORE_QUEUE_FILES)
+
+# LOAD_QUEUE
+LOAD_QUEUE_FILES = verilog/sys_defs.svh verilog/load_queue.sv verilog/sign_align.sv verilog/onehot_mux.sv verilog/psel_gen.sv
+build/load_queue.simv: $(LOAD_QUEUE_FILES)
+build/load_queue.cov.simv: $(LOAD_QUEUE_FILES)
+build/load_queue.vg: $(LOAD_QUEUE_FILES)
 
 #################################
 # ---- Main CPU Definition ---- #
