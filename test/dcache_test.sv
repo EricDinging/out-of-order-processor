@@ -30,6 +30,8 @@ module testbench;
     DMSHR_ENTRY [7:0] dmshr_entries_debug;
     DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug;
 
+    logic [31:0] moving_idx;
+
     dcache dut(
         .clock(clock),
         .reset(reset),
@@ -174,6 +176,7 @@ module testbench;
         correct_load_req_data    = 0;
         correct_load_req_data_valid = 0;
         correct_dcache_lq_packet = 0;
+        moving_idx = 0;
 
         @(negedge clock);
         reset = 0;
@@ -200,7 +203,8 @@ module testbench;
         correct_proc2Dmem_command = MEM_LOAD;
         correct_proc2Dmem_addr    = 8;
         correct_dcache_request    = `TRUE;
-        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) && (dcache_request == correct_dcache_request);
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) 
+                && (proc2Dmem_addr == correct_proc2Dmem_addr) && (dcache_request == correct_dcache_request);
 
         Dmem2proc_transaction_tag = 1;
 
@@ -255,7 +259,8 @@ module testbench;
         correct_proc2Dmem_command = MEM_LOAD;
         correct_proc2Dmem_addr    = 8;
         correct_dcache_request    = `TRUE;
-        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) && (dcache_request == correct_dcache_request);
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) 
+               && (proc2Dmem_addr == correct_proc2Dmem_addr) && (dcache_request == correct_dcache_request);
 
         Dmem2proc_transaction_tag = 1;
 
@@ -286,7 +291,8 @@ module testbench;
         correct_load_req_accept[0] = `TRUE;
         correct_load_req_data_valid[0] = `TRUE;
         correct_load_req_data[0] = 32'h12345678;
-        correct = correct && (load_req_accept == correct_load_req_accept) && (correct_load_req_data_valid == load_req_data) && (load_req_data == correct_load_req_data);
+        correct = correct && (load_req_accept == correct_load_req_accept) 
+                && (correct_load_req_data_valid == load_req_data) && (load_req_data == correct_load_req_data);
 
         @(negedge clock);
         Dmem2proc_data_tag = 0;
@@ -303,14 +309,15 @@ module testbench;
         correct_load_req_accept[0] = `TRUE;
         correct_load_req_data_valid[0] = `TRUE;
         correct_load_req_data[0] = 16'h1234;
-        correct = correct && (load_req_accept == correct_load_req_accept) && (correct_load_req_data_valid == load_req_data) && (load_req_data == correct_load_req_data);
+        correct = correct && (load_req_accept == correct_load_req_accept) 
+                && (correct_load_req_data_valid == load_req_data) && (load_req_data == correct_load_req_data);
         
         $display("@@@ Passed test_store_load");
     endtask
 
     task test_non_blocking;
         init();
-        
+
         for (int i = 0; i < `N; ++i) begin
             lq_dcache_packet[i] = '{
                 `TRUE,
@@ -365,82 +372,197 @@ module testbench;
     endtask
 
     task test_sequential_load;
-        init();
+        
+    endtask
 
+    task load_n_inst (input is_load);
         for (int i = 0; i < `N; ++i) begin
-            lq_dcache_packet[i] = '{
-                `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){i}}, // lq_idx
-                {(32){i * 4}},  // addr
-                MEM_WORD    // mem_func
-            };
+            if (is_load) begin
+                lq_dcache_packet[i] = '{
+                    `TRUE,
+                    {(`LOAD_Q_INDEX_WIDTH){moving_idx + i}}, // lq_idx
+                    {(32){(moving_idx + i) * 4}},  // addr
+                    MEM_WORD    // mem_func
+                };
+            end else begin
+                sq_dcache_packet[i] = '{
+                    `TRUE,
+                    {(32){(moving_idx + i) * 4}},  // addr
+                    MEM_WORD,   // mem_func
+                    {(32){moving_idx + i}}
+                };
+            end
         end
 
-        #(`CLOCK_PERIOD/5);
-        $display("check load allocation");
-        correct_load_req_accept = {`N{`TRUE}};
-        correct = correct && (load_req_accept == correct_load_req_accept);
-
         @(negedge clock);
-        print_dmshr_entries_debug();
+        // print_dmshr_entries_debug();
         lq_dcache_packet = 0;
+        sq_dcache_packet = 0;
 
-        for (int i = 0; i < (`N+1) / 2; ++i) begin
-            $display("check mem_load i = %0d", i);
-            correct_proc2Dmem_command = MEM_LOAD;
-            correct_dcache_request    = `TRUE;
-            correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (dcache_request == correct_dcache_request);
+        for (int i = 0; i < (`N+1)/2; ++i) begin
             Dmem2proc_transaction_tag = i + 1;
             @(negedge clock);
         end
 
-        for (int i = 0; i < (`N+1) / 2; ++i) begin
-            $display("check return_load_data i = %0d", i);
+        Dmem2proc_transaction_tag = 0;
+        @(negedge clock);
+
+        for (int i = 0; i < (`N+1)/2; ++i) begin
             Dmem2proc_data_tag = i + 1;
-            Dmem2proc_data = i * 200;
-            correct_dcache_lq_packet = 0;
-            #(`CLOCK_PERIOD/5);
-            if (dcache_lq_packet[0].lq_idx == `N-1) begin
-                $display("last one");
-                correct_dcache_lq_packet[0] = '{
-                    `TRUE,
-                    {(`LOAD_Q_INDEX_WIDTH){dcache_lq_packet[0].lq_idx}},
-                    i * 200
-                };
-                correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
-            end else begin
-                $display("not last one");
-                for (int j = 0; j < `N; ++j) begin
-                    correct_dcache_lq_packet[j] = '{
-                        `TRUE,
-                        {(`LOAD_Q_INDEX_WIDTH){dcache_lq_packet[j].lq_idx}},
-                        i * 200
-                    };
-                end
-                correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
-            end
+            Dmem2proc_data     = (moving_idx + i) * 100;
             @(negedge clock);
         end
 
+        // print_dmshr_entries_debug();
         Dmem2proc_data_tag = 0;
-        correct_dcache_lq_packet = 0;
-        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
-
+        moving_idx += `N;
         @(negedge clock);
-
-        $display("@@@ Passed test_sequential_load");
-    endtask
-
-    task test_dirty_evict;
     endtask
 
     task test_clean_evict;
+        init();
+
+        for (int i = 0; i < `DCACHE_LINES*64/(`N*32); ++i) begin
+            $display("load_n_inst, i = %0d", i);
+            load_n_inst(`TRUE);
+            @(negedge clock);
+        end
+
+        $display("load done");
+        lq_dcache_packet = 0;
+        sq_dcache_packet = 0;
+
+        lq_dcache_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}}, // lq_idx
+            {(32){`MEM_SIZE_IN_BYTES-4}},  // addr
+            MEM_WORD    // mem_func
+        };
+
+        #(`CLOCK_PERIOD/5);
+        $display("check load allocation");
+        correct_proc2Dmem_command = MEM_NONE;
+        correct_dcache_request    = `FALSE;
+        correct_load_req_accept = {`N{`FALSE}};
+        correct_load_req_accept[0] = `TRUE;
+        correct_load_req_data_valid = {`N{`FALSE}};
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (dcache_request == correct_dcache_request)
+            && (load_req_accept == correct_load_req_accept) && (load_req_data_valid == correct_load_req_data_valid);
+
+        @(negedge clock);
+        $display("check load mem request");
+        correct_proc2Dmem_command = MEM_LOAD;
+        correct_proc2Dmem_addr    = `MEM_SIZE_IN_BYTES-8;
+        correct_dcache_request    = `TRUE;
+        $display("correct_proc2Dmem_addr = %h", correct_proc2Dmem_addr);
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) 
+            && (dcache_request == correct_dcache_request);
+        Dmem2proc_transaction_tag = 1;
+        // print_mem_cmd();
+
+        @(negedge clock);
+        Dmem2proc_transaction_tag = 0;
+        Dmem2proc_data_tag = 1;
+        Dmem2proc_data = 32'h12345678;
+
+        #(`CLOCK_PERIOD/4);
+        $display("check clean evict, data return");
+        correct_dcache_lq_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}},
+            32'h12345678
+        };
+        Dmem2proc_data_tag = 0;
+        correct_dcache_request = `FALSE;
+        correct_proc2Dmem_command = MEM_NONE;
+        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) 
+            && (dcache_request == correct_dcache_request);
+
+        @(negedge clock);
+        $display("@@@ Passed test_clean_evict");
     endtask
 
-    task test_full_cache;
+    task test_dirty_evict;
+        init();
+
+        for (int i = 0; i < `DCACHE_LINES*64/(`N*32); ++i) begin
+            $display("store_n_inst, i = %0d", i);
+            load_n_inst(`FALSE);
+            @(negedge clock);
+        end
+
+        $display("store done");
+        lq_dcache_packet = 0;
+        sq_dcache_packet = 0;
+
+        lq_dcache_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}}, // lq_idx
+            {(32){`MEM_SIZE_IN_BYTES-4}},  // addr
+            MEM_WORD    // mem_func
+        };
+
+        #(`CLOCK_PERIOD/5);
+        $display("check load allocation");
+        correct_proc2Dmem_command = MEM_NONE;
+        correct_dcache_request    = `FALSE;
+        correct_load_req_accept = {`N{`FALSE}};
+        correct_load_req_accept[0] = `TRUE;
+        correct_load_req_data_valid = {`N{`FALSE}};
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (dcache_request == correct_dcache_request)
+            && (load_req_accept == correct_load_req_accept) && (load_req_data_valid == correct_load_req_data_valid);
+
+        @(negedge clock);
+        $display("check load mem request");
+        correct_proc2Dmem_command = MEM_LOAD;
+        correct_proc2Dmem_addr    = `MEM_SIZE_IN_BYTES-8;
+        correct_dcache_request    = `TRUE;
+        $display("correct_proc2Dmem_addr = %h", correct_proc2Dmem_addr);
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) 
+            && (dcache_request == correct_dcache_request);
+        Dmem2proc_transaction_tag = 1;
+        // print_mem_cmd();
+
+        @(negedge clock);
+        Dmem2proc_transaction_tag = 0;
+        Dmem2proc_data_tag = 1;
+        Dmem2proc_data = 32'h12345678;
+
+        #(`CLOCK_PERIOD/4);
+        $display("check dirty evict, data return");
+        correct_dcache_lq_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}},
+            32'h12345678
+        };
+        Dmem2proc_data_tag = 0;
+        correct_dcache_request = `TRUE;
+        correct_proc2Dmem_command = MEM_STORE;
+        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
+        correct = correct && (proc2Dmem_command == correct_proc2Dmem_command) && (proc2Dmem_addr == correct_proc2Dmem_addr) 
+            && (dcache_request == correct_dcache_request);
+
+        @(negedge clock);
+        $display("@@@ Passed test_dirty_evict");
     endtask
 
     task test_mixed_input;
+        init();
+
+        lq_dcache_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){1}}, // lq_idx
+            {(32){i * 8}},  // addr
+            MEM_WORD    // mem_func
+        };
+        sq_dcache_packet[0] = '{
+            `TRUE,
+            {(32){1}},  // addr
+            MEM_WORD,   // mem_func
+            {(32){i}}
+        };
+
     endtask
 
     task test_mixed_queue;
@@ -458,7 +580,10 @@ module testbench;
         // test_cache_miss();
         // test_store_load();
         // test_non_blocking();
-        test_sequential_load();
+        // test_sequential_load();
+        // test_clean_evict();
+        // test_dirty_evict();
+        test_mixed_input();
 
         $display("@@@ Passed");
         $finish;
