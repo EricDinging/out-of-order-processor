@@ -212,3 +212,24 @@ module store_queue (
     end
 
 endmodule
+
+function DATA re_align;
+        input  DATA     data;
+        input  ADDR     addr;
+        input  MEM_FUNC func;
+        begin
+            re_align = 0;
+            case (func[1:0])
+                BYTE: begin
+                    re_align[(addr[1:0]+1)*8-1:addr[1:0]*8] = data[7:0];
+                end
+
+                HALF: begin
+                    re_align[(addr[0]+1)*16-1:addr[0]*16] = data[15:0];
+                end
+                default: begin
+                    re_align = data;
+                end
+            endcase
+        end
+endfunction
