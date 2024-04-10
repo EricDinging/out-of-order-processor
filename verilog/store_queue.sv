@@ -72,13 +72,13 @@ module store_queue (
     SQ_IDX size, next_size, next_head, next_tail, next_tail_ready;
     SQ_REG[`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
-    assign almost_full = size > SQ_LEN - `NUM_FU_LOAD;
+    assign almost_full = size > `SQ_LEN - `NUM_FU_LOAD;
 
     always_comb begin
         next_sq_reg = sq_reg;
         foreach (next_sq_reg[i]) begin
             next_sq_reg[i].valid  = rs_sq_packet[i].valid;
-            next_sq_reg[i].addr   = rs_sq_packet[i].addr + {20'h0, rs_sq_packet[i].offset};
+            next_sq_reg[i].addr   = rs_sq_packet[i].base + {20'h0, rs_sq_packet[i].offset};
             next_sq_reg[i].data   = rs_sq_packet[i].data;
             next_sq_reg[i].sq_idx = rs_sq_packet[i].sq_idx;
         end
@@ -97,7 +97,7 @@ module store_queue (
         if (!almost_full) begin
             for (int i = 0; i < `N; i++) begin
                 if (id_sq_packet[i].valid) begin
-                    entries[tail] = '{
+                    next_entries[tail] = '{
                         `TRUE,
                         id_sq_packet[i].byte_info,
                         0, 0, `FALSE
@@ -122,7 +122,7 @@ module store_queue (
             if (num_commit_insns > num_sent_insns) begin
                 idx = (head + i) % (`SQ_LEN + 1);
                 if (entries[idx].valid && entries[idx].ready) begin
-                    sq_dcache_packet = '{
+                    sq_dcache_packet[i] = '{
                         `TRUE,
                         entries[idx].addr,
                         entries[idx].byte_info,
@@ -160,7 +160,7 @@ module store_queue (
     logic flag_break;
     logic match, match_byte, match_half, match_word, match_dble, compatible;
     always_comb begin
-        flag_matched = `FALSE;
+        flag_break = `FALSE;
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
             value[i] = 32'h0;
             fwd_valid[i] = `FALSE;
@@ -193,13 +193,13 @@ module store_queue (
             // foreach (entries[i]) begin
             //     entries[i] <= '{`FALSE, BYTE, 32'h0, 32'h0, `FALSE};
             // end
-            entries <= $bits(entries)'h0;
+            entries <= 0;
 
-            size <= `SQ_IDX_BITS'h0;
-            head <= `SQ_IDX_BITS'h0;
-            tail <= `SQ_IDX_BITS'h0;
+            size <= 0;
+            head <= 0;
+            tail <= 0;
 
-            sq_reg <= $bits(sq_reg)'h0;
+            sq_reg <= 0;
         end else begin
             entries <= next_entries;
 
@@ -221,11 +221,19 @@ function DATA re_align;
             re_align = 0;
             case (func[1:0])
                 BYTE: begin
-                    re_align[(addr[1:0]+1)*8-1:addr[1:0]*8] = data[7:0];
+                    case (addr[1:0])
+                        3: re_align[31:24] = data[7:0];
+                        2: re_align[23:16] = data[7:0];
+                        1: re_align[15:8] = data[7:0];
+                        0: re_align[7:0] = data[7:0];
+                    endcase
                 end
 
                 HALF: begin
-                    re_align[(addr[0]+1)*16-1:addr[0]*16] = data[15:0];
+                    case (addr[0])
+                        1: re_align[31:16] = data[15:0];
+                        2: re_align[15:0] = data[15:0];
+                    endcase
                 end
                 default: begin
                     re_align = data;

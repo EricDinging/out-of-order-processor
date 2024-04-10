@@ -666,6 +666,10 @@ typedef struct packed {
     IMSHR_STATE                   state;             // MISS, WAIT
 } IMSHR_ENTRY;
 
+typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
+
+typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
+
 typedef struct packed {
     logic valid;
     // MEM_SIZE byte_info;
@@ -675,7 +679,7 @@ typedef struct packed {
 typedef struct packed {
     logic valid;
     ADDR  base;
-    logic [11:0] offset
+    logic [11:0] offset;
     DATA  data;
     logic [`SQ_IDX_BITS-1:0] sq_idx;
 } RS_SQ_PACKET;
@@ -714,8 +718,6 @@ typedef struct packed {
     SQ_IDX   tail_store;
 } RS_LQ_PACKET;
 
-typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
-typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
 typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
 
 typedef struct packed {
