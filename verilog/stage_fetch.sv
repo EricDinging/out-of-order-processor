@@ -45,7 +45,7 @@ endmodule
 module stage_fetch (
     input clock, reset,
     input logic stall,
-
+    input logic squash,
     // From memory
     input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
     input MEM_BLOCK mem2proc_data,            // Data coming back from memory
@@ -57,6 +57,9 @@ module stage_fetch (
     output MEM_COMMAND  proc2Imem_command,
     output ADDR         proc2Imem_addr,
     output IF_ID_PACKET [`N-1:0] if_id_packet
+`ifdef CPU_DEBUG_OUT
+    , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
+`endif
 );
 
     // state
@@ -87,15 +90,20 @@ module stage_fetch (
     icache ic (
         .clock(clock),
         .reset(reset),
+        .squash(squash),
         .Imem2proc_transaction_tag(mem2proc_transaction_tag),
         .Imem2proc_data(mem2proc_data),
         .Imem2proc_data_tag(mem2proc_data_tag),
         .proc2Icache_addr(proc2Icache_addr),
         .valid(proc2Icache_valid),
+        .dcache_request(`FALSE), // TODO Wire from dcache
         .proc2Imem_command(proc2Imem_command),
         .proc2Imem_addr(proc2Imem_addr),
         .Icache_data_out(Icache_data_out),
         .Icache_valid_out(Icache_valid_out)
+    `ifdef CPU_DEBUG_OUT
+        , .imshr_entries_debug(imshr_entries_debug)
+    `endif
     );
 
     always_comb begin

@@ -57,6 +57,8 @@ module cpu (
     output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug,
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug,
     output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug,
+    // icache
+    output IMSHR_ENTRY [`N-1:0] imshr_entries_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -120,6 +122,7 @@ module cpu (
         .clock(clock),
         .reset(reset),
         .stall(squash ? `FALSE : structural_hazard),
+        .squash(squash),
         .mem2proc_transaction_tag(mem2proc_transaction_tag),
         .mem2proc_data(mem2proc_data),
         .mem2proc_data_tag(mem2proc_data_tag),
@@ -127,6 +130,9 @@ module cpu (
         .proc2Imem_command(proc2mem_command),
         .proc2Imem_addr(proc2mem_addr),
         .if_id_packet(if_packet)
+    `ifdef CPU_DEBUG_OUT
+        , .imshr_entries_debug(imshr_entries_debug)
+    `endif
     );
 
     always_ff @(posedge clock) begin

@@ -98,6 +98,9 @@ module testbench;
 
     // prf
     PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug;
+    
+    // memory
+    IMSHR_ENTRY [`N-1:0] imshr_entries_debug;
 `endif
 
     task print_if_id_reg;
@@ -211,6 +214,43 @@ module testbench;
         end
     endtask
 
+    task print_mem_cache;
+        $fdisplay(ppln_fileno, "--- MEM CACHE SIGNAL");
+        if (proc2mem_command == MEM_NONE) begin
+            $fdisplay(ppln_fileno, "proc2mem_command: MEM_NONE");
+        end else if (proc2mem_command == MEM_LOAD) begin
+            $fdisplay(ppln_fileno, "proc2mem_command: MEM_LOAD");
+            $fdisplay(ppln_fileno, "proc2mem_addr: %2d", proc2mem_addr);
+        end else if (proc2mem_command == MEM_STORE) begin
+            $fdisplay(ppln_fileno, "proc2mem_command: MEM_STORE");
+            $fdisplay(ppln_fileno, "proc2mem_addr: %2d", proc2mem_addr);
+        end
+        $fdisplay(ppln_fileno,
+            "transcation_tag: %2d, data_tag: %2d, data: %x", 
+            mem2proc_transaction_tag, mem2proc_data_tag,
+            mem2proc_data);
+    endtask
+
+    task print_imshr_entries_debug;
+        $fdisplay(ppln_fileno, "### IMSHR_ENTRIES");
+        for (int i = 0; i < `N; i = i + 1) begin
+            case (imshr_entries_debug[i].state)
+                IMSHR_INVALID: 
+                    $fdisplay(ppln_fileno, "imshr_entries_debug[%2d]: IMSHR_INVALID", i);
+                IMSHR_PENDING: 
+                    $fdisplay(ppln_fileno, "imshr_entries_debug[%2d]: IMSHR_PENDING", i);
+                IMSHR_WAIT_TAG: 
+                    $fdisplay(ppln_fileno, "imshr_entries_debug[%2d]: IMSHR_WAIT_TAG", i);
+                IMSHR_WAIT_DATA: 
+                    $fdisplay(ppln_fileno, "imshr_entries_debug[%2d]: IMSHR_WAIT_DATA", i);
+                default:
+                    $fdisplay(ppln_fileno, "Invalid state");
+            endcase
+            $fdisplay(ppln_fileno, "tag: %2d; index: %2d", imshr_entries_debug[i].tag, imshr_entries_debug[i].index);
+            $fdisplay(ppln_fileno, "transaction_tag: %2d", imshr_entries_debug[i].transaction_tag);
+        end
+    endtask
+
     // Instantiate the Pipeline
     cpu verisimpleV (
         // Inputs
@@ -243,12 +283,6 @@ module testbench;
         // rs
         .rs_entries_out(rs_entries_out),
         .rs_counter_out(rs_counter_out),
-        .fu_alu_packet_debug(fu_alu_packet_debug),
-        .fu_mult_packet_debug(fu_mult_packet_debug),
-        .fu_load_packet_debug(fu_load_packet_debug),
-        .fu_store_packet_debug(fu_store_packet_debug),
-        // rrat
-        .rrat_entries(rrat_entries),
         // prf
         .prf_entries_debug(prf_entries_debug),
         // rat
@@ -257,8 +291,14 @@ module testbench;
         .rat_counter(rat_counter),
         .rat_free_list(rat_free_list),
         .rat_table_out(rat_table_out),
-        
-        
+        // rrat
+        .rrat_entries(rrat_entries),
+        // fu_packet
+        .fu_alu_packet_debug(fu_alu_packet_debug),
+        .fu_mult_packet_debug(fu_mult_packet_debug),
+        .fu_load_packet_debug(fu_load_packet_debug),
+        .fu_store_packet_debug(fu_store_packet_debug),
+        .imshr_entries_debug(imshr_entries_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -434,6 +474,8 @@ module testbench;
             // print_if_id_reg();
             // print_id_ooo_reg();
             // print_rob_if_debug();
+            print_mem_cache();
+            print_imshr_entries_debug();
             print_cdb_packet();
             print_fu_state_packet();
             print_select();

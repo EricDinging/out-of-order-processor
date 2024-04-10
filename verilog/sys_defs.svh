@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 1
+`define N 2
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -51,8 +51,22 @@
 `define NUM_FU_LOAD 2
 `define NUM_FU_STORE 2
 
+`define LOAD_Q_INDEX_WIDTH 32 // TODO: merge
+`define STORE_Q_INDEX_WIDTH 32 // TODO: merge
+
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
+
+// cache
+`define CACHE_LINES 32
+`define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
+// dcache
+`define DCACHE_LINES 32
+`define DCACHE_INDEX_BITS $clog2(`DCACHE_LINES)
+`define DCACHE_BLOCK_OFFSET_BITS 3
+`define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
+`define DMSHR_SIZE 8
 
 ///////////////////////////////
 // ---- Basic Constants ---- //
@@ -69,7 +83,7 @@ typedef logic [31:0] ADDR;
 typedef logic [31:0] DATA;
 typedef logic [4:0] REG_IDX;
 
-typedef logic [`PRN_WIDTH-1:0]           PRN;
+typedef logic [`PRN_WIDTH-1:0]         PRN;
 typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 
 // the zero register
@@ -128,6 +142,11 @@ typedef enum logic [1:0] {
     MEM_STORE  = 2'h2
 } MEM_COMMAND;
 
+typedef enum logic {
+    INST_LOAD   = 1'h0,
+    INST_STORE  = 1'h1
+} INST_COMMAND;
+
 typedef enum logic [2:0] {
     MEM_BYTE  = 3'h0,
     MEM_HALF  = 3'h1,
@@ -135,6 +154,20 @@ typedef enum logic [2:0] {
     MEM_BYTEU = 3'h4,
     MEM_HALFU = 3'h5
 } MEM_FUNC;
+
+typedef enum logic [1:0] {
+    IMSHR_INVALID   = 2'h0,
+    IMSHR_PENDING   = 2'h1, // not sent request
+    IMSHR_WAIT_TAG  = 2'h2,
+    IMSHR_WAIT_DATA = 2'h3
+} IMSHR_STATE;
+
+typedef enum logic [1:0] {
+    DMSHR_INVALID   = 2'h0,
+    DMSHR_PENDING   = 2'h1, // not sent request
+    DMSHR_WAIT_TAG  = 2'h2,
+    DMSHR_WAIT_DATA = 2'h3
+} DMSHR_STATE;
 
 ///////////////////////////////
 // ---- Exception Codes ---- //
@@ -630,5 +663,53 @@ typedef struct packed {
     RAT_IS_INPUT  rat_is_input;
 } ID_OOO_PACKET;
 
+typedef struct packed {
+    logic [`CACHE_LINE_BITS-1:0]  index;           // cache index
+    logic [12-`CACHE_LINE_BITS:0] tag;             // cache tag
+    MEM_TAG                       transaction_tag; // tag returned from memory
+    IMSHR_STATE                   state;           // MISS, WAIT
+} IMSHR_ENTRY;
+
+typedef struct packed {
+    logic [`DCACHE_INDEX_BITS-1:0]  index;           // cache index
+    logic [`DCACHE_TAG_BITS-1:0]    tag;             // cache tag
+    MEM_TAG                         transaction_tag; // tag returned from memory
+    DMSHR_STATE                     state;           // MISS, WAIT
+} DMSHR_ENTRY;
+
+typedef struct packed {
+    INST_COMMAND                          inst_command;
+    MEM_FUNC                              mem_func;
+    DATA                                  data;
+    logic [`DCACHE_BLOCK_OFFSET_BITS-1:0] block_offset;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0]       lq_idx;
+} DMSHR_Q_PACKET;
+
+typedef struct packed {
+    logic                           valid;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    DATA                            data;
+} DCACHE_LQ_PACKET;
+
+typedef struct packed {
+    logic                           valid;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    ADDR                            addr;
+    MEM_FUNC                        mem_func;
+} LQ_DCACHE_PACKET;
+
+typedef struct packed {
+    logic     valid;
+    ADDR      addr;
+    MEM_FUNC  mem_func;
+    DATA      data;
+} SQ_DCACHE_PACKET;
+
+typedef struct packed {
+    MEM_BLOCK                    data;
+    logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
+    logic                        valid;
+    logic                        dirty;
+} DCACHE_ENTRY;
 
 `endif // __SYS_DEFS_SVH__
