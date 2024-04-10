@@ -390,7 +390,7 @@ module testbench;
             if (is_load) begin
                 lq_dcache_packet[i] = '{
                     `TRUE,
-                    {(`LOAD_Q_INDEX_WIDTH){moving_idx + i}}, // lq_idx
+                    {(`LOAD_Q_INDEX_WIDTH){(moving_idx + i)%`NUM_FU_LOAD}}, // lq_idx
                     {(32){(moving_idx + i) * 4}},  // addr
                     MEM_WORD    // mem_func
                 };
@@ -444,7 +444,7 @@ module testbench;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}}, // lq_idx
+            {(`LOAD_Q_INDEX_WIDTH){(moving_idx+1)%`NUM_FU_LOAD}}, // lq_idx
             {(32){`MEM_SIZE_IN_BYTES-8}},  // addr
             MEM_WORD    // mem_func
         };
@@ -480,7 +480,7 @@ module testbench;
         $display("check clean evict, data return");
         correct_dcache_lq_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}},
+            {(`LOAD_Q_INDEX_WIDTH){(moving_idx+1)%`NUM_FU_LOAD}},
             32'h12345678
         };
         $display("moving_idx: %d", moving_idx + 1);
@@ -515,7 +515,7 @@ module testbench;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}}, // lq_idx
+            {(`LOAD_Q_INDEX_WIDTH){(moving_idx+1)%`NUM_FU_LOAD}}, // lq_idx
             {(32){`MEM_SIZE_IN_BYTES-8}},  // addr
             MEM_WORD    // mem_func
         };
@@ -551,7 +551,7 @@ module testbench;
         $display("check dirty evict, data return");
         correct_dcache_lq_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}},
+            {(`LOAD_Q_INDEX_WIDTH){(moving_idx+1)%`NUM_FU_LOAD}},
             32'h12345678
         };
         correct_dcache_request = `TRUE;
@@ -778,13 +778,13 @@ module testbench;
         clock = 0;
         clock_cycle = 0;
 
-        // test_cache_miss();
-        // test_store_load();
-        // test_non_blocking();
-        // test_clean_evict();
-        // test_dirty_evict();
-        // test_mixed_input();
-        // test_mixed_queue();
+        test_cache_miss();
+        test_store_load();
+        test_non_blocking();
+        test_clean_evict();
+        test_dirty_evict();
+        test_mixed_input();
+        test_mixed_queue();
         test_mem_func();
 
         $display("@@@ Passed");

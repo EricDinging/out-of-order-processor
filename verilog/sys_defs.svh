@@ -679,6 +679,21 @@ typedef struct packed {
     IMSHR_STATE                   state;           // MISS, WAIT
 } IMSHR_ENTRY;
 
+typedef struct packed {
+    logic [`DCACHE_INDEX_BITS-1:0]  index;           // cache index
+    logic [`DCACHE_TAG_BITS-1:0]    tag;             // cache tag
+    MEM_TAG                         transaction_tag; // tag returned from memory
+    DMSHR_STATE                     state;           // MISS, WAIT
+} DMSHR_ENTRY;
+
+typedef struct packed {
+    INST_COMMAND                          inst_command;
+    MEM_FUNC                              mem_func;
+    DATA                                  data;
+    logic [`DCACHE_BLOCK_OFFSET_BITS-1:0] block_offset;
+    logic [`LOAD_Q_INDEX_WIDTH-1:0]       lq_idx;
+} DMSHR_Q_PACKET;
+
 typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
 
 typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
@@ -700,22 +715,28 @@ typedef struct packed {
 typedef struct packed {
     logic                               valid;
     logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
-    DATA_WIDTH                          data;
+    DATA                                data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
     logic                           valid;
     logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
     ADDR                            addr;
-    MEM_SIZE                        size;
+    MEM_FUNC                        mem_func;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
-    logic                            valid;
-    logic [`STORE_Q_INDEX_WIDTH-1:0] sq_idx;
-    ADDR                             addr;
-    MEM_SIZE                         size;
-    DATA_WIDTH                       data;
+    logic     valid;
+    ADDR      addr;
+    MEM_FUNC  mem_func;
+    DATA      data;
 } SQ_DCACHE_PACKET;
+
+typedef struct packed {
+    MEM_BLOCK                    data;
+    logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
+    logic                        valid;
+    logic                        dirty;
+} DCACHE_ENTRY;
 
 `endif // __SYS_DEFS_SVH__
