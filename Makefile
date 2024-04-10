@@ -296,7 +296,7 @@ build/store_queue.cov.simv: $(STORE_QUEUE_FILES)
 build/store_queue.vg: $(STORE_QUEUE_FILES)
 
 # LOAD_QUEUE
-LOAD_QUEUE_FILES = verilog/sys_defs.svh verilog/load_queue.sv
+LOAD_QUEUE_FILES = verilog/sys_defs.svh verilog/load_queue.sv verilog/sign_align.sv verilog/onehot_mux.sv verilog/psel_gen.sv
 build/load_queue.simv: $(LOAD_QUEUE_FILES)
 build/load_queue.cov.simv: $(LOAD_QUEUE_FILES)
 build/load_queue.vg: $(LOAD_QUEUE_FILES)

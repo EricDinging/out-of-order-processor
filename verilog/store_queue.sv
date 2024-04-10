@@ -67,6 +67,35 @@ module store_queue (
     //     logic    ready;
     // } SQ_ENTRY;
 
+    function DATA re_align;
+        input  DATA     data;
+        input  ADDR     addr;
+        input  MEM_FUNC func;
+        begin
+            re_align = 0;
+            case (func[1:0])
+                BYTE: begin
+                    case (addr[1:0])
+                        3: re_align[31:24] = data[7:0];
+                        2: re_align[23:16] = data[7:0];
+                        1: re_align[15:8] = data[7:0];
+                        0: re_align[7:0] = data[7:0];
+                    endcase
+                end
+
+                HALF: begin
+                    case (addr[0])
+                        1: re_align[31:16] = data[15:0];
+                        2: re_align[15:0] = data[15:0];
+                    endcase
+                end
+                default: begin
+                    re_align = data;
+                end
+            endcase
+        end
+    endfunction
+
     SQ_ENTRY[(`SQ_LEN+1)-1:0] entries, next_entries;
 
     SQ_IDX size, next_size, next_head, next_tail, next_tail_ready;
@@ -174,9 +203,11 @@ module store_queue (
                 // compatible = entries[idx_fwd].byte_info >= load_byte_info[i];
 
                 case (entries[idx_fwd].byte_info)
-                    MEM_BYTE: MEM_BYTEU:   match = match_byte && (load_byte_info[i] == MEM_BYTE || load_byte_info[i] == MEM_BYTEU);
-                    MEM_HALF: MEM_HALFU:   match = match_half && load_byte_info[i] != MEM_WORD;
-                    MEM_WORD:   match = match_word;
+                    MEM_BYTE:  match = match_byte && load_byte_info[i][1:0] == BYTE;
+                    MEM_BYTEU: match = match_byte && load_byte_info[i][1:0] == BYTE;
+                    MEM_HALF:  match = match_half && load_byte_info[i][1:0] != WORD;
+                    MEM_HALFU: match = match_half && load_byte_info[i][1:0] != WORD;
+                    MEM_WORD:  match = match_word;
                 endcase
 
                 flag_break |= idx_fwd == tail_store[i];
@@ -212,32 +243,3 @@ module store_queue (
     end
 
 endmodule
-
-function DATA re_align;
-        input  DATA     data;
-        input  ADDR     addr;
-        input  MEM_FUNC func;
-        begin
-            re_align = 0;
-            case (func[1:0])
-                BYTE: begin
-                    case (addr[1:0])
-                        3: re_align[31:24] = data[7:0];
-                        2: re_align[23:16] = data[7:0];
-                        1: re_align[15:8] = data[7:0];
-                        0: re_align[7:0] = data[7:0];
-                    endcase
-                end
-
-                HALF: begin
-                    case (addr[0])
-                        1: re_align[31:16] = data[15:0];
-                        2: re_align[15:0] = data[15:0];
-                    endcase
-                end
-                default: begin
-                    re_align = data;
-                end
-            endcase
-        end
-endfunction

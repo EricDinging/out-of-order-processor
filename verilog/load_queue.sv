@@ -58,6 +58,35 @@ module load_queue (
 `endif
 );
 
+    function extend;
+        input DATA     data;
+        input MEM_FUNC byte_info;
+        // input logic    signext;
+        begin
+            DATA data_signed, data_unsigned;
+
+            case (byte_info)
+                BYTE: begin
+                    data_signed   =   signed'(data[ 7:0]);
+                    data_unsigned = unsigned'(data[ 7:0]);
+                end
+                HALF: begin
+                    data_signed   =   signed'(data[15:0]);
+                    data_unsigned = unsigned'(data[15:0]);
+                end
+                WORD: begin
+                    data_signed   =   signed'(data[31:0]);
+                    data_unsigned = unsigned'(data[31:0]);
+                end
+                default: begin
+                    data_signed   = data;
+                    data_unsigned = data;
+                end
+            endcase
+
+            extend = byte_info[2] ? data_unsigned : data_signed;
+        end
+    endfunction
 
     LD_ENTRY   [`LU_LEN-1:0]      entries,    next_entries;
     LU_REG     [`NUM_FU_LOAD-1:0] lu_reg,     next_lu_reg;
@@ -74,7 +103,7 @@ module load_queue (
             next_lu_reg[i].valid = rs_lq_packet[i].valid;
             // next_lu_reg[i].signext = rs_lq_packet[i].signext;
             next_lu_reg[i].sign_size  = lu_reg[i].sign_size;
-            next_lu_reg[i].addr  = rs_lq_packet[i].addr + {20'h0, rs_lq_packet[i].offset};
+            next_lu_reg[i].addr  = rs_lq_packet[i].base + {20'h0, rs_lq_packet[i].offset};
             next_lu_reg[i].prn   = rs_lq_packet[i].prn;
             next_lu_reg[i].robn  = rs_lq_packet[i].robn;
             next_lu_reg[i].tail_store = rs_lq_packet[i].tail_store;
@@ -126,7 +155,7 @@ module load_queue (
             load_packet[i].dest_prn = entries[i].prn;
             // TODO: adjust to fit the byte type?
             // load_packet[i].result = entries[i].data;
-            if (entries[i].valid && entries.load_state == KNOWN) begin
+            if (entries[i].valid && entries[i].load_state == KNOWN) begin
                 load_prepared[i] = `TRUE;
             end else begin
                 load_prepared[i] = `FALSE;
@@ -181,7 +210,7 @@ module load_queue (
     onehot_mux #(
         .SIZE ($bits(LQ_DCACHE_PACKET)),
         .WIDTH(`LU_LEN)
-    ) [`NUM_LU_DCACHE-1:0] mux_dcache (
+    ) mux_dcache[`NUM_LU_DCACHE-1:0] (
         .in(mux_input),
         .select(mux_select),
         .out(lq_dcache_packet)
@@ -210,34 +239,3 @@ module load_queue (
     end
 
 endmodule
-
-
-function extend;
-    input DATA     data;
-    input MEM_FUNC byte_info;
-    // input logic    signext;
-    begin
-        DATA data_signed, data_unsigned;
-
-        case (byte_info)
-            BYTE: begin
-                data_signed   =   signed'(data[ 7:0]);
-                data_unsigned = unsigned'(data[ 7:0]);
-            end
-            HALF: begin
-                data_signed   =   signed'(data[15:0]);
-                data_unsigned = unsigned'(data[15:0]);
-            end
-            WORD: begin
-                data_signed   =   signed'(data[31:0]);
-                data_unsigned = unsigned'(data[31:0]);
-            end
-            default: begin
-                data_signed   = data;
-                data_unsigned = data;
-            end
-        endcase
-
-        extend = byte_info[2] ? data_unsigned : data_signed;
-    end
-endfunction

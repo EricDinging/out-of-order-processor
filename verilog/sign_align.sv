@@ -1,17 +1,17 @@
 `include "sys_defs.svh"
 
 module sign_align (
-    input  DATA     data;
-    input  ADDR     addr;
-    input  MEM_FUNC func;
-    output DATA     out;
+    input  DATA     data,
+    input  ADDR     addr,
+    input  MEM_FUNC func,
+    output DATA     out
 );
 
     union packed {
-        logic [3:0]   signed [ 7:0]   signed_byte;
-        logic [3:0] unsigned [ 7:0] unsigned_byte;
-        logic [1:0]   signed [15:0]   signed_half;
-        logic [1:0] unsigned [15:0] unsigned_half;
+        logic   signed [3:0][ 7:0]   signed_byte;
+        logic unsigned [3:0][ 7:0] unsigned_byte;
+        logic   signed [1:0][15:0]   signed_half;
+        logic unsigned [1:0][15:0] unsigned_half;
     } word;
 
     assign word = data;
