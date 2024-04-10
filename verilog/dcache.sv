@@ -146,10 +146,15 @@ module dmshr #(
                 .push_accept(push_accepts[i]),
                 .flush_packet(flush_packets[i]),
                 .flush_valid(flush_valids[i])
-                `ifdef CPU_DEBUG_OUT
+            `ifdef CPU_DEBUG_OUT
                 , .counter_debug(counter_debug[i])
-                `endif
+            `endif
             );
+        end
+    endgenerate
+
+    generate
+        for (i = 0; i < SIZE; ++i) begin
             assign entries_pending[i] = dmshr_entries[i].state == DMSHR_PENDING;
         end
     endgenerate
@@ -333,7 +338,7 @@ module dcache #(
 `ifdef CPU_DEBUG_OUT
     , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
     , output DCACHE_ENTRY [SIZE-1:0] dcache_data_debug
-    , output logic [SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
 `endif
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
@@ -364,14 +369,12 @@ module dcache #(
 
     genvar i;
     generate
-        begin
-            for (i = 0; i < `N; ++i) begin
-                assign load_index[i]   = lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                assign store_index[i]  = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                assign load_tag[i]     = lq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
-                assign store_tag[i]    = sq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
-                assign store_offset[i] = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
-            end
+        for (i = 0; i < `N; ++i) begin
+            assign load_index[i]   = lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
+            assign store_index[i]  = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
+            assign load_tag[i]     = lq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
+            assign store_tag[i]    = sq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
+            assign store_offset[i] = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
         end
     endgenerate
 
