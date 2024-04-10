@@ -458,6 +458,16 @@ module dcache #(
                             dmshr_flush_packet[i].lq_idx, // lq_idx
                             next_dcache_data[cache_index].data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
                         };
+                        // dcache_lq_packet[i].valid = `TRUE;
+                        // dcache_lq_packet[i].lq_idx = dmshr_flush_packet[i].lq_idx;
+                        // case (dmshr_flush_packet[i].mem_func)
+                        //     MEM_BYTE | MEM_BYTEU: 
+                        //         dcache_lq_packet[i].data = {24'b0, next_dcache_data[cache_index].data.byte_level[dmshr_flush_packet[i].block_offset]};
+                        //     MEM_HALF | MEM_HALFU:
+                        //         dcache_lq_packet[i].data = {16'b0, next_dcache_data[cache_index].data.half_level[dmshr_flush_packet[i].block_offset[2:1]]};
+                        //     MEM_WORD:
+                        //         dcache_lq_packet[i].data = next_dcache_data[cache_index].data.word_level[dmshr_flush_packet[i].block_offset[2]];
+                        // endcase
                     end else if (dmshr_flush_packet[i].inst_command == INST_STORE) begin
                         next_dcache_data[cache_index].dirty = `TRUE;
                         case (dmshr_flush_packet[i].mem_func)
@@ -483,8 +493,15 @@ module dcache #(
                 if (next_dcache_data[load_index[i]].tag == load_tag[i] && next_dcache_data[load_index[i]].valid) begin
                     // hit
                     load_req_accept[i]     = `TRUE;
-                    // TODO mask data based on load type (signed or not)
                     load_req_data[i]       = next_dcache_data[load_index[i]].data.word_level[load_offset[i][2]];
+                    // case (lq_dcache_packet[i].mem_func)
+                    //     MEM_BYTE | MEM_BYTEU: 
+                    //         load_req_data[i] = {24'b0, next_dcache_data[load_index[i]].data.byte_level[load_offset[i]]};
+                    //     MEM_HALF | MEM_HALFU:
+                    //         load_req_data[i] = {16'b0, next_dcache_data[load_index[i]].data.half_level[load_offset[i][2:1]]};
+                    //     MEM_WORD:
+                    //         load_req_data[i] = next_dcache_data[load_index[i]].data.word_level[load_offset[i][2]];
+                    // endcase
                     load_req_data_valid[i] = `TRUE;
                 end else begin
                     // miss

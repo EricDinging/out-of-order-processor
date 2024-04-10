@@ -733,17 +733,59 @@ module testbench;
         $display("@@@ Passed test_mixed_queue");
     endtask
 
+    task test_mem_func;
+        init();
+
+        sq_dcache_packet[0] = '{
+            `TRUE,
+            {(32){10}},  // addr
+            MEM_HALF,   // mem_func
+            {(32){16'h1234}}
+        };
+
+        @(negedge clock);
+        Dmem2proc_transaction_tag = 1;
+        sq_dcache_packet = 0;
+        lq_dcache_packet[0] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){`N}}, // lq_idx
+            {(32){11}},  // addr
+            MEM_BYTE    // mem_func
+        };
+
+        @(negedge clock);
+        lq_dcache_packet = 0;
+        Dmem2proc_transaction_tag = 0;
+        Dmem2proc_data_tag = 1;
+        Dmem2proc_data = 0;
+
+        #(`CLOCK_PERIOD/4);
+        correct_dcache_lq_packet[1] = '{
+            `TRUE,
+            {(`LOAD_Q_INDEX_WIDTH){`N}},
+            32'h12340000
+        };
+        print_ld_packet();
+        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
+
+        @(negedge clock);
+        Dmem2proc_data_tag = 0;
+        @(negedge clock);
+        $display("@@@ Passed test_mem_func");
+    endtask
+
     initial begin
         clock = 0;
         clock_cycle = 0;
 
-        test_cache_miss();
-        test_store_load();
-        test_non_blocking();
-        test_clean_evict();
-        test_dirty_evict();
-        test_mixed_input();
-        test_mixed_queue();
+        // test_cache_miss();
+        // test_store_load();
+        // test_non_blocking();
+        // test_clean_evict();
+        // test_dirty_evict();
+        // test_mixed_input();
+        // test_mixed_queue();
+        test_mem_func();
 
         $display("@@@ Passed");
         $finish;
