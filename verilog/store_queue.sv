@@ -3,7 +3,7 @@
 /*
 typedef struct packed {
     logic valid;
-    MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
 } ID_SQ_PACKET;
 
 typedef struct packed {
@@ -17,13 +17,13 @@ typedef struct packed {
 typedef struct packed {
     logic    valid;
     ADDR     addr;
-    MEM_SIZE size;
+    MEM_FUNC sign_size;
     DATA     data;
 } SQ_DCACHE_PACKET;
 
 typedef struct packed {
     logic    valid;
-    MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
     ADDR     target;
     DATA     value;
     logic    ready;
@@ -50,11 +50,11 @@ module store_queue (
     // --- combinational below
     output logic [`SQ_IDX_BITS-1:0] tail_ready,
     // LQ
-    input  ADDR  [`NUM_FU_LOAD-1:0] addr,
-    input  logic [`NUM_FU_LOAD-1:0][`SQ_IDX_BITS-1:0] store_range,
-    input MEM_SIZE [`NUM_FU_LOAD-1:0] load_byte_info,
-    output DATA  [`NUM_FU_LOAD-1:0] value,
-    output logic [`NUM_FU_LOAD-1:0] fwd_valid
+    input  ADDR     [`NUM_FU_LOAD-1:0] addr,
+    input  SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store,
+    input  MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info,
+    output DATA     [`NUM_FU_LOAD-1:0] value,
+    output logic    [`NUM_FU_LOAD-1:0] fwd_valid
 `ifdef CPU_DEBUG_OUT
 `endif
 );
@@ -69,8 +69,7 @@ module store_queue (
 
     SQ_ENTRY[(`SQ_LEN+1)-1:0] entries, next_entries;
 
-    logic[`SQ_IDX_BITS-1:0] size, next_size, next_head, next_tail, next_tail_ready;
-    logic[`SQ_IDX_BITS-1:0] idx;
+    SQ_IDX size, next_size, next_head, next_tail, next_tail_ready;
     SQ_REG[`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
     assign almost_full = size > SQ_LEN - `NUM_FU_LOAD;
@@ -86,7 +85,7 @@ module store_queue (
     end
 
     // entry
-    logic[`SQ_IDX_BITS-1:0] idx;
+    SQ_IDX idx;
     always_comb begin
         next_entries = entries;
 
@@ -141,7 +140,7 @@ module store_queue (
     end
 
     // tail_ready
-    logic[`SQ_IDX_BITS-1:0] idx_tail;
+    SQ_IDX idx_tail;
     logic flag_ready;
     always_comb begin
         tail_ready = head;
@@ -158,7 +157,7 @@ module store_queue (
     end
 
     // LQ fwd
-    logic[`SQ_IDX_BITS-1:0] idx_fwd;
+    SQ_IDX idx_fwd;
     logic flag_break;
     logic match, match_byte, match_half, match_word, match_dble, compatible;
     always_comb begin
@@ -182,7 +181,7 @@ module store_queue (
                     DOUBLE: match = match_dble && compatible;
                 endcase
 
-                flag_break |= idx_fwd == store_range[i];
+                flag_break |= idx_fwd == tail_store[i];
                 if (~flag_break && match) begin
                     value[i] = entries[idx_fwd].data;
                     fwd_valid[i] = `TRUE;

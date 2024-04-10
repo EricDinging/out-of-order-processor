@@ -625,8 +625,8 @@ typedef struct packed {
     FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0]  alu_packet;
     logic                 [`NUM_FU_MULT-1:0] mult_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic                 [`NUM_FU_LOAD-1:0] load_prepared;
-    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
+    logic                 [`LU_LEN-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`LU_LEN-1:0] load_packet;
 } FU_STATE_PACKET;
 
 // typedef struct packed {
@@ -668,7 +668,8 @@ typedef struct packed {
 
 typedef struct packed {
     logic valid;
-    MEM_SIZE byte_info;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
 } ID_SQ_PACKET;
 
 typedef struct packed {
@@ -689,38 +690,85 @@ typedef struct packed {
     logic                           valid;
     logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
     ADDR                            addr;
-    MEM_SIZE                        size;
+    // MEM_SIZE                        size;
+    MEM_FUNC                        sign_size;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
-    logic                            valid;
-    ADDR                             addr;
-    MEM_SIZE                         size;
-    DATA                       data;
+    logic    valid;
+    ADDR     addr;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    DATA     data;
 } SQ_DCACHE_PACKET;
 
 typedef struct packed {
     logic valid;
-    MEM_SIZE size;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
     ADDR base;
     logic [11:0] offset;
     PRN prn;
     ROBN robn;
+    SQ_IDX   tail_store;
 } RS_LQ_PACKET;
+
+typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
+typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
+typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
 
 typedef struct packed {
     logic    valid;
-    MEM_SIZE byte_info;
+    logic    signext;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+    ADDR     addr;
+    DATA     data;
+    SQ_IDX   tail_store;
+    PRN      prn;
+    ROBN     robn;
+    LU_STATE load_state;
+} LD_ENTRY;
+
+typedef struct packed {
+    logic    valid;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
     ADDR     addr;
     DATA     data;
     logic    ready;
 } SQ_ENTRY;
 
 typedef struct packed {
-    logic valid;
-    ADDR  addr;
-    DATA  data;
-    logic [`SQ_IDX_BITS-1:0] sq_idx;
+    logic  valid;
+    ADDR   addr;
+    DATA   data;
+    SQ_IDX sq_idx;
 } SQ_REG;
+
+typedef struct packed {
+    logic valid;
+    logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR addr;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+} LU_REG;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR addr;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+    DATA value;
+    logic fwd_valid;
+} LU_FWD_REG;
 
 `endif // __SYS_DEFS_SVH__
