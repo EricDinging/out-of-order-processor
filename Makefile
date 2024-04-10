@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -283,7 +283,7 @@ build/stage_decode.cov.simv: $(STAGE_DECODE_FILES)
 synth/stage_decode.vg: $(STAGE_DECODE_FILES)
 
 # STAGE_FETCH
-STAGE_FETCH_FILES = verilog/sys_defs.svh verilog/stage_fetch.sv verilog/icache.sv verilog/psel_gen.sv
+STAGE_FETCH_FILES = verilog/sys_defs.svh verilog/stage_fetch.sv verilog/icache.sv verilog/psel_gen.sv verilog/branch_predictor.sv
 build/stage_fetch.simv: $(STAGE_FETCH_FILES)
 build/stage_fetch.cov.simv: $(STAGE_FETCH_FILES)
 synth/stage_fetch.vg: $(STAGE_FETCH_FILES)
@@ -305,6 +305,11 @@ LOAD_QUEUE_FILES = verilog/sys_defs.svh verilog/load_queue.sv verilog/sign_align
 build/load_queue.simv: $(LOAD_QUEUE_FILES)
 build/load_queue.cov.simv: $(LOAD_QUEUE_FILES)
 build/load_queue.vg: $(LOAD_QUEUE_FILES)
+
+BRANCH_PREDICTOR_FILES = verilog/sys_defs.svh verilog/branch_predictor.sv
+build/branch_predictor.simv: $(BRANCH_PREDICTOR_FILES)
+build/branch_predictor.cov.simv: $(BRANCH_PREDICTOR_FILES)
+build/branch_predictor.vg: $(BRANCH_PREDICTOR_FILES)
 
 #################################
 # ---- Main CPU Definition ---- #
@@ -341,7 +346,11 @@ CPU_SOURCES = verilog/regfile.sv \
 				verilog/rs.sv \
 				verilog/stage_decode.sv \
 				verilog/stage_fetch.sv \
-				verilog/onehot_mux.sv
+				verilog/onehot_mux.sv \
+				verilog/store_queue.sv \
+				verilog/load_queue.sv \
+				verilog/dcache.sv \
+				verilog/branch_predictor.sv
 
 
 

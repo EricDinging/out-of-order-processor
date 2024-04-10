@@ -77,6 +77,18 @@
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
 `define DMSHR_SIZE 8
 
+// local history table
+`define BHT_WIDTH 8
+`define BHT_SIZE  8
+`define BHT_IDX_WIDTH $clog2(`BHT_SIZE)
+// BTB
+`define BTB_SIZE 16
+`define BTB_INDEX_BITS $clog2(`BTB_SIZE)
+`define BTB_TAG_BITS 32-2-`BTB_INDEX_BITS
+
+// pattern history table
+`define PHT_SIZE 2**`BHT_WIDTH
+
 ///////////////////////////////
 // ---- Basic Constants ---- //
 ///////////////////////////////
@@ -177,6 +189,18 @@ typedef enum logic [1:0] {
     DMSHR_WAIT_TAG  = 2'h2,
     DMSHR_WAIT_DATA = 2'h3
 } DMSHR_STATE;
+
+// pattern history state
+typedef enum logic {
+    NOT_TAKEN = 1'h0,
+    TAKEN     = 1'h1
+} PHT_ENTRY_STATE;
+
+typedef struct packed {
+    logic                     valid;
+    ADDR                      pc;
+    logic [`BTB_TAG_BITS-1:0] tag;
+} BTB_ENTRY;
 
 ///////////////////////////////
 // ---- Exception Codes ---- //
@@ -654,6 +678,7 @@ typedef struct packed {
     ADDR  predict_target;
     logic resolve_taken;
     ADDR  resolve_target;
+    ADDR  PC;
 } ROB_IF_ENTRY;
 
 typedef struct packed {
@@ -663,7 +688,7 @@ typedef struct packed {
 typedef struct packed {
     logic taken;
     logic valid;
-    ADDR  pc;
+    ADDR  PC;
 } PC_ENTRY;
 
 typedef struct packed {

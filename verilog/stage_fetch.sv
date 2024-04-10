@@ -1,47 +1,5 @@
 `include "sys_defs.svh"
 
-module branch_predictor #(
-
-)(
-    input clock, reset,
-    input ADDR pc_start,
-    input ROB_IF_PACKET rob_if_packet,
-    // output
-    output PC_ENTRY [`N-1:0] target_pc
-);
-    // predict not taken
-
-    // TODO: if branch taken, all subsequent pc equal to the 
-    // last target
-    always_comb begin
-        // modify BTB
-        // for (int i = 0; i < `N; ++i) begin
-        //     if (rob_if_packet.entries[i].success) begin
-        //     // TODO: predict success
-        //     end else begin
-        //     // TODO: predict fail
-        //     end
-        // end
-
-        // read BTB
-        for (int i = 0; i < `N; ++i) begin
-            target_pc[i].taken = `FALSE;
-            target_pc[i].valid = `TRUE;
-            target_pc[i].pc    = pc_start + (i + 1) * 4;
-        end
-    end
-     
-    // always_ff @(posedge clock) begin
-    //     if (reset) begin
-    //         // TODO
-    //     end else begin
-    //         // TODO
-    //     end
-    // end
-
-endmodule
-
-
 module stage_fetch (
     input clock, reset,
     input logic stall,

@@ -246,6 +246,7 @@ module ooo (
             rob_if_packet.entries[i].predict_target = rob_ct_packet.entries[i].predict_target;
             rob_if_packet.entries[i].resolve_taken  = rob_ct_packet.entries[i].resolve_taken;
             rob_if_packet.entries[i].resolve_target = rob_ct_packet.entries[i].resolve_target;
+            rob_if_packet.entries[i].PC             = rob_ct_packet.entries[i].PC;
         end
 
         // prf input
