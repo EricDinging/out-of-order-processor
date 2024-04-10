@@ -720,7 +720,7 @@ typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
 
 typedef struct packed {
     logic    valid;
-    logic    signext;
+    // logic    signext;
     // MEM_SIZE byte_info;
     MEM_FUNC byte_info;
     ADDR     addr;
@@ -749,7 +749,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic valid;
-    logic signext;
+    // logic signext;
     // MEM_SIZE size;
     MEM_FUNC sign_size;
     ADDR addr;

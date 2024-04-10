@@ -92,7 +92,6 @@ module store_queue (
         next_head = head;
         next_tail = tail;
         next_size = size;
-        // next_tail_ready = tail_ready;
 
         // ID
         if (!almost_full) begin
@@ -172,18 +171,17 @@ module store_queue (
                 match_half = entries[idx_fwd].addr[31:1] == addr[i][31:1];
                 match_word = entries[idx_fwd].addr[31:2] == addr[i][31:2];
                 match_dble = entries[idx_fwd].addr[31:3] == addr[i][31:3];
-                compatible = entries[idx_fwd].byte_info >= load_byte_info[i];
+                // compatible = entries[idx_fwd].byte_info >= load_byte_info[i];
 
                 case (entries[idx_fwd].byte_info)
-                    BYTE:   match = match_byte && compatible;
-                    HALF:   match = match_half && compatible;
-                    WORD:   match = match_word && compatible;
-                    DOUBLE: match = match_dble && compatible;
+                    MEM_BYTE: MEM_BYTEU:   match = match_byte && (load_byte_info[i] == MEM_BYTE || load_byte_info[i] == MEM_BYTEU);
+                    MEM_HALF: MEM_HALFU:   match = match_half && load_byte_info[i] != MEM_WORD;
+                    MEM_WORD:   match = match_word;
                 endcase
 
                 flag_break |= idx_fwd == tail_store[i];
                 if (~flag_break && match) begin
-                    value[i] = entries[idx_fwd].data;
+                    value[i] = re_align(entries[idx_fwd].data, entries[idx_fwd].addr, entries[idx_fwd].byte_info);
                     fwd_valid[i] = `TRUE;
                 end
             end

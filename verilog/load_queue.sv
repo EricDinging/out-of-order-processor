@@ -125,7 +125,7 @@ module load_queue (
             load_packet[i].robn = entries[i].robn;
             load_packet[i].dest_prn = entries[i].prn;
             // TODO: adjust to fit the byte type?
-            load_packet[i].result = entries[i].data;
+            // load_packet[i].result = entries[i].data;
             if (entries[i].valid && entries.load_state == KNOWN) begin
                 load_prepared[i] = `TRUE;
             end else begin
@@ -165,6 +165,18 @@ module load_queue (
             end
         end
     end
+
+    genvar i;
+    generate
+        for (i = 0; i < `LU_LEN; i++) begin
+            sign_align sa (
+                .data(entries[i].data),
+                .addr(entries[i].addr),
+                .func(entries[i].byte_info),
+                .out(load_packet[i].result)
+            );
+        end
+    endgenerate
 
     onehot_mux #(
         .SIZE ($bits(LQ_DCACHE_PACKET)),
@@ -226,6 +238,6 @@ function extend;
             end
         endcase
 
-        extend = (byte_info == MEM_BYTEU | byte_info == MEM_HALFU) ? data_unsigned : data_signed;
+        extend = byte_info[2] ? data_unsigned : data_signed;
     end
 endfunction
