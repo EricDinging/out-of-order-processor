@@ -54,7 +54,9 @@ module load_queue (
     input  DATA             [`NUM_LU_DCACHE-1:0] load_req_data,
     input  logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid,
     output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet
+
 `ifdef CPU_DEBUG_OUT
+    , output LD_ENTRY   [`NUM_FU_LOAD-1:0]      entries_out
 `endif
 );
 
@@ -88,7 +90,10 @@ module load_queue (
         end
     endfunction
 
-    LD_ENTRY   [`NUM_FU_LOAD-1:0]      entries,    next_entries;
+    LD_ENTRY   [`NUM_FU_LOAD-1:0] entries,    next_entries;
+`ifdef CPU_DEBUG_OUT
+    assign entries_out = entries;
+`endif
     LU_REG     [`NUM_FU_LOAD-1:0] lu_reg,     next_lu_reg;
     LU_FWD_REG [`NUM_FU_LOAD-1:0] lu_fwd_reg, next_lu_fwd_reg;
     LQ_DCACHE_PACKET [`NUM_FU_LOAD-1:0] mux_input;
@@ -100,12 +105,11 @@ module load_queue (
     always_comb begin
         next_lu_reg = lu_reg;
         foreach (next_lu_reg[i]) begin
-            next_lu_reg[i].valid = rs_lq_packet[i].valid;
-            // next_lu_reg[i].signext = rs_lq_packet[i].signext;
-            next_lu_reg[i].sign_size  = lu_reg[i].sign_size;
-            next_lu_reg[i].addr  = rs_lq_packet[i].base + {20'h0, rs_lq_packet[i].offset};
-            next_lu_reg[i].prn   = rs_lq_packet[i].prn;
-            next_lu_reg[i].robn  = rs_lq_packet[i].robn;
+            next_lu_reg[i].valid      = rs_lq_packet[i].valid;
+            next_lu_reg[i].sign_size  = rs_lq_packet[i].sign_size;
+            next_lu_reg[i].addr       = rs_lq_packet[i].base + {20'h0, rs_lq_packet[i].offset};
+            next_lu_reg[i].prn        = rs_lq_packet[i].prn;
+            next_lu_reg[i].robn       = rs_lq_packet[i].robn;
             next_lu_reg[i].tail_store = rs_lq_packet[i].tail_store;
         end
     end
@@ -118,8 +122,7 @@ module load_queue (
             store_range[i] = lu_reg[i].tail_store;
             load_byte_info[i] = lu_reg[i].sign_size;
             next_lu_fwd_reg[i].valid      = lu_reg[i].valid;
-            // next_lu_fwd_reg[i].signext    = lu_reg[i].signext;
-            next_lu_fwd_reg[i].sign_size       = lu_reg[i].sign_size;
+            next_lu_fwd_reg[i].sign_size  = lu_reg[i].sign_size;
             next_lu_fwd_reg[i].addr       = lu_reg[i].addr;
             next_lu_fwd_reg[i].prn        = lu_reg[i].prn;
             next_lu_fwd_reg[i].robn       = lu_reg[i].robn;
@@ -132,7 +135,7 @@ module load_queue (
     // load_rs_avail
     always_comb begin
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
-            load_rs_avail[i] = entries[i].valid;
+            load_rs_avail[i] = !entries[i].valid && !lu_reg[i].valid && !lu_fwd_reg[i].valid;
         end
     end
 
@@ -140,20 +143,35 @@ module load_queue (
     always_comb begin
         next_entries = entries;
         // entry
-        for (int i = 0, inst_cnt = 0; i < `NUM_FU_LOAD; i++) begin
-            if (!entries[i].valid && inst_cnt < `NUM_FU_LOAD && lu_fwd_reg[inst_cnt].valid) begin
+        // for (int i = 0, inst_cnt = 0; i < `NUM_FU_LOAD; i++) begin
+        //     if (load_rs_avail[i] && inst_cnt < `NUM_FU_LOAD && rs_lq_packet[inst_cnt].valid) begin
+        //         next_entries[i] = '{
+        //             `TRUE,
+        //             // lu_fwd_reg[inst_cnt].signext,
+        //             lu_fwd_reg[inst_cnt].sign_size,
+        //             lu_fwd_reg[inst_cnt].addr,
+        //             lu_fwd_reg[inst_cnt].value,
+        //             lu_fwd_reg[inst_cnt].tail_store,
+        //             lu_fwd_reg[inst_cnt].prn,
+        //             lu_fwd_reg[inst_cnt].robn,
+        //             lu_fwd_reg[inst_cnt].fwd_valid ? KNOWN : NO_FORWARD
+        //         };
+        //         inst_cnt++;
+        //     end
+        // end
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            if (lu_fwd_reg[i].valid) begin
                 next_entries[i] = '{
                     `TRUE,
                     // lu_fwd_reg[inst_cnt].signext,
-                    lu_fwd_reg[inst_cnt].sign_size,
-                    lu_fwd_reg[inst_cnt].addr,
-                    lu_fwd_reg[inst_cnt].value,
-                    lu_fwd_reg[inst_cnt].tail_store,
-                    lu_fwd_reg[inst_cnt].prn,
-                    lu_fwd_reg[inst_cnt].robn,
-                    lu_fwd_reg[inst_cnt].fwd_valid ? KNOWN : NO_FORWARD
+                    lu_fwd_reg[i].sign_size,
+                    lu_fwd_reg[i].addr,
+                    lu_fwd_reg[i].value,
+                    lu_fwd_reg[i].tail_store,
+                    lu_fwd_reg[i].prn,
+                    lu_fwd_reg[i].robn,
+                    lu_fwd_reg[i].fwd_valid ? KNOWN : NO_FORWARD
                 };
-                inst_cnt++;
             end
         end
 
@@ -216,8 +234,8 @@ module load_queue (
     endgenerate
 
     onehot_mux #(
-        .SIZE ($bits(LQ_DCACHE_PACKET)),
-        .WIDTH(`NUM_FU_LOAD)
+        .SIZE  ($bits(LQ_DCACHE_PACKET)),
+        .WIDTH (`NUM_FU_LOAD)
     ) mux_dcache[`NUM_LU_DCACHE-1:0] (
         .in(mux_input),
         .select(mux_select),

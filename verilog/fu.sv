@@ -289,7 +289,7 @@ module fu #(
         .reset(reset),
         // id
         .id_sq_packet(),
-        .alu_components(),
+        .almost_full(),
         // rs
         .rs_sq_packet(),
         // rob
@@ -307,7 +307,10 @@ module fu #(
         .tail_store(),
         .load_byte_info(),
         .value(),
-        .fwd_valid()
+        .fwd_valid(),
+    `ifdef CPU_DEBUG_OUT
+        .entries_out()
+    `endif
     );
 
     load_queue load_unit (

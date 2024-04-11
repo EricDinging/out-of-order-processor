@@ -6,7 +6,7 @@ module testbench;
 
     RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet;
     logic                 [`NUM_FU_LOAD-1:0] load_rs_avail;
-    logic                 [`NUM_FU_LOAD-1:0] load_avail;
+    logic                 [`NUM_FU_LOAD-1:0] load_selected;
     logic                 [`NUM_FU_LOAD-1:0] load_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
     ADDR                  [`NUM_FU_LOAD-1:0] sq_add;
@@ -19,14 +19,15 @@ module testbench;
     logic            [`NUM_LU_DCACHE-1:0] load_req_accept;
     DATA             [`NUM_LU_DCACHE-1:0] load_req_data;
     logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid;
-    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;     
+    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;    
+    LD_ENTRY   [`NUM_FU_LOAD-1:0]      entries_out; 
 
     load_queue dut(
         .clock(clock),
         .reset(reset),
         .rs_lq_packet(rs_lq_packet),
         .load_rs_avail(load_rs_avail),
-        .load_selected(load_avail),
+        .load_selected(load_selected),
         .load_prepared(load_prepared),
         .load_packet(load_packet),
         .sq_addr(sq_add),
@@ -38,7 +39,8 @@ module testbench;
         .load_req_accept(load_req_accept),
         .load_req_data(load_req_data),
         .load_req_data_valid(load_req_data_valid),
-        .lq_dcache_packet(lq_dcache_packet)
+        .lq_dcache_packet(lq_dcache_packet),
+        .entries_out(entries_out)
     );
     
     always begin
@@ -49,6 +51,15 @@ module testbench;
     task init;
         reset = 1;
         correct = 1;
+
+        rs_lq_packet = 0;
+        load_selected = 0;
+        value = 0;
+        fwd_valid = 0;
+        dcache_lq_packet = 0;
+        load_req_accept = 0;
+        load_req_data = 0;
+        load_req_data_valid = 0;
         
         @(negedge clock);
         @(negedge clock);
@@ -61,7 +72,7 @@ module testbench;
     task exit_on_error;
         begin
             $display("@@@ Incorrect at time %4.0f, clock %b\n", $time, clock);
-            $display("@@@ Failed PRF test!");
+            $display("@@@ Failed load queue test!");
             $finish;
         end
     endtask
@@ -72,11 +83,163 @@ module testbench;
         end
     end
 
+    task entering;
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            rs_lq_packet[i] = '{
+                `TRUE,
+                MEM_WORD,
+                32'hdeadf000,
+                12'hace,
+                i,
+                i,
+                2
+            };  
+        end
+        @(negedge clock);
+        rs_lq_packet = 0;
+        #(`CLOCK_PERIOD/5.0);
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            $display(
+                "query_addr: %h, store_range:%d",
+                sq_add[i],
+                store_range[i]
+            );
+        end
+        @(negedge clock);
+        @(negedge clock);
+        print;
+        correct = load_rs_avail == 0;
+        correct &= load_prepared == 0;
+        for (int i = 0; i < `NUM_LU_DCACHE; i++) begin
+            $display(
+                "lq_dcache_packet[%2d].valid = %b, lq_idx = %d, addr = %h",
+                i, lq_dcache_packet[i].valid, lq_dcache_packet[i].lq_idx, lq_dcache_packet[i].addr
+            );
+        end
+        @(negedge clock);
+        @(negedge clock);
+        @(negedge clock);
+        @(negedge clock);
+        
+        print; // not accept, should stay no_forward
+        // for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+        //     fwd_valid[i] = 1;
+        //     value[i] = 32'hdeadbeef;
+        // end
+        for (int i = 0; i < `NUM_LU_DCACHE; i++) begin
+            $display(
+                "lq_dcache_packet[%2d].valid = %b, lq_idx = %d, addr = %h",
+                i, lq_dcache_packet[i].valid, lq_dcache_packet[i].lq_idx, lq_dcache_packet[i].addr
+            );
+        end
+    endtask
+
+    task forward;
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            rs_lq_packet[i] = '{
+                `TRUE,
+                MEM_WORD,
+                32'hdeadf000,
+                12'hace,
+                i,
+                i,
+                2
+            };  
+        end
+        @(negedge clock);
+        rs_lq_packet = 0;
+        value[0] = 32'hfaceface;
+        fwd_valid[0] = 1;
+        @(negedge clock);
+        @(negedge clock);
+        print; // load_state[0] should be known
+    endtask
+
+    task get_dcache;
+        foreach (load_req_accept[i]) begin
+            load_req_accept[i]     = `TRUE;
+            load_req_data[i]       = 32'hB0BACAFE;
+            load_req_data_valid[i] = i == 0;
+        end
+        dcache_lq_packet = 0;
+        @(negedge clock);
+        print;
+        load_req_accept     = 0;
+        load_req_data       = 0;
+        load_req_data_valid = 0;
+        @(negedge clock);
+        print;
+        dcache_lq_packet[0].valid  = `TRUE;
+        dcache_lq_packet[0].lq_idx = 0;
+        dcache_lq_packet[0].data   = 32'hCAFEB0BA;
+        @(negedge clock);
+        print;
+    endtask
+
+    task to_cdb;
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            rs_lq_packet[i] = '{
+                `TRUE,
+                MEM_WORD,
+                32'hdeadf000,
+                12'hace,
+                i,
+                i,
+                2
+            };  
+        end
+        @(negedge clock);
+        rs_lq_packet = 0;
+        
+
+        // for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+        //     fwd_valid[i] = 1;
+        //     value[i] = 32'hdeadbeef;
+        // end
+        fwd_valid[0] = 0;
+        value[0] = 32'hdeadbeef;
+        
+        fwd_valid[1] = 1;
+        value[1] = 32'hdeadbeef;
+        
+        @(negedge clock);
+        @(negedge clock);
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            fwd_valid[i] = 0;
+            value[i] = 32'hdeadbeef;
+        end
+
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            load_selected[i] = 1;
+        end
+        
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            $display("load_prepared[%2d] = %d, robn = %d, dest = %d",
+                        i, load_prepared[i], load_packet[i].robn, load_packet[i].dest_prn);
+        end
+    endtask
+
+    task print;
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            $display(
+                "ld[%2d].valid = %b, addr = %h, data = %h, tail_store = %d, load_state = %d",
+                i, entries_out[i].valid, entries_out[i].addr, entries_out[i].data,
+                entries_out[i].tail_store, entries_out[i].load_state
+            );
+        end
+    endtask
+
     initial begin
-        $display("PRF size %d\n", `PHYS_REG_SZ_R10K);
         clock = 0;
         init; 
+        entering;
+        get_dcache;
 
+        init;
+        to_cdb;
+
+        init;
+        forward;
         $finish;
     end
 endmodule
