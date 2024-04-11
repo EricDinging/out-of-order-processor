@@ -347,8 +347,6 @@ CPU_SOURCES = verilog/regfile.sv \
 				verilog/stage_decode.sv \
 				verilog/stage_fetch.sv \
 				verilog/onehot_mux.sv \
-				verilog/store_queue.sv \
-				verilog/load_queue.sv \
 				verilog/dcache.sv \
 				verilog/branch_predictor.sv
 

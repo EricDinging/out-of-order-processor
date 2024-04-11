@@ -36,7 +36,7 @@ module stage_fetch (
     MEM_BLOCK [`N-1:0] Icache_data_out;
     logic     [`N-1:0] Icache_valid_out;
 
-    branch_predictor bp (
+    local_predictor bp (
         .clock(clock),
         .reset(reset),
         .pc_start(pc_start),
@@ -72,7 +72,7 @@ module stage_fetch (
 
         for (int i = 0; i < `N; ++i) begin
             if (Icache_valid_out[i]) begin
-                next_pc_start = target_pc[i].pc;
+                next_pc_start = target_pc[i].PC;
             end else begin
                 break;
             end
@@ -89,8 +89,8 @@ module stage_fetch (
         if_id_packet[0].PC  = pc_start;
 
         for (int i = 1; i < `N; ++i) begin
-            proc2Icache_addr[i] = target_pc[i-1].pc;
-            if_id_packet[i].PC  = target_pc[i-1].pc;
+            proc2Icache_addr[i] = target_pc[i-1].PC;
+            if_id_packet[i].PC  = target_pc[i-1].PC;
         end
 
         for (int i = 0; i < `N; ++i) begin
@@ -101,7 +101,7 @@ module stage_fetch (
 
             if_id_packet[i].NPC            = if_id_packet[i].PC + 4;
             if_id_packet[i].predict_taken  = target_pc[i].taken;
-            if_id_packet[i].predict_target = target_pc[i].pc;
+            if_id_packet[i].predict_target = target_pc[i].PC;
         end
 
         if (stall) begin

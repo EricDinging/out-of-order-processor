@@ -34,6 +34,7 @@ module testbench;
     initial begin
         clock = 0;
         init();
-        $display("Start test");
+        $display("@@@ Passed");
+        $finish;
     end
 endmodule

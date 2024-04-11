@@ -198,7 +198,7 @@ typedef enum logic {
 
 typedef struct packed {
     logic                     valid;
-    ADDR                      pc;
+    ADDR                      PC;
     logic [`BTB_TAG_BITS-1:0] tag;
 } BTB_ENTRY;
 

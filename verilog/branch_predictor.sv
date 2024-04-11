@@ -30,8 +30,8 @@ module BTB (
         next_btb_entries = btb_entries;
 
         for (int i = 0; i < `N; ++i) begin
-            hits[i]    = btb_data[bp_btb_index[i]].valid && (btb_data[bp_btb_index[i]].tag == bp_tag[i]);
-            btb_pcs[i] = btb_data[bp_btb_index[i]].PC;
+            hits[i]    = btb_entries[bp_btb_index[i]].valid && (btb_entries[bp_btb_index[i]].tag == bp_tag[i]);
+            btb_pcs[i] = btb_entries[bp_btb_index[i]].PC;
         end
 
         for (int i = 0; i < `N; ++i) begin
@@ -78,6 +78,9 @@ module local_predictor (
 
     logic predict_taken_flag;
 
+    logic [`N-1:0] hits;
+    ADDR  [`N-1:0] btb_pcs;
+
     wire [`N-1:0][`BHT_IDX_WIDTH-1:0] pc_bht_index;
     wire [`N-1:0][`BHT_IDX_WIDTH-1:0] rob_bht_index;
 
@@ -107,17 +110,21 @@ module local_predictor (
         for (int i = 0; i < `N; ++i) begin
             case (pattern_history_table[branch_history_table[pc_bht_index[i]]])
                 NOT_TAKEN:
-                    target_pc[i].taken = `FALSE;
-                    target_pc[i].valid = ~predict_taken_flag;
-                    target_pc[i].pc    = pcs[i] + 4;
+                    begin
+                        target_pc[i].taken = `FALSE;
+                        target_pc[i].valid = ~predict_taken_flag;
+                        target_pc[i].PC    = pcs[i] + 4;
+                    end
                 TAKEN:
-                    target_pc[i].taken = btb.hits[i];
-                    target_pc[i].valid = ~predict_taken_flag;
-                    if (btb.hits[i]) begin
-                        target_pc[i].pc    = btb.btb_pcs[i];
-                        predict_taken_flag = `TRUE;
-                    end else begin
-                        target_pc[i].pc = pcs[i] + 4;
+                    begin
+                        target_pc[i].taken = btb.hits[i];
+                        target_pc[i].valid = ~predict_taken_flag;
+                        if (btb.hits[i]) begin
+                            target_pc[i].PC    = btb.btb_pcs[i];
+                            predict_taken_flag = `TRUE;
+                        end else begin
+                            target_pc[i].PC = pcs[i] + 4;
+                        end
                     end
             endcase
         end
