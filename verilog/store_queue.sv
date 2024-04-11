@@ -23,9 +23,9 @@ typedef struct packed {
 
 typedef struct packed {
     logic    valid;
-    MEM_FUNC byte_info;
-    ADDR     target;
-    DATA     value;
+    MEM_SIZE byte_info;
+    ADDR     addr;
+    DATA     data;
     logic    ready;
 } SQ_ENTRY;
 */
@@ -56,16 +56,9 @@ module store_queue (
     output DATA     [`NUM_FU_LOAD-1:0] value,
     output logic    [`NUM_FU_LOAD-1:0] fwd_valid
 `ifdef CPU_DEBUG_OUT
+    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] entries_out
 `endif
 );
-
-    // typedef struct packed {
-    //     logic    valid;
-    //     MEM_SIZE byte_info;
-    //     ADDR     addr;
-    //     DATA     data;
-    //     logic    ready;
-    // } SQ_ENTRY;
 
     function DATA re_align;
         input  DATA     data;
@@ -98,7 +91,11 @@ module store_queue (
 
     SQ_ENTRY[(`SQ_LEN+1)-1:0] entries, next_entries;
 
-    SQ_IDX size, next_size, next_head, next_tail, next_tail_ready;
+`ifdef CPU_DEBUG_OUT
+    assign entries_out = entries;
+`endif
+
+    SQ_IDX size, next_size, next_head, next_tail;
     SQ_REG[`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
     assign almost_full = size > `SQ_LEN - `NUM_FU_LOAD;
@@ -126,7 +123,7 @@ module store_queue (
         if (!almost_full) begin
             for (int i = 0; i < `N; i++) begin
                 if (id_sq_packet[i].valid) begin
-                    next_entries[tail] = '{
+                    next_entries[next_tail] = '{
                         `TRUE,
                         id_sq_packet[i].byte_info,
                         0, 0, `FALSE
@@ -139,8 +136,9 @@ module store_queue (
 
         // RS
         foreach (sq_reg[i]) if (sq_reg[i].valid) begin
-            next_entries[sq_reg[i].sq_idx].addr = sq_reg[i].addr;
-            next_entries[sq_reg[i].sq_idx].data = sq_reg[i].data;
+            next_entries[sq_reg[i].sq_idx].ready = `TRUE;
+            next_entries[sq_reg[i].sq_idx].addr  = sq_reg[i].addr;
+            next_entries[sq_reg[i].sq_idx].data  = sq_reg[i].data;
         end
         
         // ROB
@@ -213,7 +211,7 @@ module store_queue (
                 flag_break |= idx_fwd == tail_store[i];
                 if (~flag_break && match) begin
                     value[i] = re_align(entries[idx_fwd].data, entries[idx_fwd].addr, entries[idx_fwd].byte_info);
-                    fwd_valid[i] = `TRUE;
+                    fwd_valid[i] = entries[idx_fwd].valid && entries[idx_fwd].ready;
                 end
             end
         end

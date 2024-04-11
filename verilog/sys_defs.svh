@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 8
+`define N 4
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -734,7 +734,7 @@ typedef struct packed {
     ADDR  base;
     logic [11:0] offset;
     DATA  data;
-    logic [`SQ_IDX_BITS-1:0] sq_idx;
+    SQ_IDX sq_idx;
 } RS_SQ_PACKET;
 
 typedef struct packed {
