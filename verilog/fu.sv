@@ -284,6 +284,56 @@ module fu #(
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     );
 
+    // store_queue store_component (
+    //     .clock(clock),
+    //     .reset(reset),
+    //     // id
+    //     .id_sq_packet(),
+    //     .alu_components(),
+    //     // rs
+    //     .rs_sq_packet(),
+    //     // rob
+    //     .num_commit_insns(),
+    //     .num_sent_insns(),
+    //     // dcache
+    //     .sq_dcache_packet(),
+    //     .dcache_accept(),
+    //     // rs for load
+    //     .head(),
+    //     .tail(),
+    //     .tail_ready(),
+    //     // lq
+    //     .addr(),
+    //     .tail_store(),
+    //     .load_byte_info(),
+    //     .value(),
+    //     .fwd_valid()
+    // );
+
+    // load_queue load_unit (
+    //     .clock(clock),
+    //     .reset(reset),
+    //     // rs
+    //     .rs_lq_packet(),
+    //     .load_rs_avail(),
+    //     // cdb
+    //     .load_avail(),
+    //     .load_prepared(),
+    //     .load_packet(),
+    //     // sq
+    //     .sq_addr(),
+    //     .store_range(),
+    //     .load_byte_info(),
+    //     .value(),
+    //     .fwd_valid(),
+    //     // Dcache
+    //     .dcache_lq_packet(),
+    //     .load_req_accept(),
+    //     .load_req_data(),
+    //     .load_req_data_valid(),
+    //     .lq_dcache_packet()
+    // );
+
     load load_components [`NUM_FU_LOAD-1:0] (
         .clock(clock),
         .reset(reset),

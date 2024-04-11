@@ -207,7 +207,7 @@ module testbench;
         print_cdb;
 
         @(negedge clock);
-        print_fu_state;
+        // print_fu_state;
         print_cdb;
         @(negedge clock);
         $display("alu_avail = %0d, mult_avail = %0d", alu_avail, mult_avail);
@@ -215,17 +215,17 @@ module testbench;
         print_cdb;
         for (int i = 0; i < `N; ++i) begin
             if (cdb_output[i].dest_prn == 1 && cdb_output[i].value == 2) ++count;
-            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value)
+            $display("cdb_output[%0d].dest_prn = %0d, cdb_output[%0d].value = %0d", i, cdb_output[i].dest_prn, i, cdb_output[i].value);
         end
         
         correct = count == n;
     endtask
 
-    task print_fu_state;
-        $display("fu_state_packet: alu_prep = %0d, mult_prep = %0d, load_prep = %0d", fu_state_packet_debug.alu_prep, fu_state_packet_debug.mult_prep, fu_state_packet_debug.load_prep);
-        $display("alu_packet: robn = %0d, dest_prn = %0d, result = %0d", fu_state_packet_debug.alu_packet.basic.robn, fu_state_packet_debug.alu_packet.basic.dest_prn, fu_state_packet_debug.alu_packet.basic.result);
-        $display("mult_packet: robn = %0d, dest_prn = %0d, result = %0d", fu_state_packet_debug.mult_packet.robn, fu_state_packet_debug.mult_packet.dest_prn, fu_state_packet_debug.mult_packet.result);
-    endtask
+    // task print_fu_state;
+    //     $display("fu_state_packet: alu_prep = %0d, mult_prep = %0d, load_prep = %0d", fu_state_packet_debug.alu_prep, fu_state_packet_debug.mult_prep, fu_state_packet_debug.load_prep);
+    //     $display("alu_packet: robn = %0d, dest_prn = %0d, result = %0d", fu_state_packet_debug.alu_packet.basic.robn, fu_state_packet_debug.alu_packet.basic.dest_prn, fu_state_packet_debug.alu_packet.basic.result);
+    //     $display("mult_packet: robn = %0d, dest_prn = %0d, result = %0d", fu_state_packet_debug.mult_packet.robn, fu_state_packet_debug.mult_packet.dest_prn, fu_state_packet_debug.mult_packet.result);
+    // endtask
 
     task less_than_n_alu;
         int n;
