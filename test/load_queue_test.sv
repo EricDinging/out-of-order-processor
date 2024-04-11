@@ -6,9 +6,9 @@ module testbench;
 
     RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet;
     logic                 [`NUM_FU_LOAD-1:0] load_rs_avail;
-    logic                 [`LU_LEN-1:0] load_avail;
-    logic                 [`LU_LEN-1:0] load_prepared;
-    FU_STATE_BASIC_PACKET [`LU_LEN-1:0] load_packet;
+    logic                 [`NUM_FU_LOAD-1:0] load_avail;
+    logic                 [`NUM_FU_LOAD-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
     ADDR                  [`NUM_FU_LOAD-1:0] sq_add;
     logic                 [`NUM_FU_LOAD-1:0][`SQ_IDX_BITS-1:0] store_range;
     MEM_FUNC              [`NUM_FU_LOAD-1:0] load_byte_inf;
