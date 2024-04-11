@@ -692,7 +692,14 @@ typedef struct packed {
 } PC_ENTRY;
 
 typedef struct packed {
+    logic valid;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+} ID_SQ_PACKET;
+
+typedef struct packed {
     ID_RS_PACKET  [`N-1:0] id_rs_packet;
+    ID_SQ_PACKET  [`N-1:0] id_sq_packet;
     ROB_IS_PACKET rob_is_packet;
     RAT_IS_INPUT  rat_is_input;
 } ID_OOO_PACKET;
@@ -722,12 +729,6 @@ typedef struct packed {
 typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
 
 typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
-
-typedef struct packed {
-    logic valid;
-    // MEM_SIZE byte_info;
-    MEM_FUNC byte_info;
-} ID_SQ_PACKET;
 
 typedef struct packed {
     logic valid;

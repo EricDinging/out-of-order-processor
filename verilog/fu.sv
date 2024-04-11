@@ -257,11 +257,15 @@ module fu #(
     input logic [`NUM_FU_MULT-1:0] mult_avail,
     input logic [`NUM_FU_LOAD-1:0] load_avail,
 
+    // store_queue
+    input ID_SQ_PACKET [`N-1:0] id_sq_packet,
+
     // TODO: packet for store, to rob and maybe prf
     // tell rs whether it the next value will be accepted
     output logic           [`NUM_FU_STORE-1:0] store_avail,
     output FU_ROB_PACKET   [`NUM_FU_ALU-1:0]   cond_rob_packet,
-    output FU_STATE_PACKET                     fu_state_packet
+    output FU_STATE_PACKET                     fu_state_packet,
+    output logic                               sq_almost_full
 );
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
@@ -284,12 +288,15 @@ module fu #(
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     );
 
+    // TODO remove
+    assign sq_almost_full = `FALSE;
+
     // store_queue store_component (
     //     .clock(clock),
     //     .reset(reset),
     //     // id
-    //     .id_sq_packet(),
-    //     .almost_full(),
+    //     .id_sq_packet(id_sq_packet),
+    //     .almost_full(sq_almost_full),
     //     // rs
     //     .rs_sq_packet(),
     //     // rob
@@ -337,15 +344,15 @@ module fu #(
     //     .lq_dcache_packet()
     // );
 
-    // load load_components [`NUM_FU_LOAD-1:0] (
-    //     .clock(clock),
-    //     .reset(reset),
-    //     .fu_load_packet(fu_load_packet),
-    //     .avail(load_avail),
-    //     //output
-    //     .prepared(fu_state_packet.load_prepared),
-    //     .fu_state_load_packet(fu_state_packet.load_packet)
-    // );
+    load load_components [`NUM_FU_LOAD-1:0] (
+        .clock(clock),
+        .reset(reset),
+        .fu_load_packet(fu_load_packet),
+        .avail(load_avail),
+        //output
+        .prepared(fu_state_packet.load_prepared),
+        .fu_state_load_packet(fu_state_packet.load_packet)
+    );
 
 
     always_comb begin

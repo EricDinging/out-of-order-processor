@@ -61,6 +61,10 @@ module ooo (
     PRN       [`N-1:0]   prn_invalid;      // prf input, given by rat output
     PRF_WRITE [`N-1:0]   prn_write_data;   // prf input, given by rob output
 
+    ID_SQ_PACKET [`N-1:0] id_sq_packet;
+    logic                 sq_almost_full;
+    wor                   id_sq_valid;
+
     // output of fu_cdb, connect to rob
     FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0]   fu_rob_packet;
 
@@ -125,12 +129,14 @@ module ooo (
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
         .fu_store_packet(fu_store_packet),
+        .id_sq_packet(id_sq_packet),
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
         .load_avail(load_avail),
         .store_avail(store_avail),
         .fu_rob_packet(fu_rob_packet),
-        .cdb_output(cdb_packet)
+        .cdb_output(cdb_packet),
+        .sq_almost_full(sq_almost_full)
         `ifdef CPU_DEBUG_OUT
         , .fu_state_packet_debug(fu_state_packet_debug)
         , .select_debug(select_debug)
@@ -193,6 +199,15 @@ module ooo (
         .rrat_ct_output(rrat_ct_output)
     );
 
+    // sq almost full
+    genvar i;
+    generate
+        for (i = 0; i < `N; ++i) begin
+            assign id_sq_valid = id_ooo_packet.id_sq_packet[i].valid;
+        end
+    endgenerate
+
+
     always_comb begin
         // issue
 
@@ -239,6 +254,11 @@ module ooo (
                 rs_is_packet.entries[i].robn     = rob_tail_entries[i];
             end
         end
+        
+        // fu store queue input
+        for (int i = 0; i < `N; ++i) begin
+            id_sq_packet[i] = id_ooo_packet.id_sq_packet[i];
+        end
 
         // commit
         for (int i = 0; i < `N; ++i) begin
@@ -280,6 +300,7 @@ module ooo (
         end
     end
 
-    assign structural_hazard = rs_almost_full || rob_almost_full;
+    assign structural_hazard = rs_almost_full || rob_almost_full ||
+        (sq_almost_full && id_sq_valid);
 
 endmodule

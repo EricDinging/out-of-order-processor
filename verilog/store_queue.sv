@@ -98,7 +98,7 @@ module store_queue (
     SQ_IDX size, next_size, next_head, next_tail;
     SQ_REG[`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
-    assign almost_full = size > `SQ_LEN - `NUM_FU_LOAD;
+    assign almost_full = size > `SQ_LEN - `N;
 
     always_comb begin
         next_sq_reg = sq_reg;

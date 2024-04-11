@@ -7,13 +7,16 @@ module fu_cdb(
     input FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
     input FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
+    // store queue
+    input ID_SQ_PACKET [`N-1:0] id_sq_packet,
 
     output logic         [`NUM_FU_ALU-1:0]       alu_avail,
     output logic         [`NUM_FU_MULT-1:0]      mult_avail,
     output logic         [`NUM_FU_LOAD-1:0]      load_avail,
     output logic         [`NUM_FU_STORE-1:0]     store_avail,
     output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0] fu_rob_packet,
-    output CDB_PACKET    [`N-1:0]                cdb_output // for both cdb and prf
+    output CDB_PACKET    [`N-1:0]                cdb_output, // for both cdb and prf
+    output logic                                 sq_almost_full
 
     `ifdef CPU_DEBUG_OUT
     , output FU_STATE_PACKET fu_state_packet_debug
@@ -38,10 +41,12 @@ module fu_cdb(
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
         .load_avail(load_avail),
+        .id_sq_packet(id_sq_packet),
         // output
         .store_avail(store_avail),
         .cond_rob_packet(cond_rob_packet),
-        .fu_state_packet(fu_state_packet)
+        .fu_state_packet(fu_state_packet),
+        .sq_almost_full(sq_almost_full)
     );
 
     cdb cdb_inst(

@@ -15,6 +15,9 @@ module stage_decode #(
     FU_FUNC        [`N-1:0] fu_func;
     logic          [`N-1:0] cond_branch, uncond_branch;
     logic          [`N-1:0] csr_op, halt, illegal;
+    logic          [`N-1:0] wr_mem;
+    logic          [`N-1:0] rd_mem;
+    MEM_FUNC       [`N-1:0] mem_func;
     
     genvar i;
 
@@ -34,7 +37,10 @@ module stage_decode #(
                 .uncond_branch (uncond_branch[i]),
                 .csr_op        (csr_op[i]),
                 .halt          (halt[i]),
-                .illegal       (illegal[i])
+                .illegal       (illegal[i]),
+                .wr_mem        (wr_mem[i]),
+                .rd_mem        (rd_mem[i]),
+                .mem_func      (mem_func[i])
             );
         end
     endgenerate
@@ -79,6 +85,11 @@ module stage_decode #(
                 ~halt[i] && (opa_select[i] == OPA_IS_RS1 || cond_branch[i]) ? if_id_packet[i].inst.r.rs1 : `ZERO_REG;
             assign id_ooo_packet.rat_is_input.entries[i].op2_arn  =
                 ~halt[i] && (opb_select[i] == OPB_IS_RS2 || cond_branch[i]) ? if_id_packet[i].inst.r.rs2 : `ZERO_REG;
+
+            // store queue
+            assign id_ooo_packet.id_sq_packet[i].valid = wr_mem[i];
+            assign id_ooo_packet.id_sq_packet[i].byte_info = mem_func[i];
+            // TODO: opa opb
         end
     endgenerate
 
