@@ -39,9 +39,9 @@ module load_queue (
     input  RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet,
     output logic                 [`NUM_FU_LOAD-1:0] load_rs_avail,
     // cdb
-    input  logic                 [`LU_LEN-1:0] load_avail,
-    output logic                 [`LU_LEN-1:0] load_prepared,
-    output FU_STATE_BASIC_PACKET [`LU_LEN-1:0] load_packet,
+    input  logic                 [`NUM_FU_LOAD-1:0] load_selected,
+    output logic                 [`NUM_FU_LOAD-1:0] load_prepared,
+    output FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet,
     // SQ
     output ADDR                  [`NUM_FU_LOAD-1:0] sq_addr,
     output logic                 [`NUM_FU_LOAD-1:0][`SQ_IDX_BITS-1:0] store_range,
@@ -88,13 +88,13 @@ module load_queue (
         end
     endfunction
 
-    LD_ENTRY   [`LU_LEN-1:0]      entries,    next_entries;
+    LD_ENTRY   [`NUM_FU_LOAD-1:0]      entries,    next_entries;
     LU_REG     [`NUM_FU_LOAD-1:0] lu_reg,     next_lu_reg;
     LU_FWD_REG [`NUM_FU_LOAD-1:0] lu_fwd_reg, next_lu_fwd_reg;
-    LQ_DCACHE_PACKET [`LU_LEN-1:0] mux_input;
+    LQ_DCACHE_PACKET [`NUM_FU_LOAD-1:0] mux_input;
 
-    logic [`LU_LEN-1:0] no_forwards;
-    logic [`NUM_LU_DCACHE-1:0][`LU_LEN-1:0] mux_select;
+    logic [`NUM_FU_LOAD-1:0] no_forwards;
+    logic [`NUM_LU_DCACHE-1:0][`NUM_FU_LOAD-1:0] mux_select;
 
     // add
     always_comb begin
@@ -116,6 +116,7 @@ module load_queue (
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
             sq_addr[i] = lu_reg[i].addr;
             store_range[i] = lu_reg[i].tail_store;
+            load_byte_info[i] = lu_reg[i].sign_size;
             next_lu_fwd_reg[i].valid      = lu_reg[i].valid;
             // next_lu_fwd_reg[i].signext    = lu_reg[i].signext;
             next_lu_fwd_reg[i].sign_size       = lu_reg[i].sign_size;
@@ -128,11 +129,18 @@ module load_queue (
         end
     end
 
+    // load_rs_avail
+    always_comb begin
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            load_rs_avail[i] = entries[i].valid;
+        end
+    end
+
     
     always_comb begin
         next_entries = entries;
         // entry
-        for (int i = 0, inst_cnt = 0; i < `LU_LEN; i++) begin
+        for (int i = 0, inst_cnt = 0; i < `NUM_FU_LOAD; i++) begin
             if (!entries[i].valid && inst_cnt < `NUM_FU_LOAD && lu_fwd_reg[inst_cnt].valid) begin
                 next_entries[i] = '{
                     `TRUE,
@@ -153,7 +161,7 @@ module load_queue (
         foreach (entries[i]) begin
             load_packet[i].robn = entries[i].robn;
             load_packet[i].dest_prn = entries[i].prn;
-            // TODO: adjust to fit the byte type?
+            // adjust to fit the byte type
             // load_packet[i].result = entries[i].data;
             if (entries[i].valid && entries[i].load_state == KNOWN) begin
                 load_prepared[i] = `TRUE;
@@ -161,7 +169,7 @@ module load_queue (
                 load_prepared[i] = `FALSE;
             end
 
-            if (load_avail[i]) begin
+            if (load_selected[i]) begin
                 next_entries[i] = 0;
             end
         end
@@ -197,7 +205,7 @@ module load_queue (
 
     genvar i;
     generate
-        for (i = 0; i < `LU_LEN; i++) begin
+        for (i = 0; i < `NUM_FU_LOAD; i++) begin
             sign_align sa (
                 .data(entries[i].data),
                 .addr(entries[i].addr),
@@ -209,7 +217,7 @@ module load_queue (
 
     onehot_mux #(
         .SIZE ($bits(LQ_DCACHE_PACKET)),
-        .WIDTH(`LU_LEN)
+        .WIDTH(`NUM_FU_LOAD)
     ) mux_dcache[`NUM_LU_DCACHE-1:0] (
         .in(mux_input),
         .select(mux_select),
@@ -217,7 +225,7 @@ module load_queue (
     );
 
     psel_gen #(
-        .WIDTH(`LU_LEN),
+        .WIDTH(`NUM_FU_LOAD),
         .REQS(`NUM_LU_DCACHE)
     ) load_dcache_selector (
         .req(no_forwards),

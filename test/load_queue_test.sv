@@ -26,12 +26,12 @@ module testbench;
         .reset(reset),
         .rs_lq_packet(rs_lq_packet),
         .load_rs_avail(load_rs_avail),
-        .load_avail(load_avail),
+        .load_selected(load_avail),
         .load_prepared(load_prepared),
         .load_packet(load_packet),
-        .sq_add(sq_add),
+        .sq_addr(sq_add),
         .store_range(store_range),
-        .load_byte_inf(load_byte_inf),
+        .load_byte_info(load_byte_inf),
         .value(value),
         .fwd_valid(fwd_valid),
         .dcache_lq_packet(dcache_lq_packet),
@@ -40,17 +40,6 @@ module testbench;
         .load_req_data_valid(load_req_data_valid),
         .lq_dcache_packet(lq_dcache_packet)
     );
-    
-
-    // ooo dut(
-    //     .clock(clock),
-    //     .reset(reset),
-    //     .id_ooo_packet(id_ooo_packet),
-    //     .structural_hazard(structural_hazard),
-    //     .squash(squash),
-    //     .rob_if_packet(rob_if_packet),
-    //     .ooo_ct_packet(ooo_ct_packet)
-    // );
     
     always begin
         #(`CLOCK_PERIOD/2.0);

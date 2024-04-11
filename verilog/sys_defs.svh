@@ -67,8 +67,7 @@
 `define SQ_IDX_BITS $clog2(`SQ_LEN + 2)
 
 `define NUM_LU_DCACHE `N
-`define LU_LEN 2 * `N
-`define LU_IDX_BITS $clog2(`LU_LEN + 1)
+`define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
 `define DCACHE_LINES 32
@@ -625,8 +624,8 @@ typedef struct packed {
     FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0]  alu_packet;
     logic                 [`NUM_FU_MULT-1:0] mult_prepared;
     FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic                 [`LU_LEN-1:0] load_prepared;
-    FU_STATE_BASIC_PACKET [`LU_LEN-1:0] load_packet;
+    logic                 [`NUM_FU_LOAD-1:0] load_prepared;
+    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
 } FU_STATE_PACKET;
 
 // typedef struct packed {
