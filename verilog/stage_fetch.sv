@@ -4,6 +4,7 @@ module stage_fetch (
     input clock, reset,
     input logic stall,
     input logic squash,
+    input logic dcache_request,
     // From memory
     input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
     input MEM_BLOCK mem2proc_data,            // Data coming back from memory
@@ -63,7 +64,7 @@ module stage_fetch (
         .Imem2proc_data_tag(mem2proc_data_tag),
         .proc2Icache_addr(proc2Icache_addr),
         .valid(proc2Icache_valid),
-        .dcache_request(`FALSE), // TODO Wire from dcache
+        .dcache_request(dcache_request),
         .proc2Imem_command(proc2Imem_command),
         .proc2Imem_addr(proc2Imem_addr),
         .Icache_data_out(Icache_data_out),

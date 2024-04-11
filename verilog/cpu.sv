@@ -116,6 +116,12 @@ module cpu (
     logic         squash;
     OOO_CT_PACKET ooo_ct_packet;
 
+    // To memory
+    logic [1:0] proc2Dmem_command, proc2Imem_command;
+    ADDR        proc2Dmem_addr, proc2Imem_addr;
+
+    logic dcache_request;
+
     //////////////////////////////////////////////////
     //                                              //
     //                  Stage Fetch                 //
@@ -127,12 +133,13 @@ module cpu (
         .reset(reset),
         .stall(squash ? `FALSE : structural_hazard),
         .squash(squash),
+        .dcache_request(dcache_request),
         .mem2proc_transaction_tag(mem2proc_transaction_tag),
         .mem2proc_data(mem2proc_data),
         .mem2proc_data_tag(mem2proc_data_tag),
         .rob_if_packet(rob_if_packet),
-        .proc2Imem_command(proc2mem_command),
-        .proc2Imem_addr(proc2mem_addr),
+        .proc2Imem_command(proc2Imem_command), // TODO
+        .proc2Imem_addr(proc2Imem_addr),
         .if_id_packet(if_packet)
     `ifdef CPU_DEBUG_OUT
         , .imshr_entries_debug(imshr_entries_debug)
@@ -163,7 +170,7 @@ module cpu (
     //////////////////////////////////////////////////
     // squash decode
     stage_decode decode (
-        .if_id_packet(if_id_reg),
+        .if_id_packet(if_id_reg),,
         .id_ooo_packet(id_ooo_packet)
     );
 
@@ -191,10 +198,20 @@ module cpu (
         .clock(clock),
         .reset(reset),
         .id_ooo_packet(id_ooo_reg),
+        // from memory to dcache
+        .Dmem2proc_transaction_tag(mem2proc_transaction_tag),
+        .Dmem2proc_data(mem2proc_data),
+        .Dmem2proc_data_tag(mem2proc_data_tag),
+        // Outputs
         .structural_hazard(structural_hazard),
         .rob_if_packet(rob_if_packet),
         .squash(squash),
-        .ooo_ct_packet(ooo_ct_packet)
+        .ooo_ct_packet(ooo_ct_packet),
+        // from dcache to memory
+        .proc2Dmem_command(proc2Dmem_command),
+        .proc2Dmem_addr(proc2Dmem_addr),
+        .proc2Dmem_data(proc2mem_data),
+        .dcache_request(dcache_request)
     `ifdef CPU_DEBUG_OUT
         , .cdb_packet_debug(cdb_packet_debug)
         , .fu_state_packet_debug(fu_state_packet_debug)
@@ -243,6 +260,9 @@ module cpu (
     //                Memory Outputs                //
     //                                              //
     //////////////////////////////////////////////////
+
+    assign proc2mem_command = dcache_request ? proc2Dmem_command : proc2Imem_command;
+    assign proc2mem_addr    = dcache_request ? proc2Dmem_addr    : proc2Imem_addr;
 
     // these signals go to and from the processor and memory
     // we give precedence to the mem stage over instruction fetch

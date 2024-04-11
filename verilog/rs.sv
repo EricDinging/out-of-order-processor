@@ -16,6 +16,10 @@ module rs #(
     input logic [`NUM_FU_LOAD-1:0]  fu_load_avail,
     input logic [`NUM_FU_STORE-1:0] fu_store_avail,
 
+    input SQ_IDX head,
+    input SQ_IDX tail,
+    input SQ_IDX tail_ready,
+
     output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
     output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
@@ -57,6 +61,8 @@ module rs #(
     logic [SIZE-1:0][`NUM_FU_MULT-1:0]  mult_sel;
     logic [SIZE-1:0][`NUM_FU_LOAD-1:0]  load_sel;
     logic [SIZE-1:0][`NUM_FU_STORE-1:0] store_sel;
+
+    SQ_IDX input_tail;
 
     psel_gen #(
         .WIDTH(SIZE),
@@ -113,7 +119,9 @@ module rs #(
                 entry.opa_select,
                 entry.opb_select,
                 entry.cond_branch,
-                entry.uncond_branch
+                entry.uncond_branch,
+                entry.sq_idx,
+                entry.mem_func
             };
         end
     endfunction
@@ -141,6 +149,14 @@ module rs #(
 
         for (int j = 0; j < `NUM_FU_STORE; j++) begin
             next_fu_store_packet[j].valid = 1'b0;
+        end
+
+        input_tail = tail;
+        for (int i = 0; i < `N; i++) begin
+            rs_is_packet.entries[i].sq_idx = input_tail;
+            if (rs_is_packet.entries[i].fu == FU_STORE) begin
+                input_tail = (input_tail + 1) % (SQ_LEN + 1);
+            end
         end
 
         for (int i = 0, inst_cnt = 0; i < SIZE; ++i) begin
@@ -211,7 +227,14 @@ module rs #(
             assign wake_ups[i]       = entries[i].valid && entries[i].op1_ready && entries[i].op2_ready;
             assign alu_wake_ups[i]   = wake_ups[i] && (entries[i].fu == FU_ALU);
             assign mult_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_MULT);
-            assign load_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_LOAD);
+            assign load_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_LOAD)
+            &&  
+                (head < tail_ready?
+                    (entries[i].sq_idx >= head && entreis[i].sq_idx <= tail_ready)
+                    :
+                    (entries[i].sq_idx >= head || entries[i].sq_idx <= tail_ready) 
+                )
+            ;
             assign store_wake_ups[i] = wake_ups[i] && (entries[i].fu == FU_STORE);
         end
     endgenerate
@@ -243,87 +266,19 @@ module rs #(
         if (reset) begin
             counter <= 0;
             for (int i = 0; i < SIZE; ++i) begin
-                entries[i] <= '{
-                    `NOP,    // inst
-                    `FALSE,  // valid
-                    32'b0,   // j
-                    FU_ALU,  // fu
-                    ALU_ADD, // func.alu
-                    `FALSE,  // op1_ready
-                    `FALSE,  // op2_ready
-                    32'h0,   // op1
-                    32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},     // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
-                    2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
-                };
+                entries[i] <= 0;
             end
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
-                fu_alu_packet[j] <= '{
-                    `FALSE,  // valid
-                    `NOP,    // inst
-                    32'b0,
-                    ALU_ADD, // func
-                    32'h0,   // op1
-                    32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},     // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
-                    2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
-                };
+                fu_alu_packet[j] <= 0;
             end
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
-                fu_mult_packet[j] <= '{
-                    `FALSE,  // valid
-                    `NOP,    // inst
-                    32'b0,
-                    ALU_ADD, // func
-                    32'h0,   // op1
-                    32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
-                    2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
-                };
+                fu_mult_packet[j] <= 0;
             end
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
-                fu_load_packet[j] <= '{
-                    `FALSE,  // valid
-                    `NOP,    // inst
-                    32'b0,
-                    ALU_ADD, // func
-                    32'h0,   // op1
-                    32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}}, // dest_rob
-                    2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
-                };
+                fu_load_packet[j] <= 0;
             end
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
-                fu_store_packet[j] <= '{
-                    `FALSE,  // valid
-                    `NOP,    // inst
-                    32'b0,
-                    ALU_ADD, // func
-                    32'h0,   // op1
-                    32'h0,   // op2
-                    {`PRN_WIDTH{1'h0}},    // dest_prn
-                    {`ROB_CNT_WIDTH{1'h0}},// dest_rob
-                    2'b0,
-                    4'b0,
-                    1'b0,
-                    1'b0
-                };
+                fu_store_packet[j] <= 0;
             end
         end else begin
             counter <= next_counter;

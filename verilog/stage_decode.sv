@@ -4,7 +4,6 @@ module stage_decode #(
     // nothing
 ) (
     input IF_ID_PACKET [`N-1:0] if_id_packet,
-
     output ID_OOO_PACKET id_ooo_packet
 );
 
@@ -57,6 +56,7 @@ module stage_decode #(
             assign id_ooo_packet.id_rs_packet[i].opb_select    = opb_select[i];
             assign id_ooo_packet.id_rs_packet[i].cond_branch   = cond_branch[i];
             assign id_ooo_packet.id_rs_packet[i].uncond_branch = uncond_branch[i];
+
             // rob
             assign id_ooo_packet.rob_is_packet.valid[i] = if_id_packet[i].valid;
 
@@ -84,12 +84,12 @@ module stage_decode #(
             assign id_ooo_packet.rat_is_input.entries[i].op1_arn  =
                 ~halt[i] && (opa_select[i] == OPA_IS_RS1 || cond_branch[i]) ? if_id_packet[i].inst.r.rs1 : `ZERO_REG;
             assign id_ooo_packet.rat_is_input.entries[i].op2_arn  =
-                ~halt[i] && (opb_select[i] == OPB_IS_RS2 || cond_branch[i]) ? if_id_packet[i].inst.r.rs2 : `ZERO_REG;
+                ~halt[i] && (opb_select[i] == OPB_IS_RS2 || cond_branch[i] || fu[i] == FU_STORE) ? if_id_packet[i].inst.r.rs2 : `ZERO_REG;
 
             // store queue
             assign id_ooo_packet.id_sq_packet[i].valid = wr_mem[i];
             assign id_ooo_packet.id_sq_packet[i].byte_info = mem_func[i];
-            // TODO: opa opb
+            assign id_ooo_packet.id_rs_packet[i].mem_func = mem_func[i];
         end
     endgenerate
 

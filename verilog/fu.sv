@@ -177,17 +177,17 @@ module mult_impl (
     );
 endmodule
 
-module load (
-    input logic clock, reset,
-    input FU_PACKET fu_load_packet,
-    input logic avail,
-    output logic prepared,
-    output FU_STATE_BASIC_PACKET fu_state_load_packet
-);
+// module load (
+//     input logic clock, reset,
+//     input FU_PACKET fu_load_packet,
+//     input logic avail,
+//     output logic prepared,
+//     output FU_STATE_BASIC_PACKET fu_state_load_packet
+// );
 
-    assign prepared = 0;
-    assign fu_state_load_packet = 0;
-endmodule
+//     assign prepared = 0;
+//     assign fu_state_load_packet = 0;
+// endmodule
 
 
 
@@ -247,26 +247,114 @@ module fu #(
 
 )(
     input clock, reset,
+    input squash,
     input FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
     input FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
     input FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
 
+    // From memory to dcache
+    input MEM_TAG   Dmem2proc_transaction_tag,
+    input MEM_BLOCK Dmem2proc_data,
+    input MEM_TAG   Dmem2proc_data_tag,
+
     // given back from priority selector
-    input logic [`NUM_FU_ALU-1:0]  alu_avail,
-    input logic [`NUM_FU_MULT-1:0] mult_avail,
-    input logic [`NUM_FU_LOAD-1:0] load_avail,
+    input logic  [`NUM_FU_ALU-1:0]  alu_avail,
+    input logic  [`NUM_FU_MULT-1:0] mult_avail,
+    input logic  [`NUM_FU_LOAD-1:0] load_avail,
+    output logic [`NUM_FU_LOAD-1:0] load_rs_avail,
 
     // store_queue
-    input ID_SQ_PACKET [`N-1:0] id_sq_packet,
+    input ID_SQ_PACKET [`N-1:0]            id_sq_packet,
+    input SQ_IDX                   rob_num_commit_insns
 
-    // TODO: packet for store, to rob and maybe prf
-    // tell rs whether it the next value will be accepted
+    // tell rs whether the next value will be accepted
     output logic           [`NUM_FU_STORE-1:0] store_avail,
+    output SQ_IDX                              sq_head,
+    output SQ_IDX                              sq_tail,
+    output SQ_IDX                              sq_tail_ready,
+    output logic                               sq_almost_full,
+    output SQ_IDX                              sq_num_sent_insns,
     output FU_ROB_PACKET   [`NUM_FU_ALU-1:0]   cond_rob_packet,
     output FU_STATE_PACKET                     fu_state_packet,
-    output logic                               sq_almost_full
+    // To memory from dcache
+    output MEM_COMMAND proc2Dmem_command,
+    output ADDR        proc2Dmem_addr,
+    output MEM_BLOCK   proc2Dmem_data,
+    // To icache from dcache
+    output logic       dcache_request
 );
+
+    RS_SQ_PACKET [`NUM_FU_STORE-1:0] rs_sq_packet;
+
+    // store_queue and load_queue
+    ADDR     [`NUM_FU_LOAD-1:0] addr;          
+    SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store;    
+    MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info;
+    DATA     [`NUM_FU_LOAD-1:0] value;         
+    logic    [`NUM_FU_LOAD-1:0] fwd_valid;     
+    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet;
+    logic            [`NUM_SQ_DCACHE-1:0] dcache_sq_accept;
+    // load queue - dcache
+    DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet;
+    logic            [`NUM_LU_DCACHE-1:0] load_req_accept;
+    DATA             [`NUM_LU_DCACHE-1:0] load_req_data;
+    logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid;
+    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;
+
+    genvar i;
+    generate
+        for (i = 0; i < `NUM_FU_STORE; ++i) begin
+            assign rs_sq_packet[i] = '{
+                fu_store_packet[i].valid,                      // valid
+                fu_store_packet[i].op1,                        // base
+                `RV32_signext_Iimm(fu_mult_packet.inst)[11:0], // offset
+                fu_store_packet[i].op2,                        // data
+                fu_store_packet[i].sq_idx                      // sq_idx
+            };
+        end
+    endgenerate
+    
+
+    RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet;
+    generate
+        for (i = 0; i < `NUM_FU_LOAD; ++i) begin
+            assign rs_lq_packet[i] = '{
+                fu_load_packet[i].valid,    // logic valid;
+                fu_load_packet[i].mem_func, // MEM_FUNC sign_size;
+                fu_load_packet[i].op1,      // ADDR base;
+                `RV32_signext_Iimm(fu_mult_packet.inst)[11:0], // logic [11:0] offset;
+                fu_load_packet[i].dest_prn, // PRN prn;
+                fu_load_packet[i].robn,     // ROBN robn;
+                fu_load_packet[i].sq_idx    // SQ_IDX   tail_store;
+            };
+        end
+    endgenerate
+
+    dcache cache (
+        .clock(clock),
+        .reset(reset),
+        .squash(squash),
+        // from memory
+        .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
+        .Dmem2proc_data(Dmem2proc_data),
+        .Dmem2proc_data_tag(Dmem2proc_data_tag),
+        // from lsq
+        .lq_dcache_packet(lq_dcache_packet),
+        .sq_dcache_packet(sq_dcache_packet),
+        // to memory
+        .proc2Dmem_command(proc2Dmem_command),
+        .proc2Dmem_addr(proc2Dmem_addr),
+        .proc2Dmem_data(proc2Dmem_data),
+        // to lsq
+        .store_req_accept(dcache_sq_accept),
+        .load_req_accept(load_req_accept),
+        .load_req_data(load_req_data),
+        .load_req_data_valid(load_req_data_valid),
+        .dcache_lq_packet(dcache_lq_packet),
+        // to Icache
+        .dcache_request(dcache_request)
+    );
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
         .clock(clock), // not needed for 1-cycle alu
@@ -289,70 +377,76 @@ module fu #(
     );
 
     // TODO remove
-    assign sq_almost_full = `FALSE;
-
-    // store_queue store_component (
-    //     .clock(clock),
-    //     .reset(reset),
-    //     // id
-    //     .id_sq_packet(id_sq_packet),
-    //     .almost_full(sq_almost_full),
-    //     // rs
-    //     .rs_sq_packet(),
-    //     // rob
-    //     .num_commit_insns(),
-    //     .num_sent_insns(),
-    //     // dcache
-    //     .sq_dcache_packet(),
-    //     .dcache_accept(),
-    //     // rs for load
-    //     .head(),
-    //     .tail(),
-    //     .tail_ready(),
-    //     // lq
-    //     .addr(),
-    //     .tail_store(),
-    //     .load_byte_info(),
-    //     .value(),
-    //     .fwd_valid(),
-    // `ifdef CPU_DEBUG_OUT
-    //     .entries_out()
-    // `endif
-    // );
-
-    // load_queue load_unit (
-    //     .clock(clock),
-    //     .reset(reset),
-    //     // rs
-    //     .rs_lq_packet(),
-    //     .load_rs_avail(),
-    //     // cdb
-    //     .load_avail(),
-    //     .load_prepared(),
-    //     .load_packet(),
-    //     // sq
-    //     .sq_addr(),
-    //     .store_range(),
-    //     .load_byte_info(),
-    //     .value(),
-    //     .fwd_valid(),
-    //     // Dcache
-    //     .dcache_lq_packet(),
-    //     .load_req_accept(),
-    //     .load_req_data(),
-    //     .load_req_data_valid(),
-    //     .lq_dcache_packet()
-    // );
-
-    load load_components [`NUM_FU_LOAD-1:0] (
+    // assign sq_almost_full = `FALSE;
+    // assign sq_tail        = 0;
+    // assign sq_tail_ready  = 0;
+    // assign sq_num_sent_insns = 0;
+ 
+    store_queue store_component (
         .clock(clock),
         .reset(reset),
-        .fu_load_packet(fu_load_packet),
-        .avail(load_avail),
-        //output
-        .prepared(fu_state_packet.load_prepared),
-        .fu_state_load_packet(fu_state_packet.load_packet)
+        // id
+        .id_sq_packet(id_sq_packet),
+        .almost_full(sq_almost_full),
+        // rs
+        .rs_sq_packet(rs_sq_packet),
+        // rob
+        .num_commit_insns(rob_num_commit_insns),
+        .num_sent_insns(sq_num_sent_insns),
+        // dcache
+        .sq_dcache_packet(sq_dcache_packet),
+        .dcache_accept(dcache_sq_accept),
+        // rs for load
+        .head(sq_head),
+        .tail(sq_tail),
+        .tail_ready(sq_tail_ready),
+        // lq
+        .addr(addr),
+        .tail_store(tail_store),
+        .load_byte_info(load_byte_info),
+        .value(value),
+        .fwd_valid(fwd_valid),
+    `ifdef CPU_DEBUG_OUT
+        .entries_out()
+    `endif
     );
+
+    load_queue load_unit (
+        .clock(clock),
+        .reset(reset),
+        // rs
+        .rs_lq_packet(rs_lq_packet),
+        .load_rs_avail(load_rs_avail),
+        // cdb
+        .load_selected(load_avail),
+        .load_prepared(fu_state_packet.load_prepared),
+        .load_packet(fu_state_packet.load_packet),
+        // sq
+        .sq_addr(addr),
+        .store_range(tail_store),
+        .load_byte_info(load_byte_info),
+        .value(value),
+        .fwd_valid(fwd_valid),
+        // Dcache
+        .dcache_lq_packet(dcache_lq_packet),
+        .load_req_accept(load_req_accept),
+        .load_req_data(load_req_data),
+        .load_req_data_valid(load_req_data_valid),
+        .lq_dcache_packet(lq_dcache_packet)
+    `ifdef CPU_DEBUG_OUT
+        , .entries_out()
+    `endif
+    );
+
+    // load load_components [`NUM_FU_LOAD-1:0] (
+    //     .clock(clock),
+    //     .reset(reset),
+    //     .fu_load_packet(fu_load_packet),
+    //     .avail(load_avail),
+    //     //output
+    //     .prepared(fu_state_packet.load_prepared),
+    //     .fu_state_load_packet(fu_state_packet.load_packet)
+    // );
 
 
     always_comb begin

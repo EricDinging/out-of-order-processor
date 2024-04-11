@@ -8,11 +8,21 @@ module ooo (
     input clock, reset,
 
     input ID_OOO_PACKET id_ooo_packet,
+    // From memory to dcache
+    input MEM_TAG   Dmem2proc_transaction_tag,
+    input MEM_BLOCK Dmem2proc_data,
+    input MEM_TAG   Dmem2proc_data_tag,
 
     output logic         structural_hazard,
     output logic         squash,
     output ROB_IF_PACKET rob_if_packet,
-    output OOO_CT_PACKET ooo_ct_packet
+    output OOO_CT_PACKET ooo_ct_packet,
+    // To memory from dcache
+    output MEM_COMMAND proc2Dmem_command,
+    output ADDR        proc2Dmem_addr,
+    output MEM_BLOCK   proc2Dmem_data,
+    // To icache from dcache
+    output logic       dcache_request
 `ifdef CPU_DEBUG_OUT
     , output CDB_PACKET [`N-1:0] cdb_packet_debug
     , output FU_STATE_PACKET fu_state_packet_debug
@@ -101,6 +111,8 @@ module ooo (
     // for error status
     logic halt;
 
+    SQ_IDX sq_head, sq_tail, sq_tail_ready, sq_num_sent_insns, rob_num_commit_insns;
+
     rs rs_inst(
         .clock(clock),
         .reset(reset || squash),
@@ -110,6 +122,9 @@ module ooo (
         .fu_mult_avail(mult_avail),
         .fu_load_avail(load_avail),
         .fu_store_avail(store_avail),
+        .head(sq_head),
+        .tail(sq_tail),
+        .tail_ready(sq_tail_ready),
         // output
         .fu_alu_packet(fu_alu_packet),
         .fu_mult_packet(fu_mult_packet),
@@ -125,18 +140,34 @@ module ooo (
     fu_cdb fu_cdb_inst(
         .clock(clock),
         .reset(reset || squash),
+        .squash(squash),
         .fu_alu_packet(fu_alu_packet),
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
         .fu_store_packet(fu_store_packet),
         .id_sq_packet(id_sq_packet),
+        .rob_num_commit_insns(rob_num_commit_insns),
+        // from memory to dcache
+        .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
+        .Dmem2proc_data(Dmem2proc_data),
+        .Dmem2proc_data_tag(Dmem2proc_data_tag),
+        //output
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
         .load_avail(load_avail),
         .store_avail(store_avail),
         .fu_rob_packet(fu_rob_packet),
         .cdb_output(cdb_packet),
-        .sq_almost_full(sq_almost_full)
+        .sq_almost_full(sq_almost_full),
+        .sq_head(sq_head),
+        .sq_tail(sq_tail),
+        .sq_tail_ready(sq_tail_ready),
+        .sq_num_commit_insns(sq_num_sent_insns),
+        // from dcache to memory
+        .proc2mem_command(proc2Dmem_command),
+        .proc2mem_addr(proc2Dmem_addr),
+        .proc2mem_data(proc2Dmem_data),
+        .dcache_request(dcache_request)
         `ifdef CPU_DEBUG_OUT
         , .fu_state_packet_debug(fu_state_packet_debug)
         , .select_debug(select_debug)
@@ -162,7 +193,9 @@ module ooo (
         .reset(reset),
         .rob_is_packet(rob_is_packet),
         .fu_rob_packet(fu_rob_packet),
+        .sq_sent_insns_num(sq_num_sent_insns),
         // output
+        .rob_commit_insns_num(rob_num_commit_insns),
         .almost_full(rob_almost_full),
         .rob_ct_packet(rob_ct_packet),
         .tail_entries(rob_tail_entries),
@@ -235,7 +268,7 @@ module ooo (
                 rs_is_packet.entries[i].op1_ready = prf_output_value[2*i].valid; // || id_ooo_packet.id_rs_packet[i].op1_ready;
                 rs_is_packet.entries[i].op1       =
                     prf_output_value[2*i].valid ? prf_output_value[2*i].value : rat_is_output.entries[i].op1_prn;
-                rs_is_packet.entries[i].op2_ready = prf_output_value[2*i+1].valid; // || id_ooo_packet.id_rs_packet[i].op2_ready;
+                rs_is_packet.entries[i].op2_ready = prf_output_value[2*i+1].valid || id_ooo_packet.id_rs_packet[i].fu == FU_LOAD; // || id_ooo_packet.id_rs_packet[i].op2_ready;
                 rs_is_packet.entries[i].op2       =
                     prf_output_value[2*i+1].valid ? prf_output_value[2*i+1].value : rat_is_output.entries[i].op2_prn;
                 
@@ -252,6 +285,8 @@ module ooo (
 
                 rs_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
                 rs_is_packet.entries[i].robn     = rob_tail_entries[i];
+                rs_is_packet.entries[i].sq_idx   = id_ooo_packet.id_rs_packet[i].sq_idx;
+                rs_is_packet.entries[i].mem_func   = id_ooo_packet.id_rs_packet[i].mem_func;
             end
         end
         
@@ -300,7 +335,7 @@ module ooo (
         end
     end
 
-    assign structural_hazard = rs_almost_full || rob_almost_full ||
-        (sq_almost_full && id_sq_valid);
+    assign structural_hazard = rs_almost_full || rob_almost_full
+                            || (sq_almost_full && id_sq_valid);
 
 endmodule

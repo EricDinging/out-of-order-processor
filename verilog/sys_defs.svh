@@ -62,11 +62,11 @@
 `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
 
 // lsq
-`define NUM_SQ_DCACHE `N
+`define NUM_SQ_DCACHE `N // cannot change to other value
 `define SQ_LEN  2 * `N
 `define SQ_IDX_BITS $clog2(`SQ_LEN + 2)
 
-`define NUM_LU_DCACHE `N
+`define NUM_LU_DCACHE `N // cannot change to other value
 `define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
@@ -460,7 +460,7 @@ typedef struct packed {
  */
 
 // TODO change data padding
-typedef union packed {
+typedef u nion packed {
     DATA value;
     DATA prn;
 } OP_FIELD;
@@ -492,6 +492,8 @@ typedef struct packed {
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
     logic cond_branch;
     logic uncond_branch;
+    SQ_IDX sq_idx;
+    MEM_FUNC mem_func;
 } RS_ENTRY;
 
 typedef struct packed {
@@ -508,6 +510,7 @@ typedef struct packed {
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
     logic cond_branch;
     logic uncond_branch;
+    MEM_FUNC mem_func;
 } ID_RS_PACKET;
 
 
@@ -536,6 +539,8 @@ typedef struct packed {
     ALU_OPB_SELECT opb_select; // same as above
     logic cond_branch;
     logic uncond_branch;
+    SQ_IDX sq_idx;
+    MEM_FUNC mem_func;
 } FU_PACKET;
 
 /**
@@ -764,5 +769,27 @@ typedef struct packed {
     logic                        valid;
     logic                        dirty;
 } DCACHE_ENTRY;
+
+typedef struct packed {
+    logic    valid;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+    ADDR     addr;
+    DATA     data;
+    logic    ready;
+    logic    accepted;
+} SQ_ENTRY;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR base;
+    logic [11:0] offset;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+} RS_LQ_PACKET;
 
 `endif // __SYS_DEFS_SVH__

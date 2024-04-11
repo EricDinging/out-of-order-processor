@@ -38,23 +38,23 @@ module store_queue (
     // RS
     input  RS_SQ_PACKET [`NUM_FU_STORE-1:0] rs_sq_packet,
     // ROB
-    input  logic [`SQ_IDX_BITS-1:0] num_commit_insns,
-    output logic [`SQ_IDX_BITS-1:0] num_sent_insns,
+    input  SQ_IDX num_commit_insns,
+    output SQ_IDX num_sent_insns,
     // dcache
     output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet,
     input  logic            [`NUM_SQ_DCACHE-1:0] dcache_accept,
     // RS for load
-    output logic [`SQ_IDX_BITS-1:0] head,
-    output logic [`SQ_IDX_BITS-1:0] tail,
+    output SQ_IDX head,
+    output SQ_IDX tail,
 
     // --- combinational below
-    output logic [`SQ_IDX_BITS-1:0] tail_ready,
+    output SQ_IDX tail_ready,
     // LQ
-    input  ADDR     [`NUM_FU_LOAD-1:0] addr,
-    input  SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store,
-    input  MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info,
-    output DATA     [`NUM_FU_LOAD-1:0] value,
-    output logic    [`NUM_FU_LOAD-1:0] fwd_valid
+    input  ADDR     [`NUM_FU_LOAD-1:0] addr,           // TODO connect
+    input  SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store,     // TODO connect
+    input  MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info, // TODO connect
+    output DATA     [`NUM_FU_LOAD-1:0] value,          // TODO connect
+    output logic    [`NUM_FU_LOAD-1:0] fwd_valid       // TODO connect
 `ifdef CPU_DEBUG_OUT
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] entries_out
 `endif
@@ -112,6 +112,7 @@ module store_queue (
 
     // entry
     SQ_IDX idx;
+    logic break_flag;
     always_comb begin
         next_entries = entries;
 
@@ -126,7 +127,7 @@ module store_queue (
                     next_entries[next_tail] = '{
                         `TRUE,
                         id_sq_packet[i].byte_info,
-                        0, 0, `FALSE
+                        32'b0, 32'b0, `FALSE, `FALSE
                     };
                     next_tail = (next_tail + 1) % (`SQ_LEN + 1);
                     next_size += 1;
@@ -143,26 +144,38 @@ module store_queue (
         
         // ROB
         sq_dcache_packet = 0;
-        num_sent_insns = 0;
         idx = 0;
+        
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
             if (num_commit_insns > num_sent_insns) begin
                 idx = (head + i) % (`SQ_LEN + 1);
-                if (entries[idx].valid && entries[idx].ready) begin
+                if (entries[idx].valid && entries[idx].ready && !entries[idx].accepted) begin
                     sq_dcache_packet[i] = '{
                         `TRUE,
                         entries[idx].addr,
                         entries[idx].byte_info,
                         entries[idx].data
                     };
-                    if (dcache_accept[i]) begin
-                        num_sent_insns += 1;
-                        next_entries[idx] = 0;
-                    end
                 end
             end
         end
-        next_head = (head + num_sent_insns) % (`SQ_LEN + 1);
+
+        
+        num_sent_insns = 0;
+        break_flag = `FALSE;
+        for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
+            idx = (head + i) % (`SQ_LEN + 1);
+            if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
+                next_entries[idx].accepted = `True;
+                if (!break_flag) begin
+                    num_sent_insns += 1;
+                    next_entries[idx] = 0;
+                    next_head = (head + 1) % (`SQ_LEN + 1);
+                end
+            end else begin
+                break_flag = `TRUE;
+            end
+        end
     end
 
     // tail_ready
@@ -219,9 +232,6 @@ module store_queue (
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            // foreach (entries[i]) begin
-            //     entries[i] <= '{`FALSE, BYTE, 32'h0, 32'h0, `FALSE};
-            // end
             entries <= 0;
 
             size <= 0;
