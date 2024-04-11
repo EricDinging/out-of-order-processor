@@ -93,15 +93,10 @@ module local_predictor (
     , output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug
 `endif
 );
-    ADDR [`N-1:0] pcs;
 
-    // fanout
-    genvar i;
-    generate;
-        for (i = 0; i < `N; ++i) begin
-            assign pcs[i] = pc_start + i * 4;
-        end
-    endgenerate
+    ADDR [`N:0] pcs;
+
+    assign pcs[0] = pc_start;
 
     // branch history table
     logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table, next_branch_history_table;
@@ -114,14 +109,13 @@ module local_predictor (
     assign pattern_history_table_debug = pattern_history_table;
 `endif
 
-    logic predict_taken_flag;
-
     logic [`N-1:0] hits;
     ADDR  [`N-1:0] btb_pcs;
 
     wire [`N-1:0][`BHT_IDX_WIDTH-1:0] pc_bht_index;
     wire [`N-1:0][`BHT_IDX_WIDTH-1:0] rob_bht_index;
 
+    genvar i;
     generate
         for (i = 0; i < `N; ++i) begin
             assign pc_bht_index[i]  = pcs[i][`BHT_IDX_WIDTH+2-1:2];
@@ -132,7 +126,7 @@ module local_predictor (
     BTB btb (
         .clock(clock),
         .reset(reset),
-        .pcs(pcs),
+        .pcs(pcs[`N-1:0]),
         .rob_if_packet(rob_if_packet),
         .hits(hits),
         .btb_pcs(btb_pcs)
@@ -145,7 +139,6 @@ module local_predictor (
         next_branch_history_table  = branch_history_table;
         next_pattern_history_table = pattern_history_table;
         target_pc = 0;
-        predict_taken_flag = `FALSE;
 
         // prediction taken + target
         for (int i = 0; i < `N; ++i) begin
@@ -153,21 +146,18 @@ module local_predictor (
                 NOT_TAKEN:
                     begin
                         target_pc[i].taken = `FALSE;
-                        target_pc[i].valid = ~predict_taken_flag;
+                        target_pc[i].valid = `TRUE;
                         target_pc[i].PC    = pcs[i] + 4;
                     end
                 TAKEN:
                     begin
                         target_pc[i].taken = btb.hits[i];
-                        target_pc[i].valid = ~predict_taken_flag;
-                        if (btb.hits[i]) begin
-                            target_pc[i].PC    = btb.btb_pcs[i];
-                            predict_taken_flag = `TRUE;
-                        end else begin
-                            target_pc[i].PC = pcs[i] + 4;
-                        end
+                        target_pc[i].valid = `TRUE;
+                        target_pc[i].PC    = btb.hits[i] ? btb.btb_pcs[i] : pcs[i] + 4;
                     end
             endcase
+
+            pcs[i+1] = target_pc[i].PC;
         end
 
         for (int i = 0; i < `N; ++i) begin

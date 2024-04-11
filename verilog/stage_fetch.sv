@@ -106,7 +106,7 @@ module stage_fetch (
             if_id_packet[i].valid = target_pc[i].valid && Icache_valid_out[i] && proc2Icache_valid[i];
             if_id_packet[i].inst  =
                 !if_id_packet[i].valid ? `NOP :
-                if_id_packet[i].PC[2]     ? Icache_data_out[i][63:32] : Icache_data_out[i][31:0];
+                if_id_packet[i].PC[2]  ? Icache_data_out[i][63:32] : Icache_data_out[i][31:0];
 
             if_id_packet[i].NPC            = if_id_packet[i].PC + 4;
             if_id_packet[i].predict_taken  = target_pc[i].taken;
