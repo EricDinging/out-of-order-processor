@@ -672,6 +672,7 @@ typedef struct packed {
 // } CDB_PREDICTOR_PfACKET;
 
 typedef struct packed {
+    logic valid;
     logic success;
     logic predict_taken;
     ADDR  predict_target;

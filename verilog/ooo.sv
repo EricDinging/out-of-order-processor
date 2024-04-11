@@ -50,6 +50,7 @@ module ooo (
     ROB_CT_PACKET               rob_ct_packet;
     ROBN          [`N-1:0]      rob_tail_entries;
 
+    RAT_IS_INPUT  rat_is_input;
     RAT_IS_OUTPUT rat_is_output;
 
     RRAT_CT_INPUT  rrat_ct_input;
@@ -171,7 +172,7 @@ module ooo (
     rat rat_inst(
         .clock(clock),
         .reset(reset),
-        .rat_is_input(id_ooo_packet.rat_is_input),
+        .rat_is_input(rat_is_input),
         .rrat_ct_output(rrat_ct_output),
         // output
         .rat_is_output(rat_is_output)
@@ -194,6 +195,9 @@ module ooo (
 
     always_comb begin
         // issue
+
+        // rat input
+        rat_is_input = structural_hazard ? 0 : id_ooo_packet.rat_is_input;
 
         // rob input
         for (int i = 0; i < `N; ++i) begin
@@ -240,7 +244,8 @@ module ooo (
         for (int i = 0; i < `N; ++i) begin
             rrat_ct_input.arns[i]    = rob_ct_packet.entries[i].dest_arn;
             rrat_ct_input.success[i] = rob_ct_packet.entries[i].success;
-
+            
+            rob_if_packet.entries[i].valid          = rob_ct_packet.entries[i].executed;
             rob_if_packet.entries[i].success        = rob_ct_packet.entries[i].success;
             rob_if_packet.entries[i].predict_taken  = rob_ct_packet.entries[i].predict_taken;
             rob_if_packet.entries[i].predict_target = rob_ct_packet.entries[i].predict_target;

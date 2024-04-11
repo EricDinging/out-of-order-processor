@@ -1,4 +1,25 @@
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
+
+module not_taken_predictor (
+    input clock, reset,
+    input ADDR pc_start,
+    input ROB_IF_PACKET rob_if_packet,
+    // output
+    output PC_ENTRY [`N-1:0] target_pc
+);
+    // always predict not taken
+
+    always_comb begin
+        for (int i = 0; i < `N; ++i) begin
+            target_pc[i].taken = `FALSE;
+            target_pc[i].valid = `TRUE;
+            target_pc[i].PC    = pc_start + (i + 1) * 4;
+        end
+    end
+
+endmodule
+
 
 module BTB (
     input clock, reset,
@@ -7,9 +28,16 @@ module BTB (
 
     output logic [`N-1:0] hits,
     output ADDR  [`N-1:0] btb_pcs
+    `ifdef CPU_DEBUG_OUT
+    , output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug
+    `endif
 );
 
     BTB_ENTRY [`BTB_SIZE-1:0] btb_entries, next_btb_entries;
+
+`ifdef CPU_DEBUG_OUT
+    assign btb_entries_debug = btb_entries;
+`endif
 
     wire [`N-1:0][`BTB_INDEX_BITS-1:0] bp_btb_index;
     wire [`N-1:0][`BTB_TAG_BITS-1:0]   bp_tag;
@@ -35,7 +63,7 @@ module BTB (
         end
 
         for (int i = 0; i < `N; ++i) begin
-            if (rob_if_packet.entries[i].resolve_taken) begin
+            if (rob_if_packet.entries[i].valid && rob_if_packet.entries[i].resolve_taken) begin
                 next_btb_entries[rob_btb_index[i]].valid = `TRUE;
                 next_btb_entries[rob_btb_index[i]].PC    = rob_if_packet.entries[i].resolve_target;
                 next_btb_entries[rob_btb_index[i]].tag   = rob_tag[i];
@@ -59,9 +87,14 @@ module local_predictor (
     input ROB_IF_PACKET rob_if_packet,
     // output
     output PC_ENTRY [`N-1:0] target_pc
+`ifdef CPU_DEBUG_OUT
+    , output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug
+    , output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug
+    , output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug
+`endif
 );
     ADDR [`N-1:0] pcs;
-    
+
     // fanout
     genvar i;
     generate;
@@ -75,6 +108,11 @@ module local_predictor (
 
     // pattern history table
     PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table, next_pattern_history_table;
+
+`ifdef CPU_DEBUG_OUT
+    assign branch_history_table_debug = branch_history_table;
+    assign pattern_history_table_debug = pattern_history_table;
+`endif
 
     logic predict_taken_flag;
 
@@ -98,6 +136,9 @@ module local_predictor (
         .rob_if_packet(rob_if_packet),
         .hits(hits),
         .btb_pcs(btb_pcs)
+    `ifdef CPU_DEBUG_OUT
+        , .btb_entries_debug(btb_entries_debug)
+    `endif
     );
 
     always_comb begin
@@ -130,32 +171,34 @@ module local_predictor (
         end
 
         for (int i = 0; i < `N; ++i) begin
-            // modify bht
-            next_branch_history_table[rob_bht_index[i]] = 
-                {
-                    next_branch_history_table[rob_bht_index[i]][`BHT_WIDTH-2:0],
-                    rob_if_packet.entries[i].resolve_taken
-                };
-            // modify pht
-            next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
-                        = (rob_if_packet.entries[i].resolve_taken) ? TAKEN : NOT_TAKEN;
-            // case (pattern_history_table[branch_history_table[rob_bht_index[i]]])
-            //     TAKEN:
-            //         next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
-            //             = (~rob_if_packet.entries[i].resolve_taken) ? NOT_TAKEN : TAKEN;
-            //     NOT_TAKEN:
-            //         next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
-            //             = (rob_if_packet.entries[i].resolve_taken) ? TAKEN : NOT_TAKEN;
-            // endcase
+            if (rob_if_packet.entries[i].valid) begin
+                // modify bht
+                next_branch_history_table[rob_bht_index[i]] = 
+                    {
+                        next_branch_history_table[rob_bht_index[i]][`BHT_WIDTH-2:0],
+                        rob_if_packet.entries[i].resolve_taken
+                    };
+                // modify pht
+                next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
+                            = (rob_if_packet.entries[i].resolve_taken) ? TAKEN : NOT_TAKEN;
+                // case (pattern_history_table[branch_history_table[rob_bht_index[i]]])
+                //     TAKEN:
+                //         next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
+                //             = (~rob_if_packet.entries[i].resolve_taken) ? NOT_TAKEN : TAKEN;
+                //     NOT_TAKEN:
+                //         next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
+                //             = (rob_if_packet.entries[i].resolve_taken) ? TAKEN : NOT_TAKEN;
+                // endcase
+            end
         end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            branch_history_table <= 0;
+            branch_history_table  <= 0;
             pattern_history_table <= 0;
         end else begin
-            branch_history_table <= next_branch_history_table;
+            branch_history_table  <= next_branch_history_table;
             pattern_history_table <= next_pattern_history_table;
         end
     end

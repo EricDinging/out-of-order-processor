@@ -17,6 +17,10 @@ module stage_fetch (
     output IF_ID_PACKET [`N-1:0] if_id_packet
 `ifdef CPU_DEBUG_OUT
     , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
+    // From predictor
+    , output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug
+    , output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug
+    , output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug
 `endif
 );
 
@@ -43,6 +47,11 @@ module stage_fetch (
         .rob_if_packet(rob_if_packet),
         // output
         .target_pc(target_pc)
+        `ifdef CPU_DEBUG_OUT
+        , .btb_entries_debug(btb_entries_debug)
+        , .branch_history_table_debug(branch_history_table_debug)
+        , .pattern_history_table_debug(pattern_history_table_debug)
+        `endif
     );
 
     icache ic (

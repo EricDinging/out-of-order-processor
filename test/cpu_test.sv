@@ -101,6 +101,11 @@ module testbench;
     
     // memory
     IMSHR_ENTRY [`N-1:0] imshr_entries_debug;
+
+    // branch predictor
+    BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug;
+    logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug;
+    PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug;
 `endif
 
     task print_if_id_reg;
@@ -251,6 +256,26 @@ module testbench;
         end
     endtask
 
+    task print_branch_predictor;
+        $fdisplay(ppln_fileno, "### Predictor");
+        $fdisplay(ppln_fileno, "    BTB entry");
+        for (int i = 0; i < `BTB_SIZE; ++i) begin
+            $fdisplay(ppln_fileno, "    BTB[%2d].valid:%b, .PC:%h, .tag:%h", i, btb_entries_debug[i].valid, btb_entries_debug[i].PC, btb_entries_debug[i].tag);
+        end
+        $fdisplay(ppln_fileno, "    BHT entry");
+        for (int i = 0; i < `BHT_SIZE; ++i) begin
+            $fdisplay(ppln_fileno, "    BHT[%2d] = %8b", i, branch_history_table_debug[i]);
+        end
+        $fdisplay(ppln_fileno, "    PHT entry");
+        for (int i = 0; i < `PHT_SIZE; ++i) begin
+            if (pattern_history_table_debug[i] == TAKEN) begin
+                $fdisplay(ppln_fileno, "    PHT[%2d] = TAKEN", i);
+            end else begin
+                $fdisplay(ppln_fileno, "    PHT[%2d] = NOT_TAKEN", i);
+            end
+        end
+    endtask
+
     // Instantiate the Pipeline
     cpu verisimpleV (
         // Inputs
@@ -299,6 +324,10 @@ module testbench;
         .fu_load_packet_debug(fu_load_packet_debug),
         .fu_store_packet_debug(fu_store_packet_debug),
         .imshr_entries_debug(imshr_entries_debug),
+        // branch predictor
+        .btb_entries_debug(btb_entries_debug),
+        .branch_history_table_debug(branch_history_table_debug),
+        .pattern_history_table_debug(pattern_history_table_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -471,9 +500,9 @@ module testbench;
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
-            // print_if_id_reg();
-            // print_id_ooo_reg();
-            // print_rob_if_debug();
+            print_if_id_reg();
+            print_id_ooo_reg();
+            print_rob_if_debug();
             print_mem_cache();
             print_imshr_entries_debug();
             print_cdb_packet();
@@ -484,6 +513,7 @@ module testbench;
             print_rat();
             print_rrat();
             print_prf();
+            // print_branch_predictor();
         
             $fdisplay(ppln_fileno, "=========");
 

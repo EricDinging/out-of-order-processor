@@ -59,6 +59,10 @@ module cpu (
     output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug,
     // icache
     output IMSHR_ENTRY [`N-1:0] imshr_entries_debug,
+    // branch predictor
+    output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug,
+    output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug,
+    output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -132,6 +136,9 @@ module cpu (
         .if_id_packet(if_packet)
     `ifdef CPU_DEBUG_OUT
         , .imshr_entries_debug(imshr_entries_debug)
+        , .btb_entries_debug(btb_entries_debug)
+        , .branch_history_table_debug(branch_history_table_debug)
+        , .pattern_history_table_debug(pattern_history_table_debug)
     `endif
     );
 
@@ -215,6 +222,8 @@ module cpu (
         , .fu_mult_packet_debug(fu_mult_packet_debug)
         , .fu_load_packet_debug(fu_load_packet_debug)
         , .fu_store_packet_debug(fu_store_packet_debug)
+        // branch predictor
+
     `endif
     );
 

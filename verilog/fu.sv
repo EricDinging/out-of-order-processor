@@ -5,17 +5,17 @@
 // ALU: computes the result of FUNC applied with operands A and B
 // This module is purely combinational
 module alu (
-    input DATA opa,
-    input DATA opb,
-    input ALU_FUNC   func,
+    input DATA     opa,
+    input DATA     opb,
+    input ALU_FUNC func,
 
     output DATA result
 );
 
-    logic signed [31:0]   signed_opa, signed_opb;
+    logic signed [31:0] signed_opa, signed_opb;
 
-    assign signed_opa   = opa;
-    assign signed_opb   = opb;
+    assign signed_opa = opa;
+    assign signed_opb = opb;
 
     always_comb begin
         case (func)

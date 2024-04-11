@@ -96,7 +96,7 @@ module rob #(
             if (fu_rob_packet[i].executed) begin
                 next_rob_entries[fu_rob_packet[i].robn].executed       = `TRUE;
                 next_rob_entries[fu_rob_packet[i].robn].resolve_taken  = fu_rob_packet[i].branch_taken;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].branch_taken? fu_rob_packet[i].target_addr : next_rob_entries[fu_rob_packet[i].robn].NPC;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].branch_taken ? fu_rob_packet[i].target_addr : next_rob_entries[fu_rob_packet[i].robn].NPC;
                 if (rob_entries[fu_rob_packet[i].robn].cond_branch || rob_entries[fu_rob_packet[i].robn].uncond_branch) begin
                     next_rob_entries[fu_rob_packet[i].robn].success = (next_rob_entries[fu_rob_packet[i].robn].resolve_taken  == next_rob_entries[fu_rob_packet[i].robn].predict_taken)
                                                                    && (next_rob_entries[fu_rob_packet[i].robn].resolve_target == next_rob_entries[fu_rob_packet[i].robn].predict_target);
