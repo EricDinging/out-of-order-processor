@@ -66,9 +66,9 @@ module testbench;
     IF_ID_PACKET [`N-1:0]  if_id_reg_debug;
     ID_OOO_PACKET          id_ooo_reg_debug;
     logic                  squash_debug;
-    ROB_IF_PACKET          rob_if_packet_debug;  
+    ROB_IF_PACKET          rob_if_packet_debug;
     // cdb  
-    CDB_PACKET    [`N-1:0] cdb_packet_debug;   
+    CDB_PACKET    [`N-1:0] cdb_packet_debug;
     FU_STATE_PACKET        fu_state_packet_debug;
 
     // ROB
@@ -78,14 +78,14 @@ module testbench;
     logic [`ROB_PTR_WIDTH-1:0] rob_tail_out;
 
     // rs
-    RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out;
-    logic [`RS_CNT_WIDTH-1:0]      rs_counter_out;
+    RS_ENTRY  [`RS_SZ-1:0]     rs_entries_out;
+    logic [`RS_CNT_WIDTH-1:0]  rs_counter_out;
     
     logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;
-    FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet_debug;
-    FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug;
-    FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug;
-    FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug;
+    FU_PACKET [`NUM_FU_ALU-1:0]                       fu_alu_packet_debug;
+    FU_PACKET [`NUM_FU_MULT-1:0]                      fu_mult_packet_debug;
+    FU_PACKET [`NUM_FU_LOAD-1:0]                      fu_load_packet_debug;
+    FU_PACKET [`NUM_FU_STORE-1:0]                     fu_store_packet_debug;
     
     // rat
     PRN                              rat_head, rat_tail;
@@ -114,7 +114,11 @@ module testbench;
     LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug;
 
     // lq
-    LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out;
+    LD_ENTRY [`NUM_FU_LOAD-1:0]     lq_entries_out;
+    RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug;
+    LU_REG     [`NUM_FU_LOAD-1:0]   lu_reg_debug;
+    LU_FWD_REG [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug;
+    logic      [`NUM_FU_LOAD-1:0]   load_internal_avail_debug;
 `endif
 
     task print_load_queue;
@@ -134,7 +138,7 @@ module testbench;
                     $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALFU", i);
             endcase
             $fdisplay(ppln_fileno, "    addr[%0d]: %h", i, lq_entries_out[i].addr);
-            $fdisplay(ppln_fileno, "    lq_idx[%0d]: %0h", i, lq_entries_out[i].data);
+            $fdisplay(ppln_fileno, "    data[%0d]: %0h", i, lq_entries_out[i].data);
             $fdisplay(ppln_fileno, "    tail_score[%0d]: %0d", i, lq_entries_out[i].tail_store);
             $fdisplay(ppln_fileno, "    prn[%0d]: %0d", i, lq_entries_out[i].prn);
             $fdisplay(ppln_fileno, "    robn[%0d]: %0d", i, lq_entries_out[i].robn);
@@ -146,6 +150,17 @@ module testbench;
                 ASKED:
                     $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
             endcase
+        end
+        $fdisplay(ppln_fileno, "    cdb_load_selected: %b", load_internal_avail_debug);
+
+    endtask
+
+    task print_rs_lq_packet;
+        $fdisplay(ppln_fileno, "### RS_LQ_PACKET:");
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b, base[%0d]: %0d, offset[%0d]: %0d, tail: %0d",
+             i, rs_lq_packet_debug[i].valid, i, rs_lq_packet_debug[i].base, i, rs_lq_packet_debug[i].offset, rs_lq_packet_debug[i].tail_store);
+            $fdisplay(ppln_fileno, "  lu_reg[%0d]: %0d, lu_fwd_reg[%0d]: %0d", i, lu_reg_debug[i].valid, i, lu_fwd_reg_debug[i].valid);
         end
 
     endtask
@@ -272,6 +287,11 @@ module testbench;
         for (int i = 0; i < `NUM_FU_MULT; ++i) begin
             $fdisplay(ppln_fileno, "Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.mult_prepared[i], i, fu_state_packet_debug.mult_packet[i].robn);
             $fdisplay(ppln_fileno, "result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.mult_packet[i].result, i, fu_state_packet_debug.mult_packet[i].dest_prn);
+        end
+        $fdisplay(ppln_fileno, "### FU STATE LOAD PACKET:");
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            $fdisplay(ppln_fileno, "Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.load_prepared[i], i, fu_state_packet_debug.load_packet[i].robn);
+            $fdisplay(ppln_fileno, "result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.load_packet[i].result, i, fu_state_packet_debug.load_packet[i].dest_prn);
         end
     endtask
     
@@ -456,6 +476,10 @@ module testbench;
         .lq_dcache_packet_debug(lq_dcache_packet_debug),
         // lq
         .lq_entries_out(lq_entries_out),
+        .rs_lq_packet_debug(rs_lq_packet_debug),
+        .lu_reg_debug(lu_reg_debug),
+        .lu_fwd_reg_debug(lu_fwd_reg_debug),
+        .load_internal_avail_debug(load_internal_avail_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -633,13 +657,14 @@ module testbench;
             print_rob_if_debug();
             print_mem_cache();
             // print_imshr_entries_debug();
-            print_fu_load_packet_debug();
+            // print_fu_load_packet_debug();
+            print_rs_lq_packet();
             print_load_queue();
             // print_lq_dcache_packet();
             // print_dcache();
             print_cdb_packet();
             print_fu_state_packet();
-            // print_select();
+            print_select();
             print_rs();
             print_rob();
             // print_rat();

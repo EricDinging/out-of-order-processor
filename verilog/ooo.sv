@@ -55,6 +55,10 @@ module ooo (
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
     // lq
     , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
+    , output RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug
+    , output LU_REG     [`NUM_FU_LOAD-1:0]          lu_reg_debug
+    , output LU_FWD_REG [`NUM_FU_LOAD-1:0]          lu_fwd_reg_debug
+    , output logic      [`NUM_FU_LOAD-1:0]          load_internal_avail_debug
 `endif
 );
 
@@ -182,6 +186,10 @@ module ooo (
         , .counter_debug(counter_debug)
         , .lq_dcache_packet_debug(lq_dcache_packet_debug)
         , .lq_entries_out(lq_entries_out)
+        , .rs_lq_packet_debug(rs_lq_packet_debug)
+        , .lu_reg_debug(lu_reg_debug)
+        , .lu_fwd_reg_debug(lu_fwd_reg_debug)
+        , .load_internal_avail_debug(load_internal_avail_debug)
         `endif
     );
 

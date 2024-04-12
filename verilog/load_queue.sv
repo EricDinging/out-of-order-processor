@@ -57,6 +57,8 @@ module load_queue (
 
 `ifdef CPU_DEBUG_OUT
     , output LD_ENTRY   [`NUM_FU_LOAD-1:0]      entries_out
+    , output LU_REG     [`NUM_FU_LOAD-1:0]      lu_reg_debug
+    , output LU_FWD_REG [`NUM_FU_LOAD-1:0]      lu_fwd_reg_debug
 `endif
 );
 
@@ -132,6 +134,11 @@ module load_queue (
         end
     end
 
+    `ifdef CPU_DEBUG_OUT
+        assign lu_reg_debug     = lu_reg;
+        assign lu_fwd_reg_debug = lu_fwd_reg;
+    `endif
+
     // load_rs_avail
     always_comb begin
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
@@ -139,7 +146,7 @@ module load_queue (
         end
     end
 
-    
+
     always_comb begin
         next_entries = entries;
         // entry
@@ -187,7 +194,7 @@ module load_queue (
                 load_prepared[i] = `FALSE;
             end
 
-            if (load_selected[i]) begin
+            if (load_selected[i] && load_prepared[i]) begin
                 next_entries[i] = 0;
             end
         end

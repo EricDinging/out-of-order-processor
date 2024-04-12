@@ -93,8 +93,9 @@ module cdb #(
                 1'b0,  // not taken
                 32'b0  // null address
             };
-            other_cdb_packet[i] = '{{`PRN_WIDTH{1'b0}}, 32'b0};
-            // TODO: assign cdb to rs/prf load packet
+            other_cdb_packet[i] = cdb_state.load_prepared[i] ? 
+            '{cdb_state.load_packet[i].dest_prn, cdb_state.load_packet[i].result}
+            : '{{`PRN_WIDTH{1'b0}}, 32'b0};
         end
 
         // mult

@@ -284,11 +284,14 @@ module fu #(
     // To icache from dcache
     output logic       dcache_request
 `ifdef CPU_DEBUG_OUT
-    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
-    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
-    , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output DMSHR_ENTRY      [`DMSHR_SIZE-1:0]   dmshr_entries_debug
+    , output DCACHE_ENTRY     [`DCACHE_LINES-1:0] dcache_data_debug
+    , output logic            [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
-    , output LD_ENTRY   [`NUM_FU_LOAD-1:0]         lq_entries_out
+    , output LD_ENTRY         [`NUM_FU_LOAD-1:0]   lq_entries_out
+    , output RS_LQ_PACKET     [`NUM_FU_LOAD-1:0]   rs_lq_packet_debug
+    , output LU_REG           [`NUM_FU_LOAD-1:0]   lu_reg_debug
+    , output LU_FWD_REG       [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug
 `endif
 );
     
@@ -307,7 +310,7 @@ module fu #(
     logic            [`NUM_LU_DCACHE-1:0] load_req_accept;
     DATA             [`NUM_LU_DCACHE-1:0] load_req_data;
     logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid;
-    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet, lq_dcache_packet_debug;
+    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;
 
     genvar i;
     generate
@@ -336,6 +339,9 @@ module fu #(
             };
         end
     endgenerate
+    `ifdef CPU_DEBUG_OUT
+        assign rs_lq_packet_debug = rs_lq_packet;
+    `endif
 
     dcache cache (
         .clock(clock),
@@ -446,10 +452,14 @@ module fu #(
         .lq_dcache_packet(lq_dcache_packet)
     `ifdef CPU_DEBUG_OUT
         , .entries_out(lq_entries_out)
+        , .lu_reg_debug(lu_reg_debug)
+        , .lu_fwd_reg_debug(lu_fwd_reg_debug)
     `endif
     );
     
-    assign lq_dcache_packet_debug = lq_dcache_packet;
+    `ifdef CPU_DEBUG_OUT
+        assign lq_dcache_packet_debug = lq_dcache_packet;
+    `endif
     // load load_components [`NUM_FU_LOAD-1:0] (
     //     .clock(clock),
     //     .reset(reset),
