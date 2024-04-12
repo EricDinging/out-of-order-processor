@@ -1,6 +1,6 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
-
+`define CPU_DEBUG_OUT
 
 // ALU: computes the result of FUNC applied with operands A and B
 // This module is purely combinational
@@ -283,16 +283,23 @@ module fu #(
     output MEM_BLOCK   proc2Dmem_data,
     // To icache from dcache
     output logic       dcache_request
+`ifdef CPU_DEBUG_OUT
+    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
+    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
+    , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
+    , output LD_ENTRY   [`NUM_FU_LOAD-1:0]         lq_entries_out
+`endif
 );
-
+    
     RS_SQ_PACKET [`NUM_FU_STORE-1:0] rs_sq_packet;
 
     // store_queue and load_queue
-    ADDR     [`NUM_FU_LOAD-1:0] addr;          
-    SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store;    
+    ADDR     [`NUM_FU_LOAD-1:0] addr;
+    SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store;
     MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info;
-    DATA     [`NUM_FU_LOAD-1:0] value;         
-    logic    [`NUM_FU_LOAD-1:0] fwd_valid;     
+    DATA     [`NUM_FU_LOAD-1:0] value;
+    logic    [`NUM_FU_LOAD-1:0] fwd_valid;
     SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet;
     logic            [`NUM_SQ_DCACHE-1:0] dcache_sq_accept;
     // load queue - dcache
@@ -300,7 +307,7 @@ module fu #(
     logic            [`NUM_LU_DCACHE-1:0] load_req_accept;
     DATA             [`NUM_LU_DCACHE-1:0] load_req_data;
     logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid;
-    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;
+    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet, lq_dcache_packet_debug;
 
     genvar i;
     generate
@@ -315,7 +322,7 @@ module fu #(
         end
     endgenerate
 
-    RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet;
+    RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet;
     generate
         for (i = 0; i < `NUM_FU_LOAD; ++i) begin
             assign rs_lq_packet[i] = '{
@@ -353,6 +360,11 @@ module fu #(
         .dcache_lq_packet(dcache_lq_packet),
         // to Icache
         .dcache_request(dcache_request)
+    `ifdef CPU_DEBUG_OUT
+        , .dmshr_entries_debug(dmshr_entries_debug)
+        , .dcache_data_debug(dcache_data_debug)
+        , .counter_debug(counter_debug)
+    `endif
     );
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
@@ -433,10 +445,11 @@ module fu #(
         .load_req_data_valid(load_req_data_valid),
         .lq_dcache_packet(lq_dcache_packet)
     `ifdef CPU_DEBUG_OUT
-        , .entries_out()
+        , .entries_out(lq_entries_out)
     `endif
     );
-
+    
+    assign lq_dcache_packet_debug = lq_dcache_packet;
     // load load_components [`NUM_FU_LOAD-1:0] (
     //     .clock(clock),
     //     .reset(reset),

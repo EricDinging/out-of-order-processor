@@ -48,7 +48,13 @@ module ooo (
     , output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug
     , output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug
     , output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug
-    // rrat
+    // dcache
+    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
+    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
+    , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
+    // lq
+    , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
 `endif
 );
 
@@ -101,8 +107,8 @@ module ooo (
     CDB_PACKET    [`N-1:0] cdb_packet;
 
 `ifdef CPU_DEBUG_OUT
-    assign cdb_packet_debug = cdb_packet;
-    assign rrat_entries = rrat_ct_output.entries;
+    assign cdb_packet_debug     = cdb_packet;
+    assign rrat_entries         = rrat_ct_output.entries;
 `endif
 
     // prf input, connect to cpu output
@@ -171,6 +177,11 @@ module ooo (
         `ifdef CPU_DEBUG_OUT
         , .fu_state_packet_debug(fu_state_packet_debug)
         , .select_debug(select_debug)
+        , .dmshr_entries_debug(dmshr_entries_debug)
+        , .dcache_data_debug(dcache_data_debug)
+        , .counter_debug(counter_debug)
+        , .lq_dcache_packet_debug(lq_dcache_packet_debug)
+        , .lq_entries_out(lq_entries_out)
         `endif
     );
 

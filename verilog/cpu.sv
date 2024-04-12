@@ -41,8 +41,8 @@ module cpu (
     output logic     [`ROB_PTR_WIDTH-1:0] rob_head_out,
     output logic     [`ROB_PTR_WIDTH-1:0] rob_tail_out,
     // rs
-    output RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out,
-    output logic     [`RS_CNT_WIDTH-1:0]  rs_counter_out,
+    output RS_ENTRY  [`RS_SZ-1:0]             rs_entries_out,
+    output logic     [`RS_CNT_WIDTH-1:0]      rs_counter_out,
     // prf
     output PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug,
     // rat
@@ -63,6 +63,13 @@ module cpu (
     output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug,
     output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug,
     output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug,
+    // dcache
+    output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug,
+    output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug,
+    output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug,
+    output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug,
+    // lq
+    output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -239,7 +246,15 @@ module cpu (
         , .fu_mult_packet_debug(fu_mult_packet_debug)
         , .fu_load_packet_debug(fu_load_packet_debug)
         , .fu_store_packet_debug(fu_store_packet_debug)
+        // dcache
+        , .dmshr_entries_debug(dmshr_entries_debug)
+        , .dcache_data_debug(dcache_data_debug)
+        , .counter_debug(counter_debug)
+        , .lq_dcache_packet_debug(lq_dcache_packet_debug)
+        // lq
+        , .lq_entries_out(lq_entries_out)
         // branch predictor
+
 
     `endif
     );

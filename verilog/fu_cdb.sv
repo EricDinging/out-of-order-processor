@@ -12,9 +12,6 @@ module fu_cdb(
     input ID_SQ_PACKET [`N-1:0]            id_sq_packet,
     input SQ_IDX                   rob_num_commit_insns,
 
-    // from rs to lq
-    input RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet,
-
     // From memory to dcache
     input MEM_TAG   Dmem2proc_transaction_tag,
     input MEM_BLOCK Dmem2proc_data,
@@ -41,6 +38,11 @@ module fu_cdb(
     `ifdef CPU_DEBUG_OUT
     , output FU_STATE_PACKET fu_state_packet_debug
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug
+    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
+    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
+    , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
+    , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
     `endif
 );
 
@@ -85,6 +87,13 @@ module fu_cdb(
         .proc2Dmem_addr(proc2Dmem_addr),
         .proc2Dmem_data(proc2Dmem_data),
         .dcache_request(dcache_request)
+    `ifdef CPU_DEBUG_OUT
+        , .dmshr_entries_debug(dmshr_entries_debug)
+        , .dcache_data_debug(dcache_data_debug)
+        , .counter_debug(counter_debug)
+        , .lq_dcache_packet_debug(lq_dcache_packet_debug)
+        , .lq_entries_out(lq_entries_out)
+    `endif
     );
 
     cdb cdb_inst(

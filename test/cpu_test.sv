@@ -106,14 +106,135 @@ module testbench;
     BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug;
     logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug;
     PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug;
+
+    // dcache
+    DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug;
+    DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug;
+    logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] dmshr_counter_debug;
+    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug;
+
+    // lq
+    LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out;
 `endif
+
+    task print_load_queue;
+        $fdisplay(ppln_fileno, "### LOAD_QUEUE:");
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, lq_entries_out[i].valid);
+            case (lq_entries_out[i].byte_info)
+                MEM_BYTE:
+                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
+                MEM_HALF: 
+                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALF", i);
+                MEM_WORD:
+                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_WORD", i);
+                MEM_BYTEU:
+                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTEU", i);
+                MEM_HALFU:
+                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALFU", i);
+            endcase
+            $fdisplay(ppln_fileno, "    addr[%0d]: %h", i, lq_entries_out[i].addr);
+            $fdisplay(ppln_fileno, "    lq_idx[%0d]: %0h", i, lq_entries_out[i].data);
+            $fdisplay(ppln_fileno, "    tail_score[%0d]: %0d", i, lq_entries_out[i].tail_store);
+            $fdisplay(ppln_fileno, "    prn[%0d]: %0d", i, lq_entries_out[i].prn);
+            $fdisplay(ppln_fileno, "    robn[%0d]: %0d", i, lq_entries_out[i].robn);
+            case (lq_entries_out[i].load_state)
+                KNOWN:
+                    $fdisplay(ppln_fileno, "    load_state[%0d]: KNOWN", i);
+                NO_FORWARD:
+                    $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", i);
+                ASKED:
+                    $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
+            endcase
+        end
+
+    endtask
+
+    task print_fu_load_packet_debug;
+        $fdisplay(ppln_fileno, "### FU_LOAD_PACKET:");
+        for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, fu_load_packet_debug[i].valid);
+            $fdisplay(ppln_fileno, "    inst[%0d]: %0h", i, fu_load_packet_debug[i].inst);
+            $fdisplay(ppln_fileno, "    PC[%0d]: %d", i, fu_load_packet_debug[i].PC);
+            // $fdisplay(ppln_fileno, "  func[%0d]: %0d", i, fu_load_packet_debug[i].func);
+            $fdisplay(ppln_fileno, "    op1[%0d]: %0d", i, fu_load_packet_debug[i].op1);
+            $fdisplay(ppln_fileno, "    op2[%0d]: %0d", i, fu_load_packet_debug[i].op2);
+            $fdisplay(ppln_fileno, "    dest_prn[%0d]: %0d", i, fu_load_packet_debug[i].dest_prn);
+            $fdisplay(ppln_fileno, "    robn[%0d]: %0d", i, fu_load_packet_debug[i].robn);
+            // $fdisplay(ppln_fileno, "  opa_select[%0d]: %0d", i, fu_load_packet_debug[i].opa_select);
+            // $fdisplay(ppln_fileno, "  opb_select[%0d]: %0d", i, fu_load_packet_debug[i].opb_select);
+            // $fdisplay(ppln_fileno, "  cond_branch[%0d]: %b", i, fu_load_packet_debug[i].cond_branch);
+            // $fdisplay(ppln_fileno, "  uncond_branch[%0d]: %b", i, fu_load_packet_debug[i].uncond_branch);
+            $fdisplay(ppln_fileno, "    sq_idx[%0d]: %0d", i, fu_load_packet_debug[i].sq_idx);
+            case (fu_load_packet_debug[i].mem_func)
+                MEM_BYTE:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_BYTE", i);
+                MEM_HALF: 
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALF", i);
+                MEM_WORD:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_WORD", i);
+                MEM_BYTEU:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_BYTEU", i);
+                MEM_HALFU:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALFU", i);
+            endcase
+        end
+    endtask
+
+    task print_lq_dcache_packet;
+        $fdisplay(ppln_fileno, "### LQ_DCACHE_PACKET:");
+        for (int i = 0; i < `N; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, lq_dcache_packet_debug[i].valid);
+            $fdisplay(ppln_fileno, "    lq_idx[%0d]: %0d", i, lq_dcache_packet_debug[i].lq_idx);
+            $fdisplay(ppln_fileno, "    addr[%0d]: %h", i, lq_dcache_packet_debug[i].addr);
+            case (lq_dcache_packet_debug[i].mem_func)
+                MEM_BYTE:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_BYTE", i);
+                MEM_HALF: 
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALF", i);
+                MEM_WORD:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_WORD", i);
+                MEM_BYTEU:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_BYTEU", i);
+                MEM_HALFU:
+                    $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALFU", i);
+            endcase
+        end
+    endtask
+
+    task print_dcache;
+        $fdisplay(ppln_fileno, "### DMSHR_ENTRY:");
+        for (int i = 0; i < `DMSHR_SIZE; ++i) begin
+            case (dmshr_entries_debug[i].transaction_tag)
+                DMSHR_INVALID: 
+                    $fdisplay(ppln_fileno, "  state[%0d]: DMSHR_INVALID", i);
+                DMSHR_PENDING:
+                    $fdisplay(ppln_fileno, "  state[%0d]: DMSHR_PENDING", i);
+                DMSHR_WAIT_TAG:
+                    $fdisplay(ppln_fileno, "  state[%0d]: DMSHR_WAIT_TAG", i);
+                DMSHR_WAIT_DATA:
+                    $fdisplay(ppln_fileno, "  state[%0d]: DMSHR_WAIT_DATA", i);
+            endcase
+            $fdisplay(ppln_fileno, "    cache_index[%0d]: %0d", i, dmshr_entries_debug[i].index);
+            $fdisplay(ppln_fileno, "    tag[%0d]: %h", i, dmshr_entries_debug[i].tag);
+            $fdisplay(ppln_fileno, "    transaction_tag[%0d]: %0d", i, dmshr_entries_debug[i].transaction_tag);
+            $fdisplay(ppln_fileno, "    queue_size[%0d]: %d", i, dmshr_counter_debug[i]);
+        end
+        $fdisplay(ppln_fileno, "### DCACHE_ENTRY:");
+        for (int i = 0; i < `DCACHE_LINES; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, dcache_data_debug[i].valid);
+            $fdisplay(ppln_fileno, "    data[%0d]: %h", i, dcache_data_debug[i].data);
+            $fdisplay(ppln_fileno, "    tag[%0d]: %h", i, dcache_data_debug[i].tag);
+            $fdisplay(ppln_fileno, "    dirty[%0d]: %b", i, dcache_data_debug[i].dirty);
+        end
+    endtask
 
     task print_if_id_reg;
         $fdisplay(ppln_fileno, "### IF/ID REG:");
         for (int i = 0; i < `N; ++i) begin
-            $fdisplay(ppln_fileno, "  PC[%0d]: %0d", i, if_id_reg_debug[i].PC);
-            $fdisplay(ppln_fileno, "  Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
             $fdisplay(ppln_fileno, "  Valid[%0d]: %x", i, if_id_reg_debug[i].valid);
+            $fdisplay(ppln_fileno, "    PC[%0d]: %0d", i, if_id_reg_debug[i].PC);
+            $fdisplay(ppln_fileno, "    Instruction[%0d]: %x", i, if_id_reg_debug[i].inst);
         end
     endtask
 
@@ -328,6 +449,13 @@ module testbench;
         .btb_entries_debug(btb_entries_debug),
         .branch_history_table_debug(branch_history_table_debug),
         .pattern_history_table_debug(pattern_history_table_debug),
+        // dcache
+        .dmshr_entries_debug(dmshr_entries_debug),
+        .dcache_data_debug(dcache_data_debug),
+        .counter_debug(dmshr_counter_debug),
+        .lq_dcache_packet_debug(lq_dcache_packet_debug),
+        // lq
+        .lq_entries_out(lq_entries_out),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -504,14 +632,18 @@ module testbench;
             print_id_ooo_reg();
             print_rob_if_debug();
             print_mem_cache();
-            print_imshr_entries_debug();
+            // print_imshr_entries_debug();
+            print_fu_load_packet_debug();
+            print_load_queue();
+            // print_lq_dcache_packet();
+            // print_dcache();
             print_cdb_packet();
             print_fu_state_packet();
-            print_select();
+            // print_select();
             print_rs();
             print_rob();
-            print_rat();
-            print_rrat();
+            // print_rat();
+            // print_rrat();
             print_prf();
             // print_branch_predictor();
         

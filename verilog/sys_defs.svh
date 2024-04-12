@@ -532,18 +532,18 @@ typedef struct packed {
  * Data exchanged between reservation stations and the FU
  */
 typedef struct packed {
-    logic   valid;
-    INST    inst;
-    ADDR    PC;
-    FU_FUNC func;
-    DATA    op1, op2;
-    PRN     dest_prn;
-    ROBN    robn;
+    logic    valid;
+    INST     inst;
+    ADDR     PC;
+    FU_FUNC  func;
+    DATA     op1, op2;
+    PRN      dest_prn;
+    ROBN     robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
-    logic cond_branch;
-    logic uncond_branch;
-    SQ_IDX sq_idx;
+    logic    cond_branch;
+    logic    uncond_branch;
+    SQ_IDX   sq_idx;
     MEM_FUNC mem_func;
 } FU_PACKET;
 
