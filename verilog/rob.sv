@@ -32,9 +32,6 @@ module rob #(
 
     ROB_ENTRY [SIZE-1:0] rob_entries, next_rob_entries;
 
-    // commit control logic
-    logic is_block;
-
     SQ_IDX internal_num_sent_insns;
 
     always_comb begin
@@ -44,10 +41,8 @@ module rob #(
         next_rob_entries = rob_entries;
         squash = 0;
 
-        is_block = `FALSE;
-
         rob_commit_insns_num = 0;
-        internal_sq_sent_insns_num = sq_sent_insns_num;
+        internal_num_sent_insns = sq_sent_insns_num;
 
         for (int i = 0; i < `N; ++i) begin
             rob_ct_packet.entries[i] = '{
@@ -72,23 +67,27 @@ module rob #(
 
         // to SQ
         for (int i = 0; i < `N; ++i) begin
-            if (rob_entries[next_head+i].is_store && ~rob_entries[next_head+i].executed) begin
-                rob_commit_insns_num += 1;
+            if (~rob_entries[(next_head + i) % SIZE].executed) begin
+                if (rob_entries[(next_head + i) % SIZE].is_store) begin
+                    rob_commit_insns_num += 1;
+                end else begin
+                    break;
+                end
             end
         end
 
         // from SQ
         for (int i = 0; i < `N; ++i) begin
-            if (rob_entries[next_head+i].is_store && ~rob_entries[next_head+i].executed && internal_sq_sent_insns_num > 0) begin
-                internal_sq_sent_insns_num -= 1;
-                next_rob_entries[next_head+i].executed = `TRUE;
+            if (rob_entries[(next_head + i) % SIZE].is_store && ~rob_entries[(next_head + i) % SIZE].executed && internal_num_sent_insns > 0) begin
+                internal_num_sent_insns -= 1;
+                next_rob_entries[(next_head + i) % SIZE].executed = `TRUE;
             end
         end
 
 
         // Commit
         for (int i = 0; i < `N; ++i) begin
-            if (~is_block && next_counter > 0 && next_rob_entries[next_head].executed) begin
+            if (next_counter > 0 && next_rob_entries[next_head].executed) begin
                 rob_ct_packet.entries[i] = next_rob_entries[next_head]; // TODO verify this op does not break if not success
                 if (next_rob_entries[next_head].success) begin
                     next_head = (next_head + 1) % SIZE;
@@ -100,7 +99,7 @@ module rob #(
                     next_counter = {`ROB_PTR_WIDTH{1'b0}};
                 end
             end else begin
-                is_block = `TRUE;
+                break;
             end
         end
 

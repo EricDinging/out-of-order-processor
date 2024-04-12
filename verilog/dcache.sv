@@ -13,6 +13,7 @@ module dmshr_queue (
     , output logic [`N_CNT_WIDTH-1:0] counter_debug
 `endif
 );
+
     DMSHR_Q_PACKET  [`N-1:0] dmshr_q_entries, next_dmshr_q_entries;
     logic [`N_CNT_WIDTH-1:0] counter, next_counter;
     logic [`N_CNT_WIDTH-1:0] head, next_head, tail, next_tail;
@@ -253,7 +254,7 @@ module dmshr #(
                         sq_dcache_packet[i].mem_func, // mem_func
                         sq_dcache_packet[i].data, // data
                         sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0], // block_offset
-                        {`LOAD_Q_INDEX_WIDTH{1'b0}}    // lq_idx
+                        {`LU_IDX_BITS{1'b0}}    // lq_idx
                     };
                     push_valids[j][i+`N] = `TRUE;
                     store_req_accept[i] = push_accepts[j][i+`N];
@@ -271,7 +272,7 @@ module dmshr #(
                             sq_dcache_packet[i].mem_func, // mem_func
                             sq_dcache_packet[i].data, // data
                             sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0], // block_offset
-                            {`LOAD_Q_INDEX_WIDTH{1'b0}}    // lq_idx
+                            {`LU_IDX_BITS{1'b0}}    // lq_idx
                         };
                         push_valids[j][i+`N] = `TRUE;
                         store_req_accept[i] = push_accepts[j][i+`N];

@@ -68,7 +68,7 @@ module fu_cdb(
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
         .load_avail(load_internal_avail),
-        .load_rs_avail(load_availa),
+        .load_rs_avail(load_avail), // FIXME
         .id_sq_packet(id_sq_packet),
         .rob_num_commit_insns(rob_num_commit_insns),
         // output

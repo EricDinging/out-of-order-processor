@@ -89,14 +89,14 @@ module store_queue (
         end
     endfunction
 
-    SQ_ENTRY[(`SQ_LEN+1)-1:0] entries, next_entries;
+    SQ_ENTRY [(`SQ_LEN+1)-1:0] entries, next_entries;
 
 `ifdef CPU_DEBUG_OUT
     assign entries_out = entries;
 `endif
 
     SQ_IDX size, next_size, next_head, next_tail;
-    SQ_REG[`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
+    SQ_REG [`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
     assign almost_full = size > `SQ_LEN - `N;
 
@@ -166,7 +166,7 @@ module store_queue (
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
             idx = (head + i) % (`SQ_LEN + 1);
             if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
-                next_entries[idx].accepted = `True;
+                next_entries[idx].accepted = `TRUE;
                 if (!break_flag) begin
                     num_sent_insns += 1;
                     next_entries[idx] = 0;
@@ -198,12 +198,13 @@ module store_queue (
     // LQ fwd
     SQ_IDX idx_fwd;
     logic flag_break;
-    logic match, match_byte, match_half, match_word, match_dble, compatible;
+    logic match, match_byte, match_half, match_word, match_dble;
     always_comb begin
         flag_break = `FALSE;
+        value = 0;
+        fwd_valid = 0;
+        idx_fwd = 0;
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
-            value[i] = 32'h0;
-            fwd_valid[i] = `FALSE;
             for (int j = 0; j < `SQ_LEN; j++) begin
                 idx_fwd = (head + j) % (`SQ_LEN + 1);
 
@@ -211,7 +212,6 @@ module store_queue (
                 match_half = entries[idx_fwd].addr[31:1] == addr[i][31:1];
                 match_word = entries[idx_fwd].addr[31:2] == addr[i][31:2];
                 match_dble = entries[idx_fwd].addr[31:3] == addr[i][31:3];
-                // compatible = entries[idx_fwd].byte_info >= load_byte_info[i];
 
                 case (entries[idx_fwd].byte_info)
                     MEM_BYTE:  match = match_byte && load_byte_info[i][1:0] == BYTE;

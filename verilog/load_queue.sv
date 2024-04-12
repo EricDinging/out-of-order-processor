@@ -41,12 +41,12 @@ module load_queue (
     // cdb
     input  logic                 [`NUM_FU_LOAD-1:0] load_selected,
     output logic                 [`NUM_FU_LOAD-1:0] load_prepared,
-    output FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet,  
+    output FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet,
     // SQ
     output ADDR                  [`NUM_FU_LOAD-1:0] sq_addr,
     output logic                 [`NUM_FU_LOAD-1:0][`SQ_IDX_BITS-1:0] store_range,
     output MEM_FUNC              [`NUM_FU_LOAD-1:0] load_byte_info,
-    input  DATA                  [`NUM_FU_LOAD-1:0] value,         
+    input  DATA                  [`NUM_FU_LOAD-1:0] value,
     input  logic                 [`NUM_FU_LOAD-1:0] fwd_valid,
     // Dcache
     input  DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet,
@@ -198,10 +198,10 @@ module load_queue (
             if (entries[i].valid && entries[i].load_state == NO_FORWARD) begin
                 no_forwards[i] = `TRUE;
             end
-            mux_input[i].valid = entries[i].valid && entries[i].load_state == NO_FORWARD;
+            mux_input[i].valid  = entries[i].valid && entries[i].load_state == NO_FORWARD;
             mux_input[i].lq_idx = i; // TODO: width
-            mux_input[i].addr = entries[i].addr;
-            mux_input[i].sign_size = entries[i].byte_info;
+            mux_input[i].addr   = entries[i].addr;
+            mux_input[i].mem_func = entries[i].byte_info;
         end
 
         for (int i = 0; i < `NUM_LU_DCACHE; i++) begin

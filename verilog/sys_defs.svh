@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 4
+`define N 2
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -51,8 +51,8 @@
 `define NUM_FU_LOAD 8
 `define NUM_FU_STORE 8
 
-`define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
-`define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
+// `define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
+// `define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
@@ -105,6 +105,10 @@ typedef logic [4:0] REG_IDX;
 
 typedef logic [`PRN_WIDTH-1:0]         PRN;
 typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
+
+typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
+
+typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
@@ -460,7 +464,7 @@ typedef struct packed {
  */
 
 // TODO change data padding
-typedef u nion packed {
+typedef union packed {
     DATA value;
     DATA prn;
 } OP_FIELD;
@@ -705,8 +709,8 @@ typedef struct packed {
 typedef struct packed {
     ID_RS_PACKET  [`N-1:0] id_rs_packet;
     ID_SQ_PACKET  [`N-1:0] id_sq_packet;
-    ROB_IS_PACKET rob_is_packet;
-    RAT_IS_INPUT  rat_is_input;
+    ROB_IS_PACKET          rob_is_packet;
+    RAT_IS_INPUT           rat_is_input;
 } ID_OOO_PACKET;
 
 typedef struct packed {
@@ -728,30 +732,26 @@ typedef struct packed {
     MEM_FUNC                              mem_func;
     DATA                                  data;
     logic [`DCACHE_BLOCK_OFFSET_BITS-1:0] block_offset;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0]       lq_idx;
+    LU_IDX                                lq_idx;
 } DMSHR_Q_PACKET;
-
-typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
-
-typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
 
 typedef struct packed {
     logic valid;
     ADDR  base;
-    logic [11:0] offset;
+    logic signed [11:0] offset;
     DATA  data;
     SQ_IDX sq_idx;
 } RS_SQ_PACKET;
 
 typedef struct packed {
     logic                               valid;
-    logic     [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    LU_IDX                              lq_idx;
     DATA                                data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
     logic                           valid;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
+    LU_IDX                          lq_idx;
     ADDR                            addr;
     MEM_FUNC                        mem_func;
 } LQ_DCACHE_PACKET;
@@ -786,10 +786,56 @@ typedef struct packed {
     // MEM_SIZE size;
     MEM_FUNC sign_size;
     ADDR base;
-    logic [11:0] offset;
+    logic signed [11:0] offset;
     PRN prn;
     ROBN robn;
     SQ_IDX   tail_store;
 } RS_LQ_PACKET;
+
+typedef struct packed {
+    logic  valid;
+    ADDR   addr;
+    DATA   data;
+    SQ_IDX sq_idx;
+} SQ_REG;
+
+typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
+
+typedef struct packed {
+    logic    valid;
+    // logic    signext;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+    ADDR     addr;
+    DATA     data;
+    SQ_IDX   tail_store;
+    PRN      prn;
+    ROBN     robn;
+    LU_STATE load_state;
+} LD_ENTRY;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR addr;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+} LU_REG;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR addr;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+    DATA value;
+    logic fwd_valid;
+} LU_FWD_REG;
 
 `endif // __SYS_DEFS_SVH__

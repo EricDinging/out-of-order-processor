@@ -170,7 +170,7 @@ module cpu (
     //////////////////////////////////////////////////
     // squash decode
     stage_decode decode (
-        .if_id_packet(if_id_reg),,
+        .if_id_packet(if_id_reg),
         .id_ooo_packet(id_ooo_packet)
     );
 

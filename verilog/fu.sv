@@ -266,7 +266,7 @@ module fu #(
 
     // store_queue
     input ID_SQ_PACKET [`N-1:0]            id_sq_packet,
-    input SQ_IDX                   rob_num_commit_insns
+    input SQ_IDX                   rob_num_commit_insns,
 
     // tell rs whether the next value will be accepted
     output logic           [`NUM_FU_STORE-1:0] store_avail,
@@ -308,13 +308,12 @@ module fu #(
             assign rs_sq_packet[i] = '{
                 fu_store_packet[i].valid,                      // valid
                 fu_store_packet[i].op1,                        // base
-                `RV32_signext_Iimm(fu_mult_packet.inst)[11:0], // offset
+                {fu_store_packet[i].inst.s.off, fu_store_packet[i].inst.s.set}, // offset
                 fu_store_packet[i].op2,                        // data
                 fu_store_packet[i].sq_idx                      // sq_idx
             };
         end
     endgenerate
-    
 
     RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet;
     generate
@@ -323,7 +322,7 @@ module fu #(
                 fu_load_packet[i].valid,    // logic valid;
                 fu_load_packet[i].mem_func, // MEM_FUNC sign_size;
                 fu_load_packet[i].op1,      // ADDR base;
-                `RV32_signext_Iimm(fu_mult_packet.inst)[11:0], // logic [11:0] offset;
+                fu_load_packet[i].inst.i.imm, // logic [11:0] offset;
                 fu_load_packet[i].dest_prn, // PRN prn;
                 fu_load_packet[i].robn,     // ROBN robn;
                 fu_load_packet[i].sq_idx    // SQ_IDX   tail_store;
@@ -450,7 +449,7 @@ module fu #(
 
 
     always_comb begin
-        store_avail = {`NUM_FU_STORE{1'b0}};
+        store_avail = {`NUM_FU_STORE{`TRUE}};
         
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
             cond_rob_packet[i].robn         = fu_state_packet.alu_packet[i].basic.robn;

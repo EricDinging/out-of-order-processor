@@ -162,11 +162,11 @@ module ooo (
         .sq_head(sq_head),
         .sq_tail(sq_tail),
         .sq_tail_ready(sq_tail_ready),
-        .sq_num_commit_insns(sq_num_sent_insns),
+        .sq_num_sent_insns(sq_num_sent_insns),
         // from dcache to memory
-        .proc2mem_command(proc2Dmem_command),
-        .proc2mem_addr(proc2Dmem_addr),
-        .proc2mem_data(proc2Dmem_data),
+        .proc2Dmem_command(proc2Dmem_command),
+        .proc2Dmem_addr(proc2Dmem_addr),
+        .proc2Dmem_data(proc2Dmem_data),
         .dcache_request(dcache_request)
         `ifdef CPU_DEBUG_OUT
         , .fu_state_packet_debug(fu_state_packet_debug)
@@ -285,7 +285,6 @@ module ooo (
 
                 rs_is_packet.entries[i].dest_prn = rat_is_output.entries[i].dest_prn;
                 rs_is_packet.entries[i].robn     = rob_tail_entries[i];
-                rs_is_packet.entries[i].sq_idx   = id_ooo_packet.id_rs_packet[i].sq_idx;
                 rs_is_packet.entries[i].mem_func   = id_ooo_packet.id_rs_packet[i].mem_func;
             end
         end

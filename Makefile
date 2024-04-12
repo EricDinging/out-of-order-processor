@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -330,25 +330,28 @@ CPU_TESTBENCH = test/pipeline_print.c \
 CPU_SOURCES = verilog/regfile.sv \
               verilog/icache.sv \
               verilog/mult.sv \
-				verilog/cdb.sv \
-				verilog/decoder.sv \
-				verilog/FIFO.sv \
-				verilog/free_list.sv \
-				verilog/fu_cdb.sv \
-				verilog/fu.sv \
-				verilog/icache.sv \
-				verilog/ooo.sv \
-				verilog/prf.sv \
-				verilog/psel_gen.sv \
-				verilog/rat.sv \
-				verilog/rob.sv \
-				verilog/rrat.sv \
-				verilog/rs.sv \
-				verilog/stage_decode.sv \
-				verilog/stage_fetch.sv \
-				verilog/onehot_mux.sv \
-				verilog/dcache.sv \
-				verilog/branch_predictor.sv
+              verilog/cdb.sv \
+              verilog/decoder.sv \
+              verilog/FIFO.sv \
+              verilog/free_list.sv \
+              verilog/fu_cdb.sv \
+              verilog/fu.sv \
+              verilog/icache.sv \
+              verilog/ooo.sv \
+              verilog/prf.sv \
+              verilog/psel_gen.sv \
+              verilog/rat.sv \
+              verilog/rob.sv \
+              verilog/rrat.sv \
+              verilog/rs.sv \
+              verilog/stage_decode.sv \
+              verilog/stage_fetch.sv \
+              verilog/onehot_mux.sv \
+              verilog/dcache.sv \
+              verilog/branch_predictor.sv \
+              verilog/store_queue.sv \
+              verilog/load_queue.sv \
+              verilog/sign_align.sv
 
 
 

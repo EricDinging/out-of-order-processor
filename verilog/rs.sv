@@ -37,6 +37,8 @@ module rs #(
     assign entries_out = entries;
     assign counter_out = counter;
     
+    RS_IS_PACKET rs_is_packet_temp;
+
     // Next state
     logic [`RS_CNT_WIDTH-1:0] next_counter;
     RS_ENTRY [SIZE-1:0]       next_entries;
@@ -133,7 +135,7 @@ module rs #(
         next_fu_alu_packet   = fu_alu_packet;
         next_fu_mult_packet  = fu_mult_packet;
         next_fu_load_packet  = fu_load_packet;
-        next_fu_store_packet = fu_store_avail;
+        next_fu_store_packet = fu_store_packet;
 
         for (int j = 0; j < `NUM_FU_ALU; j++) begin
             next_fu_alu_packet[j].valid = 1'b0;
@@ -152,10 +154,11 @@ module rs #(
         end
 
         input_tail = tail;
+        rs_is_packet_temp = rs_is_packet;
         for (int i = 0; i < `N; i++) begin
-            rs_is_packet.entries[i].sq_idx = input_tail;
-            if (rs_is_packet.entries[i].fu == FU_STORE) begin
-                input_tail = (input_tail + 1) % (SQ_LEN + 1);
+            rs_is_packet_temp.entries[i].sq_idx = input_tail;
+            if (rs_is_packet_temp.entries[i].fu == FU_STORE) begin
+                input_tail = (input_tail + 1) % (`SQ_LEN + 1);
             end
         end
 
@@ -164,8 +167,8 @@ module rs #(
             if (~entries[i].valid & 
                 inst_cnt < `N &
                 ~almost_full & 
-                rs_is_packet.entries[inst_cnt].valid) begin
-                next_entries[i] = rs_is_packet.entries[inst_cnt];
+                rs_is_packet_temp.entries[inst_cnt].valid) begin
+                next_entries[i] = rs_is_packet_temp.entries[inst_cnt];
                 ++inst_cnt;
                 ++next_counter;
             end
@@ -228,13 +231,12 @@ module rs #(
             assign alu_wake_ups[i]   = wake_ups[i] && (entries[i].fu == FU_ALU);
             assign mult_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_MULT);
             assign load_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_LOAD)
-            &&  
-                (head < tail_ready?
-                    (entries[i].sq_idx >= head && entreis[i].sq_idx <= tail_ready)
-                    :
-                    (entries[i].sq_idx >= head || entries[i].sq_idx <= tail_ready) 
-                )
-            ;
+                    &&  
+                        ( head < tail_ready ?
+                            entries[i].sq_idx >= head && entries[i].sq_idx <= tail_ready :
+                            entries[i].sq_idx >= head || entries[i].sq_idx <= tail_ready
+                        )
+                    ;
             assign store_wake_ups[i] = wake_ups[i] && (entries[i].fu == FU_STORE);
         end
     endgenerate
