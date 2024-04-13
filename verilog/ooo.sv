@@ -62,6 +62,11 @@ module ooo (
     , output logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
     , output DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
+    // sq
+    , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
+    , output logic rob_stall
+    , output logic rs_stall
+    , output logic sq_stall
 `endif
 );
 
@@ -153,7 +158,7 @@ module ooo (
     fu_cdb fu_cdb_inst(
         .clock(clock),
         .reset(reset),
-        .squash(squash)
+        .squash(squash),
         .fu_alu_packet(fu_alu_packet),
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
@@ -196,6 +201,7 @@ module ooo (
         , .load_req_data_valid_debug(load_req_data_valid_debug)
         , .load_req_data_debug(load_req_data_debug)
         , .sq_entries_out(sq_entries_out)
+        , .sq_dcache_packet_debug(sq_dcache_packet_debug)
         `endif
     );
 
@@ -361,5 +367,11 @@ module ooo (
 
     assign structural_hazard = rs_almost_full || rob_almost_full
                             || (sq_almost_full && id_sq_valid);
+
+    `ifdef CPU_DEBUG_OUT
+        assign rob_stall = rob_almost_full;
+        assign rs_stall  = rs_almost_full;
+        assign sq_stall  = sq_almost_full && id_sq_valid;
+    `endif
 
 endmodule

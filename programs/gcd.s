@@ -1,7 +1,7 @@
 .section .data
 .align 4
 stack:
-    .word 0
+    .fill 0x1000
 
 .section .text
 .align 4
@@ -19,7 +19,6 @@ mod:
     sub  a0, a0, a1
     tail mod
 .L0:
-    li   a1, 0
     ret
 
 gcd:
@@ -40,5 +39,5 @@ gcd:
     mv   a0, a1
     mv   a1, t0
     tail gcd
-.L1
+.L1:
     ret

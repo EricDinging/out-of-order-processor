@@ -77,6 +77,11 @@ module cpu (
     output logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug,
     output DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug,
     output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out,
+    output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug,
+    output logic id_stall,
+    output logic rob_stall,
+    output logic rs_stall,
+    output logic sq_stall,
     
 `endif
 
@@ -201,6 +206,7 @@ module cpu (
 
 `ifdef CPU_DEBUG_OUT
     assign id_ooo_reg_debug = id_ooo_reg;
+    assign id_stall = structural_hazard;
 `endif
 
     //////////////////////////////////////////////////
@@ -265,10 +271,13 @@ module cpu (
         , .lu_reg_debug(lu_reg_debug)
         , .lu_fwd_reg_debug(lu_fwd_reg_debug)
         , .load_selected_debug(load_selected_debug)
-        // branch predictor
         , .load_req_data_valid_debug(load_req_data_valid_debug)
         , .load_req_data_debug(load_req_data_debug)
         , .sq_entries_out(sq_entries_out)
+        , .sq_dcache_packet_debug(sq_dcache_packet_debug)
+        , .rob_stall(rob_stall)
+        , .rs_stall(rs_stall)
+        , .sq_stall(sq_stall)
     `endif
     );
 

@@ -232,7 +232,7 @@ module rs #(
             assign mult_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_MULT);
             assign load_wake_ups[i]  = wake_ups[i] && (entries[i].fu == FU_LOAD)
                     &&  
-                        ( head < tail_ready ?
+                        ( head <= tail_ready ?
                             entries[i].sq_idx >= head && entries[i].sq_idx <= tail_ready :
                             entries[i].sq_idx >= head || entries[i].sq_idx <= tail_ready
                         )

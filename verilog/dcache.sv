@@ -9,7 +9,7 @@ module dmshr_queue (
     input logic                      flush,
     output logic          [2*`N-1:0] push_accept,
     output DMSHR_Q_PACKET [`N-1:0]   flush_packet,
-    output logic          [`N-1:0]   flush_valid,
+    output logic          [`N-1:0]   flush_valid
 `ifdef CPU_DEBUG_OUT
     , output logic [`N_CNT_WIDTH-1:0] counter_debug
 `endif

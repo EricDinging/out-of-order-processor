@@ -295,6 +295,7 @@ module fu #(
     , output logic            [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
     , output DATA            [`NUM_FU_LOAD-1:0]    load_req_data_debug
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
+    , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
 `endif
 );
     
@@ -306,7 +307,7 @@ module fu #(
     MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info;
     DATA     [`NUM_FU_LOAD-1:0] value;
     logic    [`NUM_FU_LOAD-1:0] fwd_valid;
-    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet;
+    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet, sq_dcache_packet_debug;
     logic            [`NUM_SQ_DCACHE-1:0] dcache_sq_accept;
     // load queue - dcache
     DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet;
@@ -344,6 +345,7 @@ module fu #(
     endgenerate
     `ifdef CPU_DEBUG_OUT
         assign rs_lq_packet_debug = rs_lq_packet;
+        assign sq_dcache_packet_debug = sq_dcache_packet;
     `endif
 
     dcache cache (

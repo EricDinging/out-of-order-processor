@@ -5,11 +5,11 @@ counter:
 
 .section .text
 .align 4
-begin:
+.L0:
     lw   t0, counter
-    beqz t0, end
-    addi t0, -1
+    beqz t0, .L1
+    addi t0, t0, -1
     sw   t0, counter, t2
-    j    begin
-end:
+    j    .L0
+.L1:
     wfi

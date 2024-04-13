@@ -68,7 +68,7 @@ module rob #(
         // to SQ
         for (int i = 0; i < `N; ++i) begin
             if (counter <= i) begin
-                break
+                break;
             end
             if (~rob_entries[(next_head + i) % SIZE].executed) begin
                 if (rob_entries[(next_head + i) % SIZE].is_store) begin

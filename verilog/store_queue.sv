@@ -100,6 +100,8 @@ module store_queue (
 
     assign almost_full = size > `SQ_LEN - `N;
 
+    SQ_IDX try_to_sent_insns;
+
     always_comb begin
         next_sq_reg = sq_reg;
         foreach (next_sq_reg[i]) begin
@@ -136,18 +138,21 @@ module store_queue (
         end
 
         // RS
-        foreach (sq_reg[i]) if (sq_reg[i].valid) begin
-            next_entries[sq_reg[i].sq_idx].ready = `TRUE;
-            next_entries[sq_reg[i].sq_idx].addr  = sq_reg[i].addr;
-            next_entries[sq_reg[i].sq_idx].data  = sq_reg[i].data;
+        foreach (sq_reg[i]) begin 
+            if (sq_reg[i].valid) begin
+                next_entries[sq_reg[i].sq_idx].ready = `TRUE;
+                next_entries[sq_reg[i].sq_idx].addr  = sq_reg[i].addr;
+                next_entries[sq_reg[i].sq_idx].data  = sq_reg[i].data;
+            end
         end
         
         // ROB
         sq_dcache_packet = 0;
         idx = 0;
-        
+
+        try_to_sent_insns = 0;
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
-            if (num_commit_insns > num_sent_insns) begin
+            if (num_commit_insns > try_to_sent_insns) begin
                 idx = (head + i) % (`SQ_LEN + 1);
                 if (entries[idx].valid && entries[idx].ready && !entries[idx].accepted) begin
                     sq_dcache_packet[i] = '{
@@ -156,11 +161,14 @@ module store_queue (
                         entries[idx].byte_info,
                         entries[idx].data
                     };
+                    try_to_sent_insns += 1;
+                end else if (entries[idx].valid && ~entries[idx].ready) begin
+                    break;
                 end
             end
         end
 
-        
+
         num_sent_insns = 0;
         break_flag = `FALSE;
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
@@ -171,6 +179,7 @@ module store_queue (
                     num_sent_insns += 1;
                     next_entries[idx] = 0;
                     next_head = (head + 1) % (`SQ_LEN + 1);
+                    next_size -= 1;
                 end
             end else begin
                 break_flag = `TRUE;

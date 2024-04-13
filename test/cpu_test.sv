@@ -122,6 +122,11 @@ module testbench;
     logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug;
     DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug;
     SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out;
+    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug;
+    logic id_stall;
+    logic rob_stall;
+    logic rs_stall;
+    logic sq_stall;
 
 `endif
 
@@ -129,7 +134,7 @@ module testbench;
         $fdisplay(ppln_fileno, "### LOAD_QUEUE:");
         for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
             if (lq_entries_out[i].valid) begin
-                $fdisplay(ppln_fileno, "  addr[%0d]: %h, data: %h, tail_score: %0d, prn: %0d, robn: %0d", 
+                $fdisplay(ppln_fileno, "  addr[%0d]: %h, data: %h, tail_store: %0d, prn: %0d, robn: %0d", 
                           i, lq_entries_out[i].addr, lq_entries_out[i].data, lq_entries_out[i].tail_store, lq_entries_out[i].prn, lq_entries_out[i].robn);
                 case (lq_entries_out[i].byte_info)
                     MEM_BYTE:
@@ -225,7 +230,7 @@ module testbench;
     task print_sq;
         $fdisplay(ppln_fileno, "### SQ ENTRIES:");
         for (int i = 0; i < `SQ_LEN + 1; i++) begin
-            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b\n", sq_entries_out[i].valid, sq_entries_out[i].addr, sq_entries_out[i].data, sq_entries_out[i].ready, sq_entries_out[i].accepted);
+            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b", i, sq_entries_out[i].valid, sq_entries_out[i].addr, sq_entries_out[i].data, sq_entries_out[i].ready, sq_entries_out[i].accepted);
             case (sq_entries_out[i].byte_info)
                     MEM_BYTE:
                         $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
@@ -283,6 +288,10 @@ module testbench;
             $fdisplay(ppln_fileno, "  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
             $fdisplay(ppln_fileno, "  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
         end
+        $fdisplay(ppln_fileno, "id structural hazard:%b", id_stall);
+        $fdisplay(ppln_fileno, "rob structural hazard:%b", rob_stall);
+        $fdisplay(ppln_fileno, "rs structural hazard:%b", rs_stall);
+        $fdisplay(ppln_fileno, "sq structural hazard:%b", sq_stall);
     endtask
 
     task print_rob_if_debug;
@@ -337,9 +346,9 @@ module testbench;
         $fdisplay(ppln_fileno, "counter=%2d", rs_counter_out);
         for (int i = 0; i < `RS_SZ; i++) begin
             if (rs_entries_out[i].valid)
-                $fdisplay(ppln_fileno, "RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d", //, .cond_branch=%d, .uncond_branch=%d",
+                $fdisplay(ppln_fileno, "RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d, sq_idx=%2d", //, .cond_branch=%d, .uncond_branch=%d",
                         i, rs_entries_out[i].PC, rs_entries_out[i].op1_ready, rs_entries_out[i].op2_ready, 
-                        rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].dest_prn, rs_entries_out[i].robn);
+                        rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].dest_prn, rs_entries_out[i].robn, rs_entries_out[i].sq_idx);
                         //,rs_entries_out[i].cond_branch, rs_entries_out[i].uncond_branch);
             else
                 $fdisplay(ppln_fileno, "RS[%2d]: invalid", i);
@@ -441,6 +450,29 @@ module testbench;
         end
     endtask
 
+    task print_sq_dcache_packet;
+        $fdisplay(ppln_fileno, "### SQ_DCACHE_PACKET");
+        for (int i = 0; i < `NUM_SQ_DCACHE; ++i) begin
+            if (sq_dcache_packet_debug[i].valid) begin
+                $fdisplay(ppln_fileno, "  valid %d, .addr:%h, data:%h ", i, sq_dcache_packet_debug[i].addr, sq_dcache_packet_debug[i].data);
+                case (sq_dcache_packet_debug[i].mem_func)
+                    MEM_BYTE:
+                        $fdisplay(ppln_fileno, "    mem_func: MEM_BYTE");
+                    MEM_HALF: 
+                        $fdisplay(ppln_fileno, "    mem_func: MEM_HALF");
+                    MEM_WORD:
+                        $fdisplay(ppln_fileno, "    mem_func: MEM_WORD");
+                    MEM_BYTEU:
+                        $fdisplay(ppln_fileno, "    mem_func: MEM_BYTEU");
+                    MEM_HALFU:
+                        $fdisplay(ppln_fileno, "    mem_func: MEM_HALFU");
+                endcase
+            end else begin
+                $fdisplay(ppln_fileno, "  invalid %d", i);
+            end
+        end
+    endtask
+
     // Instantiate the Pipeline
     cpu verisimpleV (
         // Inputs
@@ -507,6 +539,11 @@ module testbench;
         .load_req_data_valid_debug(load_req_data_valid_debug),
         .load_req_data_debug(load_req_data_debug),
         .sq_entries_out(sq_entries_out),
+        .sq_dcache_packet_debug(sq_dcache_packet_debug),
+        .id_stall(id_stall),
+        .rob_stall(rob_stall),
+        .rs_stall(rs_stall),
+        .sq_stall(sq_stall),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -686,9 +723,11 @@ module testbench;
             // print_imshr_entries_debug();
             // print_fu_load_packet_debug();
             print_rs_lq_packet();
-            // print_load_queue();
+            print_load_queue();
+            print_sq();
             print_lq_dcache_packet();
-            print_dcache();
+            print_sq_dcache_packet();
+            // print_dcache();
             print_cdb_packet();
             print_fu_state_packet();
             // print_select();
