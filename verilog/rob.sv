@@ -67,12 +67,17 @@ module rob #(
 
         // to SQ
         for (int i = 0; i < `N; ++i) begin
+            if (counter <= i) begin
+                break
+            end
             if (~rob_entries[(next_head + i) % SIZE].executed) begin
                 if (rob_entries[(next_head + i) % SIZE].is_store) begin
                     rob_commit_insns_num += 1;
                 end else begin
                     break;
                 end
+            end else if (~rob_entries[(next_head + i) % SIZE].success) begin
+                break;
             end
         end
 
@@ -83,7 +88,6 @@ module rob #(
                 next_rob_entries[(next_head + i) % SIZE].executed = `TRUE;
             end
         end
-
 
         // Commit
         for (int i = 0; i < `N; ++i) begin

@@ -3,12 +3,13 @@
 
 module dmshr_queue (
     input clock, reset,
+    input logic squash,
     input DMSHR_Q_PACKET  [2*`N-1:0] push_packet,
     input logic           [2*`N-1:0] push_valid,
     input logic                      flush,
     output logic          [2*`N-1:0] push_accept,
     output DMSHR_Q_PACKET [`N-1:0]   flush_packet,
-    output logic          [`N-1:0]   flush_valid
+    output logic          [`N-1:0]   flush_valid,
 `ifdef CPU_DEBUG_OUT
     , output logic [`N_CNT_WIDTH-1:0] counter_debug
 `endif
@@ -30,15 +31,26 @@ module dmshr_queue (
         flush_valid          = {`N{`FALSE}};
         push_accept          = {`N{`FALSE}};
 
+        if (squash) begin
+            for (int i = 0 ; i < `N; i++) begin
+                if (dmshr_q_entries[next_tail].inst_command == INST_LOAD && next_counter > 0) begin
+                    next_tail = (next_tail - 1) % `N;
+                    next_counter -= 1;
+                end else begin
+                    break;
+                end
+            end
+        end
+
         if (flush) begin
-            next_head = 0;
-            next_tail = 0;
-            next_counter = 0;
-            next_dmshr_q_entries = 0;
-            for (int i = 0; i < counter; ++i) begin
+            for (int i = 0; i < next_counter; ++i) begin
                 flush_valid[i]  = `TRUE;
                 flush_packet[i] = dmshr_q_entries[(head + i) % `N];
             end
+            next_head = 0;
+            next_tail = 0;
+            next_dmshr_q_entries = 0;
+            next_counter = 0;
         end else begin
             for (int i = 0; i < 2*`N; ++i) begin
                 if (push_valid[i] && next_counter < `N) begin
@@ -49,6 +61,7 @@ module dmshr_queue (
                 end
             end
         end
+
     end
     
     always_ff @(posedge clock) begin
@@ -71,6 +84,7 @@ module dmshr #(
     parameter SIZE = `DMSHR_SIZE
 )(
     input clock, reset,
+    input logic squash,
     // From memory
     input MEM_TAG   Dmem2proc_transaction_tag,
     input MEM_TAG   Dmem2proc_data_tag,
@@ -141,6 +155,7 @@ module dmshr #(
             dmshr_queue dmshr_q(
                 .clock(clock),
                 .reset(reset),
+                .squash(squash),
                 .push_packet(push_packets[i]),
                 .push_valid(push_valids[i]),
                 .flush(flushes[i]),
@@ -183,20 +198,6 @@ module dmshr #(
         // immediate values
         dmshr_load_allocate  = {`N{`FALSE}};
         dmshr_store_allocate = {`N{`FALSE}};
-
-        // memory to dmshr
-        for (int i = 0; i < SIZE; ++i) begin
-            if (dmshr_entries[i].state == DMSHR_WAIT_DATA
-                && dmshr_entries[i].transaction_tag == Dmem2proc_data_tag) begin
-                cache_index = dmshr_entries[i].index;
-                cache_tag   = dmshr_entries[i].tag;
-                ready       = `TRUE;
-                flushes[i]  = `TRUE;
-                dmshr_flush_packet = flush_packets[i];
-                dmshr_flush_valid  = flush_valids[i];
-                next_dmshr_entries[i].state = DMSHR_INVALID;
-            end
-        end
 
         // load to dmshr
         for (int i = 0; i < `N; ++i) begin
@@ -299,6 +300,20 @@ module dmshr #(
                 end
             end
         end
+
+        // memory to dmshr
+        for (int i = 0; i < SIZE; ++i) begin
+            if (dmshr_entries[i].state == DMSHR_WAIT_DATA
+                && dmshr_entries[i].transaction_tag == Dmem2proc_data_tag) begin
+                cache_index = dmshr_entries[i].index;
+                cache_tag   = dmshr_entries[i].tag;
+                ready       = `TRUE;
+                flushes[i]  = `TRUE;
+                dmshr_flush_packet = flush_packets[i];
+                dmshr_flush_valid  = flush_valids[i];
+                next_dmshr_entries[i].state = DMSHR_INVALID;
+            end
+        end
     end
 
     always_ff @(posedge clock) begin
@@ -382,7 +397,8 @@ module dcache #(
 
     dmshr mshr (
         .clock(clock),
-        .reset(reset || squash),
+        .reset(reset),
+        .squash(squash),
         // From memory
         .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
         .Dmem2proc_data_tag(Dmem2proc_data_tag),

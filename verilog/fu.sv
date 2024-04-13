@@ -294,6 +294,7 @@ module fu #(
     , output LU_FWD_REG       [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug
     , output logic            [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
     , output DATA            [`NUM_FU_LOAD-1:0]    load_req_data_debug
+    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
 `endif
 );
     
@@ -348,7 +349,6 @@ module fu #(
     dcache cache (
         .clock(clock),
         .reset(reset),
-        .squash(squash),
         // from memory
         .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
         .Dmem2proc_data(Dmem2proc_data),
@@ -382,7 +382,7 @@ module fu #(
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
         .clock(clock), // not needed for 1-cycle alu
-        .reset(reset), // not needed for 1-cycle alu
+        .reset(reset || squash), // not needed for 1-cycle alu
         .fu_alu_packet(fu_alu_packet),
         .avail(alu_avail), // not needed for 1-cycle alu
         //output
@@ -392,7 +392,7 @@ module fu #(
 
     mult_impl mult_components [`NUM_FU_MULT-1:0] (
         .clock(clock),
-        .reset(reset),
+        .reset(reset || squash),
         .fu_mult_packet(fu_mult_packet),
         .avail(mult_avail),
         //output
@@ -408,7 +408,7 @@ module fu #(
  
     store_queue store_component (
         .clock(clock),
-        .reset(reset),
+        .reset(reset || squash),
         // id
         .id_sq_packet(id_sq_packet),
         .almost_full(sq_almost_full),
@@ -431,13 +431,13 @@ module fu #(
         .value(value),
         .fwd_valid(fwd_valid),
     `ifdef CPU_DEBUG_OUT
-        .entries_out()
+        .entries_out(sq_entries_out)
     `endif
     );
 
     load_queue load_unit (
         .clock(clock),
-        .reset(reset),
+        .reset(reset || squash),
         // rs
         .rs_lq_packet(rs_lq_packet),
         .load_rs_avail(load_rs_avail),

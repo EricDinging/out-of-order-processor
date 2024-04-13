@@ -61,6 +61,7 @@ module ooo (
     , output logic      [`NUM_FU_LOAD-1:0]   load_selected_debug
     , output logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
     , output DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug
+    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
 `endif
 );
 
@@ -151,8 +152,8 @@ module ooo (
 
     fu_cdb fu_cdb_inst(
         .clock(clock),
-        .reset(reset || squash),
-        .squash(squash),
+        .reset(reset),
+        .squash(squash)
         .fu_alu_packet(fu_alu_packet),
         .fu_mult_packet(fu_mult_packet),
         .fu_load_packet(fu_load_packet),
@@ -194,6 +195,7 @@ module ooo (
         , .load_selected_debug(load_selected_debug)
         , .load_req_data_valid_debug(load_req_data_valid_debug)
         , .load_req_data_debug(load_req_data_debug)
+        , .sq_entries_out(sq_entries_out)
         `endif
     );
 

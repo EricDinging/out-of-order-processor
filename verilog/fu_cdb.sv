@@ -2,8 +2,7 @@
 `define CPU_DEBUG_OUT
 
 module fu_cdb(
-    input clock, reset,
-    input squash, // for dcache
+    input clock, reset, squash,
     input FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
     input FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
     input FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
@@ -49,6 +48,7 @@ module fu_cdb(
     , output logic      [`NUM_FU_LOAD-1:0]    load_selected_debug
     , output logic      [`NUM_FU_LOAD-1:0]    load_req_data_valid_debug
     , output DATA       [`NUM_FU_LOAD-1:0]    load_req_data_debug
+    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
     `endif
 );
 
@@ -109,12 +109,13 @@ module fu_cdb(
         , .lu_fwd_reg_debug(lu_fwd_reg_debug)
         , .load_req_data_valid_debug(load_req_data_valid_debug)
         , .load_req_data_debug(load_req_data_debug)
+        , .sq_entries_out(sq_entries_out)
     `endif
     );
 
     cdb cdb_inst(
         .clock(clock),
-        .reset(reset),
+        .reset(reset || squash),
         .fu_state_packet(fu_state_packet),
         //output
         .alu_avail(alu_avail),

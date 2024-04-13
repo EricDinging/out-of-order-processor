@@ -121,6 +121,8 @@ module testbench;
     logic      [`NUM_FU_LOAD-1:0]   load_selected_debug;
     logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug;
     DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug;
+    SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out;
+
 `endif
 
     task print_load_queue;
@@ -217,6 +219,25 @@ module testbench;
                     $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALFU", i);
             endcase
             $fdisplay(ppln_fileno, "    load_req_data_valid_debug: %b, load_req_data_debug: 0x%h", load_req_data_valid_debug[i], load_req_data_debug[i]);
+        end
+    endtask
+
+    task print_sq;
+        $fdisplay(ppln_fileno, "### SQ ENTRIES:");
+        for (int i = 0; i < `SQ_LEN + 1; i++) begin
+            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b\n", sq_entries_out[i].valid, sq_entries_out[i].addr, sq_entries_out[i].data, sq_entries_out[i].ready, sq_entries_out[i].accepted);
+            case (sq_entries_out[i].byte_info)
+                    MEM_BYTE:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
+                    MEM_HALF: 
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALF", i);
+                    MEM_WORD:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_WORD", i);
+                    MEM_BYTEU:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTEU", i);
+                    MEM_HALFU:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALFU", i);
+                endcase
         end
     endtask
 
@@ -485,6 +506,7 @@ module testbench;
         .load_selected_debug(load_selected_debug),
         .load_req_data_valid_debug(load_req_data_valid_debug),
         .load_req_data_debug(load_req_data_debug),
+        .sq_entries_out(sq_entries_out),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -664,9 +686,9 @@ module testbench;
             // print_imshr_entries_debug();
             // print_fu_load_packet_debug();
             print_rs_lq_packet();
-            print_load_queue();
+            // print_load_queue();
             print_lq_dcache_packet();
-            // print_dcache();
+            print_dcache();
             print_cdb_packet();
             print_fu_state_packet();
             // print_select();
@@ -674,7 +696,7 @@ module testbench;
             print_rob();
             // print_rat();
             // print_rrat();
-            print_prf();
+            // print_prf();
             // print_branch_predictor();
         
             $fdisplay(ppln_fileno, "=========");
