@@ -349,6 +349,7 @@ module fu #(
     dcache cache (
         .clock(clock),
         .reset(reset),
+        .squash(squash),
         // from memory
         .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
         .Dmem2proc_data(Dmem2proc_data),
