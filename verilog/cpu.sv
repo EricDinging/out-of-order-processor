@@ -69,11 +69,13 @@ module cpu (
     output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug,
     output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug,
     // lq
-    output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out,
+    output LD_ENTRY [`NUM_FU_LOAD-1:0]     lq_entries_out,
     output RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug,
     output LU_REG     [`NUM_FU_LOAD-1:0]   lu_reg_debug,
     output LU_FWD_REG [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug,
-    output logic      [`NUM_FU_LOAD-1:0]   load_internal_avail_debug,
+    output logic      [`NUM_FU_LOAD-1:0]   load_selected_debug,
+    output logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug,
+    output DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -260,10 +262,10 @@ module cpu (
         , .rs_lq_packet_debug(rs_lq_packet_debug)
         , .lu_reg_debug(lu_reg_debug)
         , .lu_fwd_reg_debug(lu_fwd_reg_debug)
-        , .load_internal_avail_debug(load_internal_avail_debug)
+        , .load_selected_debug(load_selected_debug)
         // branch predictor
-
-
+        , .load_req_data_valid_debug(load_req_data_valid_debug)
+        , .load_req_data_debug(load_req_data_debug)
     `endif
     );
 

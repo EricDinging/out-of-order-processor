@@ -118,40 +118,42 @@ module testbench;
     RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug;
     LU_REG     [`NUM_FU_LOAD-1:0]   lu_reg_debug;
     LU_FWD_REG [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug;
-    logic      [`NUM_FU_LOAD-1:0]   load_internal_avail_debug;
+    logic      [`NUM_FU_LOAD-1:0]   load_selected_debug;
+    logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug;
+    DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug;
 `endif
 
     task print_load_queue;
         $fdisplay(ppln_fileno, "### LOAD_QUEUE:");
         for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
-            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, lq_entries_out[i].valid);
-            case (lq_entries_out[i].byte_info)
-                MEM_BYTE:
-                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
-                MEM_HALF: 
-                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALF", i);
-                MEM_WORD:
-                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_WORD", i);
-                MEM_BYTEU:
-                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTEU", i);
-                MEM_HALFU:
-                    $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALFU", i);
-            endcase
-            $fdisplay(ppln_fileno, "    addr[%0d]: %h", i, lq_entries_out[i].addr);
-            $fdisplay(ppln_fileno, "    data[%0d]: %0h", i, lq_entries_out[i].data);
-            $fdisplay(ppln_fileno, "    tail_score[%0d]: %0d", i, lq_entries_out[i].tail_store);
-            $fdisplay(ppln_fileno, "    prn[%0d]: %0d", i, lq_entries_out[i].prn);
-            $fdisplay(ppln_fileno, "    robn[%0d]: %0d", i, lq_entries_out[i].robn);
-            case (lq_entries_out[i].load_state)
-                KNOWN:
-                    $fdisplay(ppln_fileno, "    load_state[%0d]: KNOWN", i);
-                NO_FORWARD:
-                    $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", i);
-                ASKED:
-                    $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
-            endcase
+            if (lq_entries_out[i].valid) begin
+                $fdisplay(ppln_fileno, "  addr[%0d]: %h, data: %h, tail_score: %0d, prn: %0d, robn: %0d", 
+                          i, lq_entries_out[i].addr, lq_entries_out[i].data, lq_entries_out[i].tail_store, lq_entries_out[i].prn, lq_entries_out[i].robn);
+                case (lq_entries_out[i].byte_info)
+                    MEM_BYTE:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
+                    MEM_HALF: 
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALF", i);
+                    MEM_WORD:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_WORD", i);
+                    MEM_BYTEU:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTEU", i);
+                    MEM_HALFU:
+                        $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_HALFU", i);
+                endcase
+                case (lq_entries_out[i].load_state)
+                    KNOWN:
+                        $fdisplay(ppln_fileno, "    load_state[%0d]: KNOWN", i);
+                    NO_FORWARD:
+                        $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", i);
+                    ASKED:
+                        $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
+                endcase
+            end else begin
+                $fdisplay(ppln_fileno, "  invalid[%0d]", i);
+            end
         end
-        $fdisplay(ppln_fileno, "    cdb_load_selected: %b", load_internal_avail_debug);
+        $fdisplay(ppln_fileno, "    cdb_load_selected: %b", load_selected_debug);
 
     endtask
 
@@ -214,6 +216,7 @@ module testbench;
                 MEM_HALFU:
                     $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALFU", i);
             endcase
+            $fdisplay(ppln_fileno, "    load_req_data_valid_debug: %b, load_req_data_debug: 0x%h", load_req_data_valid_debug[i], load_req_data_debug[i]);
         end
     endtask
 
@@ -479,7 +482,9 @@ module testbench;
         .rs_lq_packet_debug(rs_lq_packet_debug),
         .lu_reg_debug(lu_reg_debug),
         .lu_fwd_reg_debug(lu_fwd_reg_debug),
-        .load_internal_avail_debug(load_internal_avail_debug),
+        .load_selected_debug(load_selected_debug),
+        .load_req_data_valid_debug(load_req_data_valid_debug),
+        .load_req_data_debug(load_req_data_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -660,11 +665,11 @@ module testbench;
             // print_fu_load_packet_debug();
             print_rs_lq_packet();
             print_load_queue();
-            // print_lq_dcache_packet();
+            print_lq_dcache_packet();
             // print_dcache();
             print_cdb_packet();
             print_fu_state_packet();
-            print_select();
+            // print_select();
             print_rs();
             print_rob();
             // print_rat();

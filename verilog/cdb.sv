@@ -11,7 +11,7 @@ module cdb #(
     // also tell rs whether it the next value will be accepted
     output logic [`NUM_FU_ALU-1:0]  alu_avail,
     output logic [`NUM_FU_MULT-1:0] mult_avail,
-    output logic [`NUM_FU_LOAD-1:0] load_avail,
+    output logic [`NUM_FU_LOAD-1:0] load_selected,
 
     // data path
     // output CDB_PREDICTOR_PACKET [`NUM_FU_ALU-1:0] cdb_predictor_packet, // for predictor, regardless of priority selection
@@ -27,7 +27,7 @@ module cdb #(
 
     logic [`NUM_FU_ALU-1:0]  alu_selected;
     logic [`NUM_FU_MULT-1:0] mult_selected;
-    logic [`NUM_FU_LOAD-1:0] load_selected;
+    // logic [`NUM_FU_LOAD-1:0] load_selected;
 
     // for mux input
     FU_ROB_PACKET               [`NUM_FU_ALU-1:0] alu_rob_packet;
@@ -40,7 +40,7 @@ module cdb #(
 
     assign alu_avail  = alu_selected  | ~cdb_state.alu_prepared | cond_branches;
     assign mult_avail = mult_selected | ~cdb_state.mult_prepared;
-    assign load_avail = load_selected | ~cdb_state.load_prepared;
+    // assign load_avail = load_selected;
 
 `ifdef CPU_DEBUG_OUT
     assign select_debug = {alu_selected, mult_selected, load_selected};
@@ -124,7 +124,7 @@ module cdb #(
             end
         end
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
-            if (load_avail[i]) begin
+            if (load_selected[i] || ~cdb_state.load_prepared[i]) begin
                 next_cdb_state.load_prepared[i] = fu_state_packet.load_prepared[i];
                 next_cdb_state.load_packet[i]   = fu_state_packet.load_packet[i];
             end

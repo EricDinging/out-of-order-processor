@@ -43,10 +43,12 @@ module fu_cdb(
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
     , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
-    , output RS_LQ_PACKET [`NUM_FU_LOAD-1:0]        rs_lq_packet_debug
-    , output LU_REG     [`NUM_FU_LOAD-1:0]          lu_reg_debug
-    , output LU_FWD_REG [`NUM_FU_LOAD-1:0]          lu_fwd_reg_debug
-    , output logic      [`NUM_FU_LOAD-1:0]          load_internal_avail_debug
+    , output RS_LQ_PACKET [`NUM_FU_LOAD-1:0]  rs_lq_packet_debug
+    , output LU_REG     [`NUM_FU_LOAD-1:0]    lu_reg_debug
+    , output LU_FWD_REG [`NUM_FU_LOAD-1:0]    lu_fwd_reg_debug
+    , output logic      [`NUM_FU_LOAD-1:0]    load_selected_debug
+    , output logic      [`NUM_FU_LOAD-1:0]    load_req_data_valid_debug
+    , output DATA       [`NUM_FU_LOAD-1:0]    load_req_data_debug
     `endif
 );
 
@@ -54,11 +56,11 @@ module fu_cdb(
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet;
     FU_ROB_PACKET [`N-1:0] cdb_rob_packet;
 
-    logic         [`NUM_FU_LOAD-1:0]      load_internal_avail;
+    logic         [`NUM_FU_LOAD-1:0]      load_selected;
     
 `ifdef CPU_DEBUG_OUT
     assign fu_state_packet_debug = fu_state_packet;
-    assign load_internal_avail_debug = load_internal_avail;
+    assign load_selected_debug   = load_selected;
 `endif
 
    
@@ -77,7 +79,7 @@ module fu_cdb(
         .Dmem2proc_data_tag(Dmem2proc_data_tag),
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
-        .load_avail(load_internal_avail),
+        .load_selected(load_selected),
         // output
         .load_rs_avail(load_avail),
         .id_sq_packet(id_sq_packet),
@@ -105,6 +107,8 @@ module fu_cdb(
         , .rs_lq_packet_debug(rs_lq_packet_debug)
         , .lu_reg_debug(lu_reg_debug)
         , .lu_fwd_reg_debug(lu_fwd_reg_debug)
+        , .load_req_data_valid_debug(load_req_data_valid_debug)
+        , .load_req_data_debug(load_req_data_debug)
     `endif
     );
 
@@ -115,7 +119,7 @@ module fu_cdb(
         //output
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
-        .load_avail(load_internal_avail),
+        .load_selected(load_selected),
         .fu_rob_packet(cdb_rob_packet),
         .cdb_output(cdb_output)
         `ifdef CPU_DEBUG_OUT

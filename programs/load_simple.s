@@ -5,5 +5,9 @@ data:
 
 .section .text
 .align 4
-    lw x1, data
+    lb  x1, data
+    lh  x1, data
+    lw  x1, data
+    lbu x1, data
+    lhu x1, data
     wfi

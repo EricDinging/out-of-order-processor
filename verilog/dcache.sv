@@ -376,6 +376,7 @@ module dcache #(
             assign load_tag[i]     = lq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
             assign store_tag[i]    = sq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
             assign store_offset[i] = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
+            assign load_offset[i]  = lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
         end
     endgenerate
 

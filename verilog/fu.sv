@@ -261,7 +261,7 @@ module fu #(
     // given back from priority selector
     input logic  [`NUM_FU_ALU-1:0]  alu_avail,
     input logic  [`NUM_FU_MULT-1:0] mult_avail,
-    input logic  [`NUM_FU_LOAD-1:0] load_avail,
+    input logic  [`NUM_FU_LOAD-1:0] load_selected,
     output logic [`NUM_FU_LOAD-1:0] load_rs_avail,
 
     // store_queue
@@ -292,6 +292,8 @@ module fu #(
     , output RS_LQ_PACKET     [`NUM_FU_LOAD-1:0]   rs_lq_packet_debug
     , output LU_REG           [`NUM_FU_LOAD-1:0]   lu_reg_debug
     , output LU_FWD_REG       [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug
+    , output logic            [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
+    , output DATA            [`NUM_FU_LOAD-1:0]    load_req_data_debug
 `endif
 );
     
@@ -373,6 +375,11 @@ module fu #(
     `endif
     );
 
+    `ifdef CPU_DEBUG_OUT
+        assign load_req_data_valid_debug = load_req_data_valid;
+        assign load_req_data_debug = load_req_data;
+    `endif
+
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
         .clock(clock), // not needed for 1-cycle alu
         .reset(reset), // not needed for 1-cycle alu
@@ -435,7 +442,7 @@ module fu #(
         .rs_lq_packet(rs_lq_packet),
         .load_rs_avail(load_rs_avail),
         // cdb
-        .load_selected(load_avail),
+        .load_selected(load_selected),
         .load_prepared(fu_state_packet.load_prepared),
         .load_packet(fu_state_packet.load_packet),
         // sq

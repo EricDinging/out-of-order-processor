@@ -62,35 +62,24 @@ module load_queue (
 `endif
 );
 
-    function extend;
-        input DATA     data;
-        input MEM_FUNC byte_info;
-        // input logic    signext;
-        begin
-            DATA data_signed, data_unsigned;
-
-            case (byte_info)
-                BYTE: begin
-                    data_signed   =   signed'(data[ 7:0]);
-                    data_unsigned = unsigned'(data[ 7:0]);
-                end
-                HALF: begin
-                    data_signed   =   signed'(data[15:0]);
-                    data_unsigned = unsigned'(data[15:0]);
-                end
-                WORD: begin
-                    data_signed   =   signed'(data[31:0]);
-                    data_unsigned = unsigned'(data[31:0]);
-                end
-                default: begin
-                    data_signed   = data;
-                    data_unsigned = data;
-                end
-            endcase
-
-            extend = byte_info[2] ? data_unsigned : data_signed;
-        end
-    endfunction
+    // function extend;
+    //     input DATA     data;
+    //     input MEM_FUNC byte_info;
+    //     begin
+    //         case (byte_info)
+    //             MEM_BYTE:
+    //                 extend = signed'(data[ 7:0]);
+    //             MEM_BYTEU:
+    //                 extend = unsigned'(data[ 7:0]);
+    //             MEM_HALF:
+    //                 extend = signed'(data[15:0]);
+    //             MEM_HALFU:
+    //                 extend = unsigned'(data[15:0]);
+    //             WORD:
+    //                 extend = signed'(data[31:0]);
+    //         endcase
+    //     end
+    // endfunction
 
     LD_ENTRY   [`NUM_FU_LOAD-1:0] entries,    next_entries;
 `ifdef CPU_DEBUG_OUT
@@ -194,7 +183,7 @@ module load_queue (
                 load_prepared[i] = `FALSE;
             end
 
-            if (load_selected[i] && load_prepared[i]) begin
+            if (load_selected[i]) begin
                 next_entries[i] = 0;
             end
         end
@@ -215,7 +204,7 @@ module load_queue (
             if (load_req_accept[i] && load_req_data_valid[i]) begin
                 next_entries[lq_dcache_packet[i].lq_idx].load_state = KNOWN;
                 next_entries[lq_dcache_packet[i].lq_idx].data = load_req_data[i];
-            end else if (load_req_accept) begin
+            end else if (load_req_accept[i]) begin
                 next_entries[lq_dcache_packet[i].lq_idx].load_state = ASKED;
             end
         end
