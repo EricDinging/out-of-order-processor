@@ -39,7 +39,7 @@ module load_queue (
     input  RS_LQ_PACKET          [`NUM_FU_LOAD-1:0] rs_lq_packet,
     output logic                 [`NUM_FU_LOAD-1:0] load_rs_avail,
     // cdb
-    input  logic                 [`NUM_FU_LOAD-1:0] load_selected,
+    input  logic                 [`NUM_FU_LOAD-1:0] load_avail,
     output logic                 [`NUM_FU_LOAD-1:0] load_prepared,
     output FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet,
     // SQ
@@ -177,13 +177,9 @@ module load_queue (
             load_packet[i].dest_prn = entries[i].prn;
             // adjust to fit the byte type
             // load_packet[i].result = entries[i].data;
-            if (entries[i].valid && entries[i].load_state == KNOWN) begin
-                load_prepared[i] = `TRUE;
-            end else begin
-                load_prepared[i] = `FALSE;
-            end
+            load_prepared[i] = entries[i].valid && entries[i].load_state == KNOWN;
 
-            if (load_selected[i]) begin
+            if (load_avail[i] & load_prepared[i]) begin
                 next_entries[i] = 0;
             end
         end

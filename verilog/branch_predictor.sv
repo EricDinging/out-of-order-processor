@@ -213,7 +213,7 @@ module gshare_predictor (
     assign branch_history_reg_debug    = branch_history_reg;
     assign pattern_history_table_debug = pattern_history_table;
 `endif
-
+    // TODO check branch
     logic [`N-1:0] hits;
     ADDR  [`N-1:0] btb_pcs;
 

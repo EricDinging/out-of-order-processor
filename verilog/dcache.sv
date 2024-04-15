@@ -33,7 +33,7 @@ module dmshr_queue (
 
         if (squash) begin
             for (int i = 0 ; i < `N; i++) begin
-                if (dmshr_q_entries[next_tail].inst_command == INST_LOAD && next_counter > 0) begin
+                if (dmshr_q_entries[(next_tail-1)%`N].inst_command == INST_LOAD && next_counter > 0) begin
                     next_tail = (next_tail - 1) % `N;
                     next_counter -= 1;
                 end else begin

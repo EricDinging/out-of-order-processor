@@ -81,7 +81,7 @@ module fu_cdb(
         .Dmem2proc_data_tag(Dmem2proc_data_tag),
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
-        .load_selected(load_selected),
+        .load_avail(cdb_lq_load_avail),
         // output
         .load_rs_avail(load_avail),
         .id_sq_packet(id_sq_packet),
@@ -123,7 +123,7 @@ module fu_cdb(
         //output
         .alu_avail(alu_avail),
         .mult_avail(mult_avail),
-        .load_selected(load_selected),
+        .load_avail(cdb_lq_load_avail),
         .fu_rob_packet(cdb_rob_packet),
         .cdb_output(cdb_output)
         `ifdef CPU_DEBUG_OUT

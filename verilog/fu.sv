@@ -262,7 +262,7 @@ module fu #(
     // given back from priority selector
     input logic  [`NUM_FU_ALU-1:0]  alu_avail,
     input logic  [`NUM_FU_MULT-1:0] mult_avail,
-    input logic  [`NUM_FU_LOAD-1:0] load_selected,
+    input logic  [`NUM_FU_LOAD-1:0] load_avail,
     output logic [`NUM_FU_LOAD-1:0] load_rs_avail,
 
     // store_queue
@@ -446,7 +446,7 @@ module fu #(
         .rs_lq_packet(rs_lq_packet),
         .load_rs_avail(load_rs_avail),
         // cdb
-        .load_selected(load_selected),
+        .load_avail(load_avail),
         .load_prepared(fu_state_packet.load_prepared),
         .load_packet(fu_state_packet.load_packet),
         // sq

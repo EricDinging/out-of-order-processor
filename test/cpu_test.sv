@@ -256,7 +256,7 @@ module testbench;
     task print_dcache;
         $fdisplay(ppln_fileno, "### DMSHR_ENTRY:");
         for (int i = 0; i < `DMSHR_SIZE; ++i) begin
-            case (dmshr_entries_debug[i].transaction_tag)
+            case (dmshr_entries_debug[i].state)
                 DMSHR_INVALID: 
                     $fdisplay(ppln_fileno, "  state[%0d]: DMSHR_INVALID", i);
                 DMSHR_PENDING:
@@ -768,11 +768,11 @@ module testbench;
             print_rs_lq_packet();
             print_load_queue();
             print_sq();
-            // print_lq_dcache_packet();
-            // print_sq_dcache_packet();
-            // print_dcache();
-            print_cdb_packet();
-            print_cdb_state();
+            print_lq_dcache_packet();
+            print_sq_dcache_packet();
+            print_dcache();
+            // print_cdb_packet();
+            // print_cdb_state();
             print_fu_state_packet();
             print_fu_rob_packet();
             print_select();
