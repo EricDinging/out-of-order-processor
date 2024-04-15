@@ -42,7 +42,7 @@ loop:	mul	x3,	x6,	x31
     nop
     nop
     lw	x4, 0(x2)
-    nop
+    li x30, 0xff
     nop
     nop
     nop

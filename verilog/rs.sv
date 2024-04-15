@@ -28,6 +28,7 @@ module rs #(
     `ifdef CPU_DEBUG_OUT // DEBUG_OUT
     , output RS_ENTRY [SIZE-1:0]       entries_out
     , output logic [`RS_CNT_WIDTH-1:0] counter_out
+    , output logic [SIZE-1:0][`NUM_FU_ALU-1:0]  alu_sel_debug
     `endif
 );
     // State
@@ -65,6 +66,10 @@ module rs #(
     logic [SIZE-1:0][`NUM_FU_STORE-1:0] store_sel;
 
     SQ_IDX input_tail;
+
+`ifdef CPU_DEBUG_OUT
+    assign alu_sel_debug = alu_sel;
+`endif
 
     psel_gen #(
         .WIDTH(SIZE),
@@ -242,6 +247,11 @@ module rs #(
     endgenerate
 
     always_comb begin
+        alu_sel   = 0;
+        mult_sel  = 0;
+        load_sel  = 0;
+        store_sel = 0;
+
         for (int i = 0; i < SIZE; ++i) begin
             for (int j = 0; j < `NUM_FU_ALU; ++j) begin
                 alu_sel[i][j] = alu_gnt_bus[j][i] & fu_alu_avail[j];

@@ -194,3 +194,119 @@ module local_predictor (
     end
 
 endmodule
+
+module global_predictor (
+    input clock, reset,
+    input ADDR pc_start,
+    input ROB_IF_PACKET rob_if_packet,
+    // output
+    output PC_ENTRY [`N-1:0] target_pc
+`ifdef CPU_DEBUG_OUT
+    , output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug
+    , output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug
+    , output PHT_ENTRY_STATE pattern_history_reg_debug
+`endif
+);
+
+    ADDR [`N:0] pcs;
+
+    assign pcs[0] = pc_start;
+
+    // branch history table
+    logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table, next_branch_history_table;
+
+    // pattern history table
+    // PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table, next_pattern_history_table;
+    PHT_ENTRY_STATE pattern_history_reg, next_pattern_history_reg;
+
+`ifdef CPU_DEBUG_OUT
+    assign branch_history_table_debug = branch_history_table;
+    assign pattern_history_reg_debug  = pattern_history_reg;
+`endif
+
+    logic [`N-1:0] hits;
+    ADDR  [`N-1:0] btb_pcs;
+
+    wire [`N-1:0][`BHT_IDX_WIDTH-1:0] pc_bht_index;
+    wire [`N-1:0][`BHT_IDX_WIDTH-1:0] rob_bht_index;
+
+    genvar i;
+    generate
+        for (i = 0; i < `N; ++i) begin
+            assign pc_bht_index[i]  = pcs[i][`BHT_IDX_WIDTH+2-1:2];
+            assign rob_bht_index[i] = rob_if_packet.entries[i].PC[`BHT_IDX_WIDTH+2-1:2];
+        end
+    endgenerate
+
+    BTB btb (
+        .clock(clock),
+        .reset(reset),
+        .pcs(pcs[`N-1:0]),
+        .rob_if_packet(rob_if_packet),
+        .hits(hits),
+        .btb_pcs(btb_pcs)
+    `ifdef CPU_DEBUG_OUT
+        , .btb_entries_debug(btb_entries_debug)
+    `endif
+    );
+
+    always_comb begin
+        next_branch_history_table  = branch_history_table;
+        next_pattern_history_reg = pattern_history_reg;
+        target_pc = 0;
+
+        // prediction taken + target
+        for (int i = 0; i < `N; ++i) begin
+            case (pattern_history_table[branch_history_table[pc_bht_index[i]]])
+                NOT_TAKEN:
+                    begin
+                        target_pc[i].taken = `FALSE;
+                        target_pc[i].valid = `TRUE;
+                        target_pc[i].PC    = pcs[i] + 4;
+                    end
+                TAKEN:
+                    begin
+                        target_pc[i].taken = btb.hits[i];
+                        target_pc[i].valid = `TRUE;
+                        target_pc[i].PC    = btb.hits[i] ? btb.btb_pcs[i] : pcs[i] + 4;
+                    end
+            endcase
+
+            pcs[i+1] = target_pc[i].PC;
+        end
+
+        for (int i = 0; i < `N; ++i) begin
+            if (rob_if_packet.entries[i].valid) begin
+                // modify bht
+                next_branch_history_table[rob_bht_index[i]] = 
+                    {
+                        next_branch_history_table[rob_bht_index[i]][`BHT_WIDTH-2:0],
+                        rob_if_packet.entries[i].resolve_taken
+                    };
+                // modify pht
+                next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
+                            = (rob_if_packet.entries[i].resolve_taken) ? TAKEN : NOT_TAKEN;
+                // case (pattern_history_table[branch_history_table[rob_bht_index[i]]])
+                //     TAKEN:
+                //         next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
+                //             = (~rob_if_packet.entries[i].resolve_taken) ? NOT_TAKEN : TAKEN;
+                //     NOT_TAKEN:
+                //         next_pattern_history_table[branch_history_table[rob_bht_index[i]]] 
+                //             = (rob_if_packet.entries[i].resolve_taken) ? TAKEN : NOT_TAKEN;
+                // endcase
+            end
+        end
+    end
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            branch_history_table  <= 0;
+            pattern_history_table <= 0;
+        end else begin
+            branch_history_table  <= next_branch_history_table;
+            pattern_history_table <= next_pattern_history_table;
+        end
+    end
+
+endmodule
+

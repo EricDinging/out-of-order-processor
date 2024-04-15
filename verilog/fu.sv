@@ -307,7 +307,7 @@ module fu #(
     MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info;
     DATA     [`NUM_FU_LOAD-1:0] value;
     logic    [`NUM_FU_LOAD-1:0] fwd_valid;
-    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet, sq_dcache_packet_debug;
+    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet;
     logic            [`NUM_SQ_DCACHE-1:0] dcache_sq_accept;
     // load queue - dcache
     DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet;

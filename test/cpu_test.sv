@@ -80,6 +80,7 @@ module testbench;
     // rs
     RS_ENTRY  [`RS_SZ-1:0]     rs_entries_out;
     logic [`RS_CNT_WIDTH-1:0]  rs_counter_out;
+    logic [`RS_SZ-1:0][`NUM_FU_ALU-1:0] alu_sel_debug;
     
     logic [`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LOAD-1:0] select_debug;
     FU_PACKET [`NUM_FU_ALU-1:0]                       fu_alu_packet_debug;
@@ -346,12 +347,13 @@ module testbench;
         $fdisplay(ppln_fileno, "counter=%2d", rs_counter_out);
         for (int i = 0; i < `RS_SZ; i++) begin
             if (rs_entries_out[i].valid)
-                $fdisplay(ppln_fileno, "RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d, sq_idx=%2d", //, .cond_branch=%d, .uncond_branch=%d",
+                $fdisplay(ppln_fileno, "RS[%2d]: .PC=%d, .op1_ready=%b, .op2_ready=%b, .op1_value=0x%8x, .op2_value=0x%8x, .dest_prn=%2d, .robn=%2d, sq_idx=%2d, alu_sel[1][0]=%b|%b,", //, .cond_branch=%d, .uncond_branch=%d",
                         i, rs_entries_out[i].PC, rs_entries_out[i].op1_ready, rs_entries_out[i].op2_ready, 
-                        rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].dest_prn, rs_entries_out[i].robn, rs_entries_out[i].sq_idx);
+                        rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].dest_prn, rs_entries_out[i].robn, rs_entries_out[i].sq_idx,
+                        alu_sel_debug[i][1], alu_sel_debug[i][0]);
                         //,rs_entries_out[i].cond_branch, rs_entries_out[i].uncond_branch);
             else
-                $fdisplay(ppln_fileno, "RS[%2d]: invalid", i);
+                $fdisplay(ppln_fileno, "RS[%2d]: invalid, alu_sel[1][0]=%b|%b", i, alu_sel_debug[i][1], alu_sel_debug[i][0]);
         end
         // alu packet
         $fdisplay(ppln_fileno, "--- RS ALU PACKETS");
@@ -505,6 +507,7 @@ module testbench;
         // rs
         .rs_entries_out(rs_entries_out),
         .rs_counter_out(rs_counter_out),
+        .alu_sel_debug(alu_sel_debug),
         // prf
         .prf_entries_debug(prf_entries_debug),
         // rat

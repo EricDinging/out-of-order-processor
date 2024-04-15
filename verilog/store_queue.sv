@@ -168,7 +168,6 @@ module store_queue (
             end
         end
 
-
         num_sent_insns = 0;
         break_flag = `FALSE;
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin

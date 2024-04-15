@@ -35,6 +35,7 @@ module ooo (
     // rs
     , output RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out
     , output logic     [`RS_CNT_WIDTH-1:0]  rs_counter_out
+    , output logic [`RS_SZ-1:0][`NUM_FU_ALU-1:0] alu_sel_debug
     // prf
     , output PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug
     // rra
@@ -152,6 +153,7 @@ module ooo (
     `ifdef CPU_DEBUG_OUT
         , .entries_out(rs_entries_out)
         , .counter_out(rs_counter_out)
+        , .alu_sel_debug(alu_sel_debug)
     `endif
     );
 
