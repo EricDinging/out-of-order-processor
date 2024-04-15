@@ -177,7 +177,7 @@ module store_queue (
                 if (!break_flag) begin
                     num_sent_insns += 1;
                     next_entries[idx] = 0;
-                    next_head = (head + 1) % (`SQ_LEN + 1);
+                    next_head = (next_head + 1) % (`SQ_LEN + 1);
                     next_size -= 1;
                 end
             end else begin

@@ -58,12 +58,11 @@ module fu_cdb(
     FU_ROB_PACKET [`NUM_FU_ALU-1:0] cond_rob_packet;
     FU_ROB_PACKET [`N-1:0] cdb_rob_packet;
 
-    logic         [`NUM_FU_LOAD-1:0]      load_selected;
     logic [`NUM_FU_LOAD-1:0] cdb_lq_load_avail;
     
 `ifdef CPU_DEBUG_OUT
     assign fu_state_packet_debug = fu_state_packet;
-    assign load_selected_debug   = load_selected;
+    assign load_selected_debug   = cdb_lq_load_avail;
 `endif
 
    
