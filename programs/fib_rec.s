@@ -24,7 +24,7 @@
     li  x8, 1
     li	x31, stack
 
-    li	x17, 14
+    li	x17, 10
     jal	x27,	fib #
 
     li	x2, data
@@ -45,8 +45,8 @@ fib:	beq	x17,	x0,	fib_ret_1 # arg is 0: return 1
     jal	x27,	fib # call fib
     sw	x1, 8(x31)
 
-    lw	x17, 0(x31)
-    addi	x17,	x17,	-2 # arg = arg-2
+    lw	x17, 0(x31) # PC=3c
+    addi	x17,	x17,	-2 # arg = arg-2 PC=40
     jal	x27,	fib # call fib
 
     lw	x2, 8(x31)
