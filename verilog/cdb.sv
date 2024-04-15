@@ -20,6 +20,7 @@ module cdb #(
 
     `ifdef CPU_DEBUG_OUT
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD - 1:0] select_debug
+    , output FU_STATE_PACKET cdb_state_debug
     `endif
 );
 
@@ -44,6 +45,7 @@ module cdb #(
 
 `ifdef CPU_DEBUG_OUT
     assign select_debug = {alu_selected, mult_selected, load_selected};
+    assign cdb_state_debug = cdb_state;
 `endif
 
     psel_gen #(

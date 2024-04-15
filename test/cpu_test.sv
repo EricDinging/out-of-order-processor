@@ -129,6 +129,12 @@ module testbench;
     logic rs_stall;
     logic sq_stall;
 
+    FU_PACKET [`NUM_FU_ALU-1:0] next_fu_alu_packet_debug;
+
+    FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0]   fu_rob_packet_debug;
+    // cdb
+    FU_STATE_PACKET cdb_state_debug;
+
 `endif
 
     task print_load_queue;
@@ -312,7 +318,7 @@ module testbench;
     endtask
 
     task print_fu_state_packet;
-        $fdisplay(ppln_fileno, "### FU STATE ALU PACKET:");
+        $fdisplay(ppln_fileno, "--- FU STATE ALU PACKET:");
         for (int i = 0; i < `NUM_FU_ALU; ++i) begin
             $fdisplay(ppln_fileno, "Prepared[%2d]=%b, robn[%2d]=%2d", i, fu_state_packet_debug.alu_prepared[i], i, fu_state_packet_debug.alu_packet[i].basic.robn);
             $fdisplay(ppln_fileno, "result[%2d]=%b, dest_prn[%2d]=%2d", i, fu_state_packet_debug.alu_packet[i].basic.result, i, fu_state_packet_debug.alu_packet[i].basic.dest_prn);
@@ -360,7 +366,15 @@ module testbench;
         for (int i = 0; i < `NUM_FU_ALU; ++i) begin
             if (fu_alu_packet_debug[i].valid)
                 $fdisplay(ppln_fileno, "ALU[%2d]: .robn=%2d, .dest_prn=%2d, .op1=%2d, .op2=%2d, .PC=%2d",
-                        i, rs_entries_out[i].robn, rs_entries_out[i].dest_prn, rs_entries_out[i].op1, rs_entries_out[i].op2, rs_entries_out[i].PC);
+                        i, fu_alu_packet_debug[i].robn, fu_alu_packet_debug[i].dest_prn, fu_alu_packet_debug[i].op1, fu_alu_packet_debug[i].op2, fu_alu_packet_debug[i].PC);
+            else
+                $fdisplay(ppln_fileno, "ALU[%2d]: invalid", i);
+        end
+        $fdisplay(ppln_fileno, "--- NEXT RS ALU PACKETS");
+        for (int i = 0; i < `NUM_FU_ALU; ++i) begin
+            if (next_fu_alu_packet_debug[i].valid)
+                $fdisplay(ppln_fileno, "ALU[%2d]: .robn=%2d, .dest_prn=%2d, .op1=%2d, .op2=%2d, .PC=%2d",
+                        i, next_fu_alu_packet_debug[i].robn, next_fu_alu_packet_debug[i].dest_prn, next_fu_alu_packet_debug[i].op1, next_fu_alu_packet_debug[i].op2, next_fu_alu_packet_debug[i].PC);
             else
                 $fdisplay(ppln_fileno, "ALU[%2d]: invalid", i);
         end
@@ -475,6 +489,29 @@ module testbench;
         end
     endtask
 
+    task print_fu_rob_packet;
+        $fdisplay(ppln_fileno, "### FU ROB PACKET");
+        for (int i = 0; i < `FU_ROB_PACKET_SZ; i++) begin
+            if (fu_rob_packet_debug[i].executed) begin
+                $fdisplay(ppln_fileno, "    fu_rob_packet[%2d].robn= %d, .branch_taken:%b, data:%h ", 
+                        i, fu_rob_packet_debug[i].robn, fu_rob_packet_debug[i].branch_taken, fu_rob_packet_debug[i].target_addr);
+            end else begin
+                $fdisplay(ppln_fileno, "    invalid %d", i);
+            end
+        end
+    endtask
+
+    task print_cdb_state;
+        $fdisplay(ppln_fileno, "### CDB STATE - ALU");
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            if (cdb_state_debug.alu_prepared[i]) begin
+                $fdisplay(ppln_fileno, "    cdb_state_alu[%2d] robn:%d, dest_prn:%d, result: %h", i, cdb_state_debug.alu_packet[i].basic.robn, cdb_state_debug.alu_packet[i].basic.dest_prn, cdb_state_debug.alu_packet[i].basic.result);
+            end else begin
+                $fdisplay(ppln_fileno, "    invalid %d", i);
+            end
+        end
+    endtask
+
     // Instantiate the Pipeline
     cpu verisimpleV (
         // Inputs
@@ -547,6 +584,9 @@ module testbench;
         .rob_stall(rob_stall),
         .rs_stall(rs_stall),
         .sq_stall(sq_stall),
+        .next_fu_alu_packet_debug(next_fu_alu_packet_debug),
+        .fu_rob_packet_debug(fu_rob_packet_debug),
+        .cdb_state_debug(cdb_state_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -728,12 +768,14 @@ module testbench;
             print_rs_lq_packet();
             print_load_queue();
             print_sq();
-            print_lq_dcache_packet();
-            print_sq_dcache_packet();
+            // print_lq_dcache_packet();
+            // print_sq_dcache_packet();
             // print_dcache();
             print_cdb_packet();
+            print_cdb_state();
             print_fu_state_packet();
-            // print_select();
+            print_fu_rob_packet();
+            print_select();
             print_rs();
             print_rob();
             // print_rat();

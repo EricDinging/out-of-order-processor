@@ -55,6 +55,7 @@ module cpu (
     output PRN   [`ARCH_REG_SZ-1:0]         rrat_entries,
     // fu_packet (rs output state)
     output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet_debug,
+    output FU_PACKET [`NUM_FU_ALU-1:0]   next_fu_alu_packet_debug,
     output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug,
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug,
     output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug,
@@ -83,7 +84,8 @@ module cpu (
     output logic rob_stall,
     output logic rs_stall,
     output logic sq_stall,
-    
+    output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0]   fu_rob_packet_debug,
+    output FU_STATE_PACKET cdb_state_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -259,6 +261,7 @@ module cpu (
         , .rrat_entries(rrat_entries)
         // fu_state_packet
         , .fu_alu_packet_debug(fu_alu_packet_debug)
+        , .next_fu_alu_packet_debug(next_fu_alu_packet_debug)
         , .fu_mult_packet_debug(fu_mult_packet_debug)
         , .fu_load_packet_debug(fu_load_packet_debug)
         , .fu_store_packet_debug(fu_store_packet_debug)
@@ -280,6 +283,8 @@ module cpu (
         , .rob_stall(rob_stall)
         , .rs_stall(rs_stall)
         , .sq_stall(sq_stall)
+        , .fu_rob_packet_debug(fu_rob_packet_debug)
+        , .cdb_state_debug(cdb_state_debug)
     `endif
     );
 

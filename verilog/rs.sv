@@ -29,16 +29,18 @@ module rs #(
     , output RS_ENTRY [SIZE-1:0]       entries_out
     , output logic [`RS_CNT_WIDTH-1:0] counter_out
     , output logic [SIZE-1:0][`NUM_FU_ALU-1:0]  alu_sel_debug
+    , output FU_PACKET [`NUM_FU_ALU-1:0] next_fu_alu_packet_debug
     `endif
 );
     // State
     logic [`RS_CNT_WIDTH-1:0] counter;
     RS_ENTRY [SIZE-1:0]       entries;
 
-    assign entries_out = entries;
-    assign counter_out = counter;
+
     
     RS_IS_PACKET rs_is_packet_temp;
+
+    logic [`N_CNT_WIDTH-1:0] inst_cnt;
 
     // Next state
     logic [`RS_CNT_WIDTH-1:0] next_counter;
@@ -66,6 +68,12 @@ module rs #(
     logic [SIZE-1:0][`NUM_FU_STORE-1:0] store_sel;
 
     SQ_IDX input_tail;
+
+`ifdef CPU_DEBUG_OUT
+    assign entries_out = entries;
+    assign counter_out = counter;
+    assign next_fu_alu_packet_debug = next_fu_alu_packet;
+`endif
 
 `ifdef CPU_DEBUG_OUT
     assign alu_sel_debug = alu_sel;
@@ -137,25 +145,28 @@ module rs #(
     always_comb begin
         next_counter = counter;
         next_entries = entries;
-        next_fu_alu_packet   = fu_alu_packet;
-        next_fu_mult_packet  = fu_mult_packet;
-        next_fu_load_packet  = fu_load_packet;
-        next_fu_store_packet = fu_store_packet;
+        inst_cnt     = 0;
+        next_fu_alu_packet  = 0;
+        next_fu_mult_packet  = 0;
+        next_fu_load_packet = 0;
+        next_fu_store_packet = 0;
 
-        for (int j = 0; j < `NUM_FU_ALU; j++) begin
-            next_fu_alu_packet[j].valid = 1'b0;
-        end
+        for (int i = 0; i < SIZE; ++i) begin
+            for (int j = 0; j < `NUM_FU_ALU; ++j) begin
+                alu_sel[i][j] = alu_gnt_bus[j][i] & fu_alu_avail[j];
+            end
 
-        for (int j = 0; j < `NUM_FU_MULT; j++) begin
-            next_fu_mult_packet[j].valid = 1'b0;
-        end
+            for (int j = 0; j < `NUM_FU_MULT; ++j) begin
+                mult_sel[i][j] = mult_gnt_bus[j][i] & fu_mult_avail[j];
+            end
 
-        for (int j = 0; j < `NUM_FU_LOAD; j++) begin
-            next_fu_load_packet[j].valid = 1'b0;
-        end
+            for (int j = 0; j < `NUM_FU_LOAD; ++j) begin
+                load_sel[i][j] = load_gnt_bus[j][i] & fu_load_avail[j];
+            end
 
-        for (int j = 0; j < `NUM_FU_STORE; j++) begin
-            next_fu_store_packet[j].valid = 1'b0;
+            for (int j = 0; j < `NUM_FU_STORE; ++j) begin
+                store_sel[i][j] = store_gnt_bus[j][i] & fu_store_avail[j];
+            end
         end
 
         input_tail = tail;
@@ -167,7 +178,7 @@ module rs #(
             end
         end
 
-        for (int i = 0, inst_cnt = 0; i < SIZE; ++i) begin
+        for (int i = 0; i < SIZE; ++i) begin
             // Input new value
             if (~entries[i].valid & 
                 inst_cnt < `N &
@@ -177,7 +188,9 @@ module rs #(
                 ++inst_cnt;
                 ++next_counter;
             end
+        end
 
+        for (int i = 0; i < SIZE; ++i) begin
             // Check CDB value
             for (int cdb_idx = 0; cdb_idx < `N; ++cdb_idx) begin
                 if (cdb_packet[cdb_idx].dest_prn != 0) begin
@@ -191,15 +204,16 @@ module rs #(
                     end
                 end
             end
+        end
 
-
+        for (int i = 0; i < SIZE; ++i) begin
             // Output
             for (int j = 0; j < `NUM_FU_ALU; j++) begin
                 if (alu_sel[i][j]) begin
                     next_fu_alu_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
-                end  
+                end
             end
 
             for (int j = 0; j < `NUM_FU_MULT; j++) begin
@@ -207,7 +221,7 @@ module rs #(
                     next_fu_mult_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
-                end 
+                end
             end
 
             for (int j = 0; j < `NUM_FU_LOAD; j++) begin
@@ -215,7 +229,7 @@ module rs #(
                     next_fu_load_packet[j] = rs_entry_to_packet(entries[i]);
                     next_entries[i].valid = `FALSE;
                     next_counter--;
-                end 
+                end
             end
 
             for (int j = 0; j < `NUM_FU_STORE; j++) begin
@@ -224,6 +238,26 @@ module rs #(
                     next_entries[i].valid = `FALSE;
                     next_counter--;
                 end 
+            end
+        end
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            if (!fu_alu_avail[i]) begin
+                next_fu_alu_packet[i] = fu_alu_packet[i];
+            end
+        end
+        for (int i = 0; i < `NUM_FU_MULT; i++) begin
+            if (!fu_mult_avail[i]) begin
+                next_fu_mult_packet[i] = fu_mult_packet[i];
+            end
+        end
+        for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            if (!fu_load_avail[i]) begin
+                next_fu_load_packet[i] = fu_load_packet[i];
+            end
+        end
+        for (int i = 0; i < `NUM_FU_STORE; i++) begin
+            if (!fu_store_avail[i]) begin
+                next_fu_store_packet[i] = fu_store_packet[i];
             end
         end
     end
@@ -245,31 +279,6 @@ module rs #(
             assign store_wake_ups[i] = wake_ups[i] && (entries[i].fu == FU_STORE);
         end
     endgenerate
-
-    always_comb begin
-        alu_sel   = 0;
-        mult_sel  = 0;
-        load_sel  = 0;
-        store_sel = 0;
-
-        for (int i = 0; i < SIZE; ++i) begin
-            for (int j = 0; j < `NUM_FU_ALU; ++j) begin
-                alu_sel[i][j] = alu_gnt_bus[j][i] & fu_alu_avail[j];
-            end
-
-            for (int j = 0; j < `NUM_FU_MULT; ++j) begin
-                mult_sel[i][j] = mult_gnt_bus[j][i] & fu_mult_avail[j];
-            end
-
-            for (int j = 0; j < `NUM_FU_LOAD; ++j) begin
-                load_sel[i][j] = load_gnt_bus[j][i] & fu_load_avail[j];
-            end
-
-            for (int j = 0; j < `NUM_FU_STORE; ++j) begin
-                store_sel[i][j] = store_gnt_bus[j][i] & fu_store_avail[j];
-            end
-        end
-    end
 
     assign almost_full = (counter > SIZE - ALERT_DEPTH);
 

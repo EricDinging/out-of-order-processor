@@ -68,6 +68,10 @@ module ooo (
     , output logic rob_stall
     , output logic rs_stall
     , output logic sq_stall
+    , output FU_PACKET [`NUM_FU_ALU-1:0] next_fu_alu_packet_debug
+    , output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0]   fu_rob_packet_debug
+    // cdb
+    , output FU_STATE_PACKET cdb_state_debug
 `endif
 );
 
@@ -108,6 +112,7 @@ module ooo (
         assign fu_mult_packet_debug  = fu_mult_packet;
         assign fu_load_packet_debug  = fu_load_packet;
         assign fu_store_packet_debug = fu_store_packet;
+        assign fu_rob_packet_debug = fu_rob_packet;
     `endif
     
     // output of fu_cdb, connect to rs
@@ -154,6 +159,7 @@ module ooo (
         , .entries_out(rs_entries_out)
         , .counter_out(rs_counter_out)
         , .alu_sel_debug(alu_sel_debug)
+        , .next_fu_alu_packet_debug(next_fu_alu_packet_debug)
     `endif
     );
 
@@ -204,6 +210,7 @@ module ooo (
         , .load_req_data_debug(load_req_data_debug)
         , .sq_entries_out(sq_entries_out)
         , .sq_dcache_packet_debug(sq_dcache_packet_debug)
+        , .cdb_state_debug(cdb_state_debug)
         `endif
     );
 
