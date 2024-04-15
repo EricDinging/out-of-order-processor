@@ -662,6 +662,7 @@ typedef struct packed {
     logic take_branch;
     logic cond_branch;
     logic uncond_branch;
+    ADDR NPC;
 } FU_STATE_ALU_PACKET;
 
 typedef struct packed {

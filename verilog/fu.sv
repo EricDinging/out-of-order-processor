@@ -100,6 +100,7 @@ module alu_cond (
     end
 
     assign fu_state_alu_packet.take_branch = fu_alu_packet.uncond_branch || (fu_alu_packet.cond_branch && internal_take);
+    assign fu_state_alu_packet.NPC = fu_alu_packet.PC + 4;
     alu alu_0 (
         // Inputs
         .opa(opa_mux_out),
