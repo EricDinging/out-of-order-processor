@@ -59,6 +59,7 @@ module fu_cdb(
     FU_ROB_PACKET [`N-1:0] cdb_rob_packet;
 
     logic         [`NUM_FU_LOAD-1:0]      load_selected;
+    logic [`NUM_FU_LOAD-1:0] cdb_lq_load_avail;
     
 `ifdef CPU_DEBUG_OUT
     assign fu_state_packet_debug = fu_state_packet;
