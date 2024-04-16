@@ -1,5 +1,4 @@
-    add x2, x0, x0
-    addi x2, x0, 0x07E0    # target addr
+    li x2, 0x08E0    # target addr
     li x5, 0x01E0   # addr with the same block idx
     li x3, 0x000A   # data
     sw x3, 0(x2)    
