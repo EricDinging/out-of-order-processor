@@ -10,6 +10,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
+`define CPU_DEBUG_OUT
 
 module mem (
     input           clock,         // Memory clock
@@ -24,9 +25,15 @@ module mem (
     output MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction (0 = can't accept)
     output MEM_BLOCK mem2proc_data,            // Data for a load
     output MEM_TAG   mem2proc_data_tag         // Tag for finished transactions (0 = no value)
+`ifdef CPU_DEBUG_OUT
+    , output logic [63:0] target_mem_block_debug
+`endif
 );
 
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
+`ifdef CPU_DEBUG_OUT
+    assign target_mem_block_debug = unified_memory[508];
+`endif
 
     MEM_BLOCK   next_mem2proc_data;
     MEM_TAG     next_mem2proc_transaction_tag, next_mem2proc_data_tag;

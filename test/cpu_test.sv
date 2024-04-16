@@ -135,7 +135,15 @@ module testbench;
     // cdb
     FU_STATE_PACKET cdb_state_debug;
 
+    // memory
+    logic [63:0] target_mem_block_debug;
+
 `endif
+
+    task print_target_memory_block;
+        $fdisplay(ppln_fileno, "### target_mem_block 508 (FE0):");
+        $fdisplay(ppln_fileno, "mem block: %x", target_mem_block_debug);
+    endtask
 
     task print_load_queue;
         $fdisplay(ppln_fileno, "### LOAD_QUEUE:");
@@ -415,10 +423,10 @@ module testbench;
             $fdisplay(ppln_fileno, "proc2mem_command: MEM_NONE");
         end else if (proc2mem_command == MEM_LOAD) begin
             $fdisplay(ppln_fileno, "proc2mem_command: MEM_LOAD");
-            $fdisplay(ppln_fileno, "proc2mem_addr: %2d", proc2mem_addr);
+            $fdisplay(ppln_fileno, "proc2mem_addr: %h", proc2mem_addr);
         end else if (proc2mem_command == MEM_STORE) begin
             $fdisplay(ppln_fileno, "proc2mem_command: MEM_STORE");
-            $fdisplay(ppln_fileno, "proc2mem_addr: %2d", proc2mem_addr);
+            $fdisplay(ppln_fileno, "proc2mem_addr: %h, proc2mem_data: %x", proc2mem_addr, proc2mem_data);
         end
         $fdisplay(ppln_fileno,
             "transcation_tag: %2d, data_tag: %2d, data: %x", 
@@ -628,6 +636,9 @@ module testbench;
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
         .mem2proc_data            (mem2proc_data),
         .mem2proc_data_tag        (mem2proc_data_tag)
+`ifdef CPU_DEBUG_OUT
+        , .target_mem_block_debug(target_mem_block_debug)
+`endif
     );
 
 
@@ -762,7 +773,8 @@ module testbench;
             // print_if_id_reg();
             // print_id_ooo_reg();
             // print_rob_if_debug();
-            // print_mem_cache();
+            print_target_memory_block();
+            print_mem_cache();
             print_rs_lq_packet();
             print_load_queue();
             print_sq();
