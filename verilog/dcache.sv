@@ -359,6 +359,10 @@ module dcache #(
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
 
+    logic store_valid, next_store_valid;
+    ADDR  store_addr, next_store_addr;
+    DATA  store_data, next_store_data;
+
     // DMSHR input
     logic dcache_evict;
     logic [`N-1:0] lq_dcache_miss;
@@ -435,7 +439,7 @@ module dcache #(
         load_req_data       = 0;
         load_req_data_valid = {`N{`FALSE}};
         dcache_lq_packet    = 0;
-        dcache_request      = `FALSE;
+        // dcache_request      = `FALSE;
         load_req_accept     = {`N{`FALSE}};
         store_req_accept    = {`N{`FALSE}};
         // dmshr input
@@ -445,24 +449,34 @@ module dcache #(
 
         next_dcache_data  = dcache_data;
 
+        next_store_addr = 0;
+        next_store_data = 0;
+        next_store_valid = `FALSE;
+
         proc2Dmem_addr    = dmshr_proc2Dmem_addr;
         proc2Dmem_command = dmshr_proc2Dmem_command;
         proc2Dmem_data    = 0;
-        dcache_request    = dmshr_request;
+        // dcache_request    = dmshr_request;
+
+        dcache_evict = store_valid;
+        dcache_request = store_valid ? `TRUE : dmshr_request;
+        if (store_valid) begin
+            proc2Dmem_addr    = store_addr;
+            proc2Dmem_command = MEM_STORE;
+            proc2Dmem_data    = store_data;
+        end
 
         // memory to dcache
         if (ready) begin
             // if dirty evict, set dcache_evict
             if (dcache_data[cache_index].dirty && dcache_data[cache_index].valid) begin
-                dcache_evict = `TRUE;
-                proc2Dmem_addr = {
+                next_store_valid = `TRUE;
+                next_store_addr = {
                     dcache_data[cache_index].tag,
                     cache_index,
                     {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}
                 };
-                proc2Dmem_command = MEM_STORE;
-                dcache_request    = `TRUE;
-                proc2Dmem_data    = dcache_data[cache_index].data;
+                next_store_data = dcache_data[cache_index].data;
             end
 
             // directly mapped cache
@@ -562,8 +576,14 @@ module dcache #(
     always_ff @(posedge clock) begin
         if (reset) begin
             dcache_data <= 0;
+            store_valid <= `FALSE;
+            store_addr  <= 0;
+            store_data  <= 0;
         end else begin
             dcache_data <= next_dcache_data;
+            store_valid <= next_store_valid;
+            store_addr  <= next_store_addr;
+            store_data  <= next_store_data;
         end
     end
 
