@@ -109,7 +109,6 @@ module stage_fetch (
 
         for (int i = 0; i < `N; ++i) begin
             if (~has_invalid_icache_out) begin
-                has_invalid_icache_out = Icache_data_out[i];
                 if_id_packet[i].valid = target_pc[i].valid && Icache_valid_out[i] && proc2Icache_valid[i];
                 if_id_packet[i].inst  =
                     !if_id_packet[i].valid ? `NOP :
@@ -118,6 +117,7 @@ module stage_fetch (
                 if_id_packet[i].NPC            = if_id_packet[i].PC + 4;
                 if_id_packet[i].predict_taken  = target_pc[i].taken;
                 if_id_packet[i].predict_target = target_pc[i].PC;
+                has_invalid_icache_out = ~if_id_packet[i].valid;
             end
         end
 
