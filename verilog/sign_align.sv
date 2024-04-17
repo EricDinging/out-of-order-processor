@@ -72,6 +72,7 @@ module sign_align (
     assign half_offset = addr[1];
 
     always_comb begin
+        out = 0;
         case (func)
             MEM_BYTE: begin
                 // out[7:0]  = word.byte_level[byte_offset];

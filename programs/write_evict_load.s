@@ -5,6 +5,6 @@
 
     li x4, 0xFFFF
     sw x4, 0(x5)    # evict original
-
+    nop
     lw x6, 0(x2)    # load evicted data, should be 0a
     wfi

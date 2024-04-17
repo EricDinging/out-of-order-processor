@@ -770,8 +770,8 @@ module testbench;
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
-            // print_if_id_reg();
-            // print_id_ooo_reg();
+            print_if_id_reg();
+            print_id_ooo_reg();
             // print_rob_if_debug();
             print_target_memory_block();
             print_mem_cache();
@@ -782,7 +782,8 @@ module testbench;
             print_sq_dcache_packet();
             print_dcache();
             // print_fu_state_packet();
-            // print_fu_rob_packet();
+            print_cdb_state();
+            print_fu_rob_packet();
             print_select();
             print_rs();
             print_rob();
@@ -791,7 +792,6 @@ module testbench;
             // print_imshr_entries_debug();
             // print_fu_load_packet_debug();
             // print_cdb_packet();
-            // print_cdb_state();
             // print_rat();
             // print_rrat();
             // print_prf();
