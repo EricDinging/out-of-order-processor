@@ -41,6 +41,8 @@ module stage_fetch (
     MEM_BLOCK [`N-1:0] Icache_data_out;
     logic     [`N-1:0] Icache_valid_out;
 
+    logic has_invalid_icache_out;
+
     local_predictor bp (
         .clock(clock),
         .reset(reset),
@@ -76,6 +78,8 @@ module stage_fetch (
 
     always_comb begin
         next_pc_start = pc_start;
+        has_invalid_icache_out = 0;
+        if_id_packet = 0;
         for (int i = 0; i < `N; ++i) begin
             proc2Icache_valid[i] = target_pc[i].valid;
         end
@@ -104,14 +108,17 @@ module stage_fetch (
         end
 
         for (int i = 0; i < `N; ++i) begin
-            if_id_packet[i].valid = target_pc[i].valid && Icache_valid_out[i] && proc2Icache_valid[i];
-            if_id_packet[i].inst  =
-                !if_id_packet[i].valid ? `NOP :
-                if_id_packet[i].PC[2]  ? Icache_data_out[i][63:32] : Icache_data_out[i][31:0];
+            if (~has_invalid_icache_out) begin
+                has_invalid_icache_out = Icache_data_out[i];
+                if_id_packet[i].valid = target_pc[i].valid && Icache_valid_out[i] && proc2Icache_valid[i];
+                if_id_packet[i].inst  =
+                    !if_id_packet[i].valid ? `NOP :
+                    if_id_packet[i].PC[2]  ? Icache_data_out[i][63:32] : Icache_data_out[i][31:0];
 
-            if_id_packet[i].NPC            = if_id_packet[i].PC + 4;
-            if_id_packet[i].predict_taken  = target_pc[i].taken;
-            if_id_packet[i].predict_target = target_pc[i].PC;
+                if_id_packet[i].NPC            = if_id_packet[i].PC + 4;
+                if_id_packet[i].predict_taken  = target_pc[i].taken;
+                if_id_packet[i].predict_target = target_pc[i].PC;
+            end
         end
 
         if (stall) begin
