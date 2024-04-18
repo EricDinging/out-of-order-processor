@@ -86,7 +86,8 @@ module local_predictor (
     input ADDR pc_start,
     input ROB_IF_PACKET rob_if_packet,
     // output
-    output PC_ENTRY [`N-1:0] target_pc
+    output PC_ENTRY [`N-1:0] target_pc,
+    output logic    [`N-1:0] correct
 `ifdef CPU_DEBUG_OUT
     , output BTB_ENTRY [`BTB_SIZE-1:0]             btb_entries_debug
     , output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug
@@ -170,6 +171,10 @@ module local_predictor (
                 // modify pht
                 next_pattern_history_table[branch_history_table[rob_bht_index[i]]] =
                     rob_if_packet.entries[i].resolve_taken ? TAKEN : NOT_TAKEN;
+                // report correctness
+                correct[i] =
+                    pattern_history_table[branch_history_table[rob_bht_index[i]]] ==
+                    next_pattern_history_table[branch_history_table[rob_bht_index[i]]];
             end
         end
     end
@@ -191,7 +196,8 @@ module gshare_predictor (
     input ADDR pc_start,
     input ROB_IF_PACKET rob_if_packet,
     // output
-    output PC_ENTRY [`N-1:0] target_pc
+    output PC_ENTRY [`N-1:0] target_pc,
+    output logic    [`N-1:0] correct
 `ifdef CPU_DEBUG_OUT
     , output BTB_ENTRY [`BTB_SIZE-1:0]       btb_entries_debug
     , output logic [`BHT_WIDTH-1:0]          branch_history_reg_debug
@@ -275,6 +281,10 @@ module gshare_predictor (
                 // modify pht
                 next_pattern_history_table[branch_history_reg ^ rob_bht_index[i]] =
                     rob_if_packet.entries[i].resolve_taken ? TAKEN : NOT_TAKEN;
+                // report correctness
+                correct[i] =
+                    pattern_history_table[branch_history_reg ^ rob_bht_index[i]] ==
+                    next_pattern_history_table[branch_history_reg ^ rob_bht_index[i]];
             end
         end
     end
@@ -291,8 +301,7 @@ module gshare_predictor (
 
 endmodule
 
-/*
-module tournament(
+module tournament_predictor(
     input clock, reset,
     input ADDR pc_start,
     input ROB_IF_PACKET rob_if_packet,
@@ -305,17 +314,20 @@ module tournament(
     , output BTB_ENTRY [`BTB_SIZE-1:0]             gp_btb_entries_debug
     , output logic [`BHT_WIDTH-1:0]                gp_branch_history_reg_debug
     , output PHT_ENTRY_STATE [`PHT_SIZE-1:0]       gp_pattern_history_table_debug
+    , output logic [1:0]                           bias_debug
 `endif
 );
 
     PC_ENTRY [`N-1:0] lp_target_pc, gp_target_pc;
+    logic    [`N-1:0] lp_correct,   gp_correct;
 
     local_predictor lp (
         .clock         (clock),
         .reset         (reset),
         .pc_start      (pc_start),
         .rob_if_packet (rob_if_packet),
-        .target_pc     (lp_target_pc)
+        .target_pc     (lp_target_pc),
+        .correct       (lp_correct)
     `ifdef CPU_DEBUG_OUT
         , .btb_entries_debug           (lp_btb_entries_debug)
         , .branch_history_table_debug  (lp_branch_history_table_debug)
@@ -328,7 +340,8 @@ module tournament(
         .reset         (reset),
         .pc_start      (pc_start),
         .rob_if_packet (rob_if_packet),
-        .target_pc     (lp_target_pc)
+        .target_pc     (gp_target_pc),
+        .correct       (gp_correct)
     `ifdef CPU_DEBUG_OUT
         , .btb_entries_debug           (gp_btb_entries_debug)
         , .branch_history_reg_debug    (gp_branch_history_reg_debug)
@@ -336,7 +349,28 @@ module tournament(
     `endif
     );
 
-    // TODO: Calculate target_pc
+    logic [1:0] bias, next_bias;
+
+`ifdef CPU_DEBUG_OUT
+    assign bias_debug = bias;
+`endif
+
+    assign target_pc = bias[1] ? lp_target_pc : gp_target_pc;
+
+    always_comb begin
+        next_bias = bias;
+        for (int i = 0; i < `N; ++i) if (rob_if_packet.entries[i].valid) begin
+            if (lp_correct[i] && ~gp_correct[i] && next_bias != 2'b11) ++next_bias;
+            if (gp_correct[i] && ~lp_correct[i] && next_bias != 2'b00) --next_bias;
+        end
+    end
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            bias <= 0;
+        end else begin
+            bias <= next_bias;
+        end
+    end
 
 endmodule
-*/
