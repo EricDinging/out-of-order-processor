@@ -355,6 +355,8 @@ module dcache #(
     , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
     , output DCACHE_ENTRY [SIZE-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output logic [`N-1:0] store_req_accept_debug
+    , output logic [`N-1:0] load_req_accept_debug
 `endif
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
@@ -385,6 +387,8 @@ module dcache #(
 
 `ifdef CPU_DEBUG_OUT
     assign dcache_data_debug = dcache_data;
+    assign store_req_accept_debug = store_req_accept;
+    assign load_req_accept_debug = load_req_accept;
 `endif
 
     genvar i;

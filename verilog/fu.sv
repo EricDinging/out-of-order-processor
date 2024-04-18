@@ -297,6 +297,8 @@ module fu #(
     , output DATA            [`NUM_FU_LOAD-1:0]    load_req_data_debug
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
     , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
+    , output logic [`N-1:0] store_req_accept_debug
+    , output logic [`N-1:0] load_req_accept_debug
 `endif
 );
     
@@ -376,6 +378,8 @@ module fu #(
         , .dmshr_entries_debug(dmshr_entries_debug)
         , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
+        , .store_req_accept_debug(store_req_accept_debug)
+        , .load_req_accept_debug(load_req_accept_debug)
     `endif
     );
 
