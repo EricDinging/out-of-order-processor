@@ -150,7 +150,7 @@ module testbench;
 
 
     task print_dcache_lq_packet;
-        $fdisplay(ppln_fileno, "### LOAD_QUEUE:");
+        $fdisplay(ppln_fileno, "### Dcache LQ PACKET:");
         for (int i = 0; i < `N; ++i) begin
             $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, dcache_lq_packet_debug[i].valid);
             $fdisplay(ppln_fileno, "    lq_idx[%0d]: %0d", i, dcache_lq_packet_debug[i].lq_idx);
