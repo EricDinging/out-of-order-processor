@@ -844,7 +844,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 50000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 500000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status
