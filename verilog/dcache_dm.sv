@@ -325,7 +325,9 @@ module dmshr #(
     end
 endmodule
 
-module dcache (
+module dcache #(
+    parameter SIZE = `DCACHE_LINES
+)(
     input logic clock,
     input logic reset,
     input logic squash,
@@ -351,13 +353,11 @@ module dcache (
     output logic dcache_request
 `ifdef CPU_DEBUG_OUT
     , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
-    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
+    , output DCACHE_ENTRY [SIZE-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
-    , output logic [`N-1:0] store_req_accept_debug
-    , output logic [`N-1:0] load_req_accept_debug
 `endif
 );
-    DCACHE_ENTRY [`DCACHE_SETS-1:0][`DCACHE_WAYS-1:0] dcache_data, next_dcache_data;
+    DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
 
     logic store_valid, next_store_valid;
     ADDR  store_addr, next_store_addr;
@@ -383,19 +383,8 @@ module dcache (
     wire [`N-1:0][`DCACHE_TAG_BITS-1:0]          load_tag, store_tag;
     wire [`N-1:0][`DCACHE_BLOCK_OFFSET_BITS-1:0] load_offset, store_offset;
 
-    logic [`DCACHE_SETS-1:0] set_hits;
-    logic [`DCACHE_SETS-1:0][`LRU_WIDTH-1:0] cache_line_hit_indexes;
-    logic [`DCACHE_SETS-1:0][`LRU_WIDTH-1:0] cache_line_lru_indexes;
-
-    logic [`N-1:0][`DCACHE_WAYS-1:0] load_tag_hits, store_tag_hits; // compare tag against input load/store
-    logic [`N-1:0][`LRU_WIDTH-1:0]  load_way_indexes, store_way_indexes; // from one hot decoder
-    logic [`N-1:0]                  load_cache_hits, store_cache_hits; // from one hot decoder
-
-
 `ifdef CPU_DEBUG_OUT
     assign dcache_data_debug = dcache_data;
-    assign store_req_accept_debug = store_req_accept;
-    assign load_req_accept_debug = load_req_accept;
 `endif
 
     genvar i;
@@ -407,21 +396,6 @@ module dcache (
             assign store_tag[i]    = sq_dcache_packet[i].addr[31:`DCACHE_BLOCK_OFFSET_BITS+`DCACHE_INDEX_BITS];
             assign store_offset[i] = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
             assign load_offset[i]  = lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
-
-            onehotdec #(
-                .WIDTH(`DCACHE_WAYS)
-            ) lohd (
-                .in(load_tag_hits[i]),
-                .out(load_way_indexes[i]),
-                .valid(load_cache_hits[i])
-            );
-            onehotdec #(
-                .WIDTH(`DCACHE_WAYS)
-            ) sohd (
-                .in(store_tag_hits[i]),
-                .out(store_way_indexes[i]),
-                .valid(store_cache_hits[i])
-            );
         end
     endgenerate
 
@@ -458,21 +432,6 @@ module dcache (
     `endif
     );
 
-    generate
-        for (i = 0; i < `DCACHE_SETS; ++i) begin
-            lru #(
-                .WIDTH(`LRU_WIDTH)
-            ) lru_policy (
-                .clock(clock),
-                .reset(reset),
-                .hit(set_hits[i]),
-                .index_hit(cache_line_hit_indexes[i]),
-                // output
-                .index_lru(cache_line_lru_indexes[i])
-            );
-        end
-    endgenerate
-
     always_comb begin
         // dcache output
         proc2Dmem_command   = MEM_NONE;
@@ -501,10 +460,6 @@ module dcache (
 
         dcache_evict = store_valid;
         dcache_request = store_valid ? `TRUE : dmshr_request;
-
-        set_hits               = 0;
-        cache_line_hit_indexes = 0;
-
         if (store_valid) begin
             proc2Dmem_addr    = store_addr;
             proc2Dmem_command = MEM_STORE;
@@ -514,22 +469,21 @@ module dcache (
         // memory to dcache
         if (ready) begin
             // if dirty evict, set dcache_evict
-            if (dcache_data[cache_index][cache_line_lru_indexes[cache_index]].dirty 
-                && dcache_data[cache_index][cache_line_lru_indexes[cache_index]].valid) begin
-
+            if (dcache_data[cache_index].dirty && dcache_data[cache_index].valid) begin
                 next_store_valid = `TRUE;
                 next_store_addr = {
-                    dcache_data[cache_index][cache_line_lru_indexes[cache_index]].tag,
+                    dcache_data[cache_index].tag,
                     cache_index,
                     {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}
                 };
-                next_store_data = dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data;
+                next_store_data = dcache_data[cache_index].data;
             end
 
-            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].valid = `TRUE;
-            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].tag   = cache_tag;
-            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].dirty = `FALSE;
-            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data  = Dmem2proc_data;
+            // directly mapped cache
+            next_dcache_data[cache_index].valid = `TRUE;
+            next_dcache_data[cache_index].tag   = cache_tag;
+            next_dcache_data[cache_index].dirty = `FALSE;
+            next_dcache_data[cache_index].data  = Dmem2proc_data;
             // update dcache data content for store, output load
             for (int i = 0; i < `N; ++i) begin
                 if (dmshr_flush_valid[i]) begin
@@ -537,48 +491,53 @@ module dcache (
                         dcache_lq_packet[i] = '{
                             `TRUE, // valid
                             dmshr_flush_packet[i].lq_idx, // lq_idx
-                            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
+                            next_dcache_data[cache_index].data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
                         };
+                        // dcache_lq_packet[i].valid = `TRUE;
+                        // dcache_lq_packet[i].lq_idx = dmshr_flush_packet[i].lq_idx;
+                        // case (dmshr_flush_packet[i].mem_func)
+                        //     MEM_BYTE | MEM_BYTEU: 
+                        //         dcache_lq_packet[i].data = {24'b0, next_dcache_data[cache_index].data.byte_level[dmshr_flush_packet[i].block_offset]};
+                        //     MEM_HALF | MEM_HALFU:
+                        //         dcache_lq_packet[i].data = {16'b0, next_dcache_data[cache_index].data.half_level[dmshr_flush_packet[i].block_offset[2:1]]};
+                        //     MEM_WORD:
+                        //         dcache_lq_packet[i].data = next_dcache_data[cache_index].data.word_level[dmshr_flush_packet[i].block_offset[2]];
+                        // endcase
                     end else if (dmshr_flush_packet[i].inst_command == INST_STORE) begin
-                        next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].dirty = `TRUE;
+                        next_dcache_data[cache_index].dirty = `TRUE;
                         case (dmshr_flush_packet[i].mem_func)
                             MEM_BYTE: 
-                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.byte_level[dmshr_flush_packet[i].block_offset]
+                                next_dcache_data[cache_index].data.byte_level[dmshr_flush_packet[i].block_offset]
                                     = dmshr_flush_packet[i].data[7:0];
                             MEM_HALF:
-                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.half_level[dmshr_flush_packet[i].block_offset[2:1]]
+                                next_dcache_data[cache_index].data.half_level[dmshr_flush_packet[i].block_offset[2:1]]
                                     = dmshr_flush_packet[i].data[15:0];
                             MEM_WORD:
-                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level[dmshr_flush_packet[i].block_offset[2]]
+                                next_dcache_data[cache_index].data.word_level[dmshr_flush_packet[i].block_offset[2]]
                                     = dmshr_flush_packet[i].data[31:0];
                         endcase
                     end
                 end
             end
-
-            set_hits[cache_index]               = `TRUE;
-            cache_line_hit_indexes[cache_index] = cache_line_lru_indexes[cache_index];
         end
 
         // cache hit or miss
         // load
         for (int i = 0; i < `N; ++i) begin
             if (lq_dcache_packet[i].valid) begin
-
-                for (int j = 0; j < `DCACHE_WAYS; ++j) begin
-                    load_tag_hits[i][j] = next_dcache_data[load_index[i]][j].tag == load_tag[i] 
-                        && next_dcache_data[load_index[i]][j].valid;
-                end
-
-                if (load_cache_hits[i]) begin
+                if (next_dcache_data[load_index[i]].tag == load_tag[i] && next_dcache_data[load_index[i]].valid) begin
                     // hit
                     load_req_accept[i]     = `TRUE;
-                    load_req_data[i]       = next_dcache_data[load_index[i]][load_way_indexes[i]].data.word_level[load_offset[i][2]];
+                    load_req_data[i]       = next_dcache_data[load_index[i]].data.word_level[load_offset[i][2]];
+                    // case (lq_dcache_packet[i].mem_func)
+                    //     MEM_BYTE | MEM_BYTEU: 
+                    //         load_req_data[i] = {24'b0, next_dcache_data[load_index[i]].data.byte_level[load_offset[i]]};
+                    //     MEM_HALF | MEM_HALFU:
+                    //         load_req_data[i] = {16'b0, next_dcache_data[load_index[i]].data.half_level[load_offset[i][2:1]]};
+                    //     MEM_WORD:
+                    //         load_req_data[i] = next_dcache_data[load_index[i]].data.word_level[load_offset[i][2]];
+                    // endcase
                     load_req_data_valid[i] = `TRUE;
-
-                    // update LRU
-                    set_hits[load_index[i]]               = `TRUE;
-                    cache_line_hit_indexes[load_index[i]] = load_way_indexes[i];
                 end else begin
                     // miss
                     lq_dcache_miss[i]  = `TRUE;
@@ -590,37 +549,28 @@ module dcache (
         // store
         for (int i = 0; i < `N; ++i) begin
             if (sq_dcache_packet[i].valid) begin
-
-                for (int j = 0; j < `DCACHE_WAYS; ++j) begin
-                    store_tag_hits[i][j] = next_dcache_data[store_index[i]][j].tag == store_tag[i] 
-                        && next_dcache_data[store_index[i]][j].valid;
-                end
-
-                if (store_cache_hits[i]) begin
+                if (next_dcache_data[store_index[i]].tag == store_tag[i] && next_dcache_data[store_index[i]].valid) begin
                     // hit
                     store_req_accept[i]                    = `TRUE;
-                    next_dcache_data[store_index[i]][store_way_indexes[i]].dirty = `TRUE;
+                    next_dcache_data[store_index[i]].dirty = `TRUE;
                     case (sq_dcache_packet[i].mem_func)
                         MEM_BYTE: 
-                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.byte_level[store_offset[i]]
+                            next_dcache_data[store_index[i]].data.byte_level[store_offset[i]]
                                 = sq_dcache_packet[i].data[7:0];
                         MEM_HALF:
-                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.half_level[store_offset[i][2:1]]
+                            next_dcache_data[store_index[i]].data.half_level[store_offset[i][2:1]]
                                 = sq_dcache_packet[i].data[15:0];
                         MEM_WORD:
-                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.word_level[store_offset[i][2]]
+                            next_dcache_data[store_index[i]].data.word_level[store_offset[i][2]]
                                 = sq_dcache_packet[i].data[31:0];
                     endcase
-
-                    // update LRU
-                    set_hits[store_index[i]]               = `TRUE;
-                    cache_line_hit_indexes[store_index[i]] = store_way_indexes[i];
                 end else begin
                     sq_dcache_miss[i]   = `TRUE;
                     store_req_accept[i] = dmhsr_store_req_accept[i];
                 end
             end
         end
+
     end
 
     always_ff @(posedge clock) begin

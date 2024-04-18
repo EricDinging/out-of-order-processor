@@ -88,6 +88,7 @@ module cpu (
     output FU_STATE_PACKET cdb_state_debug,
     output logic [`N-1:0] store_req_accept_debug,
     output logic [`N-1:0] load_req_accept_debug,
+    output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -272,6 +273,7 @@ module cpu (
         , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
         , .lq_dcache_packet_debug(lq_dcache_packet_debug)
+        , .dcache_lq_packet_debug(dcache_lq_packet_debug)
         // lq
         , .lq_entries_out(lq_entries_out)
         , .rs_lq_packet_debug(rs_lq_packet_debug)

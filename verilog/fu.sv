@@ -299,6 +299,7 @@ module fu #(
     , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
     , output logic [`N-1:0] store_req_accept_debug
     , output logic [`N-1:0] load_req_accept_debug
+    , output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug
 `endif
 );
     
@@ -349,6 +350,7 @@ module fu #(
     `ifdef CPU_DEBUG_OUT
         assign rs_lq_packet_debug = rs_lq_packet;
         assign sq_dcache_packet_debug = sq_dcache_packet;
+        assign dcache_lq_packet_debug = dcache_lq_packet;
     `endif
 
     dcache cache (

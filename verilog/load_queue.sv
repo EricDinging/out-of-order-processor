@@ -188,14 +188,17 @@ module load_queue (
 
         // dcache
         no_forwards = 0;
+        mux_input = 0;
         foreach (entries[i]) begin
             if (entries[i].valid && entries[i].load_state == NO_FORWARD) begin
                 no_forwards[i] = `TRUE;
             end
-            mux_input[i].valid  = entries[i].valid && entries[i].load_state == NO_FORWARD;
-            mux_input[i].lq_idx = i; // TODO: width
-            mux_input[i].addr   = entries[i].addr;
-            mux_input[i].mem_func = entries[i].byte_info;
+            if (!reset) begin
+                mux_input[i].valid  = entries[i].valid && entries[i].load_state == NO_FORWARD;
+                mux_input[i].lq_idx = i; // TODO: width
+                mux_input[i].addr   = entries[i].addr;
+                mux_input[i].mem_func = entries[i].byte_info;
+            end
         end
 
         for (int i = 0; i < `NUM_LU_DCACHE; i++) begin

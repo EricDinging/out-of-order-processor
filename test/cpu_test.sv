@@ -115,6 +115,7 @@ module testbench;
     LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug;
     logic [`N-1:0] store_req_accept_debug;
     logic [`N-1:0] load_req_accept_debug;
+    DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug;
 
     // lq
     LD_ENTRY [`NUM_FU_LOAD-1:0]     lq_entries_out;
@@ -145,6 +146,16 @@ module testbench;
     task print_target_memory_block;
         $fdisplay(ppln_fileno, "### target_mem_block 508 (FE0):");
         $fdisplay(ppln_fileno, "mem block: %x", target_mem_block_debug);
+    endtask
+
+
+    task print_dcache_lq_packet;
+        $fdisplay(ppln_fileno, "### Dcache LQ PACKET:");
+        for (int i = 0; i < `N; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, dcache_lq_packet_debug[i].valid);
+            $fdisplay(ppln_fileno, "    lq_idx[%0d]: %0d", i, dcache_lq_packet_debug[i].lq_idx);
+            $fdisplay(ppln_fileno, "    data[%0d]: %h", i, dcache_lq_packet_debug[i].data);
+        end
     endtask
 
     task print_load_queue;
@@ -602,6 +613,7 @@ module testbench;
         .next_fu_alu_packet_debug(next_fu_alu_packet_debug),
         .fu_rob_packet_debug(fu_rob_packet_debug),
         .cdb_state_debug(cdb_state_debug),
+        .dcache_lq_packet_debug(dcache_lq_packet_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -787,9 +799,11 @@ module testbench;
             print_sq();
             print_lq_dcache_packet();
             print_sq_dcache_packet();
-            // print_dcache();
+            print_dcache();
+            print_dcache_lq_packet();
             // print_fu_state_packet();
-            print_cdb_state();
+            print_cdb_packet();
+            // print_cdb_state();
             print_fu_rob_packet();
             print_select();
             print_rs();
@@ -798,7 +812,6 @@ module testbench;
 
             // print_imshr_entries_debug();
             // print_fu_load_packet_debug();
-            // print_cdb_packet();
             // print_rat();
             // print_rrat();
             // print_prf();
@@ -831,7 +844,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 50000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 500000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status
