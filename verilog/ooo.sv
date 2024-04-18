@@ -56,6 +56,7 @@ module ooo (
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
     , output logic [`N-1:0] store_req_accept_debug
     , output logic [`N-1:0] load_req_accept_debug
+    , output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug
     // lq
     , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
     , output RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug
@@ -215,6 +216,7 @@ module ooo (
         , .cdb_state_debug(cdb_state_debug)
         , .store_req_accept_debug(store_req_accept_debug)
         , .load_req_accept_debug(load_req_accept_debug)
+        , .dcache_lq_packet_debug(dcache_lq_packet_debug)
         `endif
     );
 
