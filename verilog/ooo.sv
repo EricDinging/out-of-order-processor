@@ -333,6 +333,9 @@ module ooo (
         for (int i = 0; i < `N; ++i) begin
             id_sq_packet[i] = id_ooo_packet.id_sq_packet[i];
         end
+        if (structural_hazard) begin
+            id_sq_packet = 0;
+        end
 
         // commit
         for (int i = 0; i < `N; ++i) begin

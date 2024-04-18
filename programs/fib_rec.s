@@ -24,7 +24,7 @@
     li  x8, 1
     li	x31, stack
 
-    li	x17, 8
+    li	x17, 14
     jal	x27,	fib #
 
     li	x2, data
