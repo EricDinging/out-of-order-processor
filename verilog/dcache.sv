@@ -351,7 +351,7 @@ module dcache (
     output logic dcache_request
 `ifdef CPU_DEBUG_OUT
     , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
-    , output DCACHE_ENTRY [SIZE-1:0] dcache_data_debug
+    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
 `endif
 );
@@ -381,11 +381,11 @@ module dcache (
     wire [`N-1:0][`DCACHE_TAG_BITS-1:0]          load_tag, store_tag;
     wire [`N-1:0][`DCACHE_BLOCK_OFFSET_BITS-1:0] load_offset, store_offset;
 
-    logic [`DCACGE_SETS-1:0] set_hits;
-    logic [`DCACGE_SETS-1:0][`LRU_WIDTH-1:0] cache_line_hit_indexes;
+    logic [`DCACHE_SETS-1:0] set_hits;
+    logic [`DCACHE_SETS-1:0][`LRU_WIDTH-1:0] cache_line_hit_indexes;
     logic [`DCACHE_SETS-1:0][`LRU_WIDTH-1:0] cache_line_lru_indexes;
 
-    wire [`N-1:0][`DCACHE_WAYS-1:0] load_tag_hits, store_tag_hits; // compare tag against input load/store
+    logic [`N-1:0][`DCACHE_WAYS-1:0] load_tag_hits, store_tag_hits; // compare tag against input load/store
     logic [`N-1:0][`LRU_WIDTH-1:0]  load_way_indexes, store_way_indexes; // from one hot decoder
     logic [`N-1:0]                  load_cache_hits, store_cache_hits; // from one hot decoder
 
@@ -404,16 +404,16 @@ module dcache (
             assign store_offset[i] = sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
             assign load_offset[i]  = lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
 
-            onehotdec lohd #(
+            onehotdec #(
                 .WIDTH(`DCACHE_WAYS)
-            ) (
+            ) lohd (
                 .in(load_tag_hits[i]),
                 .out(load_way_indexes[i]),
                 .valid(load_cache_hits[i])
             );
-            onehotdec sohd #(
+            onehotdec #(
                 .WIDTH(`DCACHE_WAYS)
-            ) (
+            ) sohd (
                 .in(store_tag_hits[i]),
                 .out(store_way_indexes[i]),
                 .valid(store_cache_hits[i])
@@ -456,9 +456,9 @@ module dcache (
 
     generate
         for (i = 0; i < `DCACHE_SETS; ++i) begin
-            lru lru_policy #(
+            lru #(
                 .WIDTH(`LRU_WIDTH)
-            ) (
+            ) lru_policy (
                 .clock(clock),
                 .reset(reset),
                 .hit(set_hits[i]),
@@ -533,7 +533,7 @@ module dcache (
                         dcache_lq_packet[i] = '{
                             `TRUE, // valid
                             dmshr_flush_packet[i].lq_idx, // lq_idx
-                            Dmem2proc_data.data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
+                            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
                         };
                     end else if (dmshr_flush_packet[i].inst_command == INST_STORE) begin
                         next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].dirty = `TRUE;
@@ -592,7 +592,7 @@ module dcache (
                         && next_dcache_data[store_index[i]][j].valid;
                 end
 
-                if (store_cache_hit[i]) begin
+                if (store_cache_hits[i]) begin
                     // hit
                     store_req_accept[i]                    = `TRUE;
                     next_dcache_data[store_index[i]][store_way_indexes[i]].dirty = `TRUE;

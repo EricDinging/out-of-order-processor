@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 3
+`define N 2
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -72,7 +72,7 @@
 // dcache
 `define DCACHE_LINES 32
 `define DCACHE_SETS  8
-`define DCACHE_WAYS  `DCACGE_LINES / `DCACHE_SETS
+`define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
 
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
