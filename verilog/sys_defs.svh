@@ -71,7 +71,11 @@
 
 // dcache
 `define DCACHE_LINES 32
-`define DCACHE_INDEX_BITS $clog2(`DCACHE_LINES)
+`define DCACHE_SETS  8
+`define DCACHE_WAYS  `DCACGE_LINES / `DCACHE_SETS
+`define LRU_WIDTH $clog2(`DCACHE_WAYS)
+
+`define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
 `define DCACHE_BLOCK_OFFSET_BITS 3
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
 `define DMSHR_SIZE 8
@@ -150,7 +154,7 @@ typedef union packed {
     logic [3:0][15:0] half_level;
     logic [1:0][31:0] word_level;
     logic      [63:0] dbbl_level;
-} MEM_BLOCK;
+} MEM_BLOCK; // If change mem_block to other size, be aware cache needs to change
 
 typedef enum logic [1:0] {
     BYTE   = 2'h0,
