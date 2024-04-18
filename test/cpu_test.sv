@@ -113,6 +113,9 @@ module testbench;
     DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug;
     logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] dmshr_counter_debug;
     LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug;
+    logic [`N-1:0] store_req_accept_debug;
+    logic [`N-1:0] load_req_accept_debug;
+    DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug;
 
     // lq
     LD_ENTRY [`NUM_FU_LOAD-1:0]     lq_entries_out;
@@ -143,6 +146,16 @@ module testbench;
     task print_target_memory_block;
         $fdisplay(ppln_fileno, "### target_mem_block 508 (FE0):");
         $fdisplay(ppln_fileno, "mem block: %x", target_mem_block_debug);
+    endtask
+
+
+    task print_dcache_lq_packet;
+        $fdisplay(ppln_fileno, "### Dcache LQ PACKET:");
+        for (int i = 0; i < `N; ++i) begin
+            $fdisplay(ppln_fileno, "  valid[%0d]: %b", i, dcache_lq_packet_debug[i].valid);
+            $fdisplay(ppln_fileno, "    lq_idx[%0d]: %0d", i, dcache_lq_packet_debug[i].lq_idx);
+            $fdisplay(ppln_fileno, "    data[%0d]: %h", i, dcache_lq_packet_debug[i].data);
+        end
     endtask
 
     task print_load_queue;
@@ -239,6 +252,7 @@ module testbench;
                     $fdisplay(ppln_fileno, "    mem_func[%0d]: MEM_HALFU", i);
             endcase
             $fdisplay(ppln_fileno, "    load_req_data_valid_debug: %b, load_req_data_debug: 0x%h", load_req_data_valid_debug[i], load_req_data_debug[i]);
+            $fdisplay(ppln_fileno, "    load_req_accept: %b", load_req_accept_debug[i]);
         end
     endtask
 
@@ -491,8 +505,10 @@ module testbench;
                     MEM_HALFU:
                         $fdisplay(ppln_fileno, "    mem_func: MEM_HALFU");
                 endcase
+                $fdisplay(ppln_fileno, "    store_req_accept ?: %b", store_req_accept_debug[i]);
             end else begin
                 $fdisplay(ppln_fileno, "  invalid %d", i);
+                $fdisplay(ppln_fileno, "    store_req_accept ?: %b", store_req_accept_debug[i]);
             end
         end
     endtask
@@ -578,6 +594,8 @@ module testbench;
         .dcache_data_debug(dcache_data_debug),
         .counter_debug(dmshr_counter_debug),
         .lq_dcache_packet_debug(lq_dcache_packet_debug),
+        .store_req_accept_debug(store_req_accept_debug),
+        .load_req_accept_debug(load_req_accept_debug),
         // lq
         .lq_entries_out(lq_entries_out),
         .rs_lq_packet_debug(rs_lq_packet_debug),
@@ -595,6 +613,7 @@ module testbench;
         .next_fu_alu_packet_debug(next_fu_alu_packet_debug),
         .fu_rob_packet_debug(fu_rob_packet_debug),
         .cdb_state_debug(cdb_state_debug),
+        .dcache_lq_packet_debug(dcache_lq_packet_debug),
 `endif
         .pipeline_completed_insts (pipeline_completed_insts),
         .pipeline_error_status    (pipeline_error_status),
@@ -781,8 +800,10 @@ module testbench;
             print_lq_dcache_packet();
             print_sq_dcache_packet();
             print_dcache();
+            print_dcache_lq_packet();
             // print_fu_state_packet();
-            print_cdb_state();
+            print_cdb_packet();
+            // print_cdb_state();
             print_fu_rob_packet();
             print_select();
             print_rs();
@@ -791,7 +812,6 @@ module testbench;
 
             // print_imshr_entries_debug();
             // print_fu_load_packet_debug();
-            // print_cdb_packet();
             // print_rat();
             // print_rrat();
             // print_prf();

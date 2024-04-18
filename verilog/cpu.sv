@@ -86,6 +86,9 @@ module cpu (
     output logic sq_stall,
     output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0]   fu_rob_packet_debug,
     output FU_STATE_PACKET cdb_state_debug,
+    output logic [`N-1:0] store_req_accept_debug,
+    output logic [`N-1:0] load_req_accept_debug,
+    output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -270,6 +273,7 @@ module cpu (
         , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
         , .lq_dcache_packet_debug(lq_dcache_packet_debug)
+        , .dcache_lq_packet_debug(dcache_lq_packet_debug)
         // lq
         , .lq_entries_out(lq_entries_out)
         , .rs_lq_packet_debug(rs_lq_packet_debug)
@@ -285,6 +289,8 @@ module cpu (
         , .sq_stall(sq_stall)
         , .fu_rob_packet_debug(fu_rob_packet_debug)
         , .cdb_state_debug(cdb_state_debug)
+        , .store_req_accept_debug(store_req_accept_debug)
+        , .load_req_accept_debug(load_req_accept_debug)
     `endif
     );
 

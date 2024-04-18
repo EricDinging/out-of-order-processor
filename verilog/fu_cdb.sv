@@ -51,6 +51,9 @@ module fu_cdb(
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
     , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
     , output FU_STATE_PACKET cdb_state_debug
+    , output logic [`N-1:0] store_req_accept_debug
+    , output logic [`N-1:0] load_req_accept_debug
+    , output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug
     `endif
 );
 
@@ -113,6 +116,9 @@ module fu_cdb(
         , .load_req_data_debug(load_req_data_debug)
         , .sq_entries_out(sq_entries_out)
         , .sq_dcache_packet_debug(sq_dcache_packet_debug)
+        , .store_req_accept_debug(store_req_accept_debug)
+        , .load_req_accept_debug(load_req_accept_debug)
+        , .dcache_lq_packet_debug(dcache_lq_packet_debug)
     `endif
     );
 

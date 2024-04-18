@@ -54,6 +54,9 @@ module ooo (
     , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
+    , output logic [`N-1:0] store_req_accept_debug
+    , output logic [`N-1:0] load_req_accept_debug
+    , output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug
     // lq
     , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
     , output RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug
@@ -211,6 +214,9 @@ module ooo (
         , .sq_entries_out(sq_entries_out)
         , .sq_dcache_packet_debug(sq_dcache_packet_debug)
         , .cdb_state_debug(cdb_state_debug)
+        , .store_req_accept_debug(store_req_accept_debug)
+        , .load_req_accept_debug(load_req_accept_debug)
+        , .dcache_lq_packet_debug(dcache_lq_packet_debug)
         `endif
     );
 
@@ -332,6 +338,9 @@ module ooo (
         // fu store queue input
         for (int i = 0; i < `N; ++i) begin
             id_sq_packet[i] = id_ooo_packet.id_sq_packet[i];
+        end
+        if (structural_hazard) begin
+            id_sq_packet = 0;
         end
 
         // commit
