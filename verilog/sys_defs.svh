@@ -88,6 +88,10 @@
 // pattern history table
 `define PHT_SIZE 2**`BHT_WIDTH
 
+`define RAS_SIZE 16
+`define RAS_CTR_WIDTH $clog2(`RAS_SIZE+1)
+`define RAS_PTR_WIDTH $clog2(`RAS_SIZE)
+
 ///////////////////////////////
 // ---- Basic Constants ---- //
 ///////////////////////////////
@@ -109,6 +113,9 @@ typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
 
 typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
+
+typedef logic [`RAS_PTR_WIDTH  :0] RAS_CTR;
+typedef logic [`RAS_PTR_WIDTH-1:0] RAS_PTR;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
@@ -745,16 +752,16 @@ typedef struct packed {
 } RS_SQ_PACKET;
 
 typedef struct packed {
-    logic                               valid;
-    LU_IDX                              lq_idx;
-    DATA                                data;
+    logic  valid;
+    LU_IDX lq_idx;
+    DATA   data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
-    logic                           valid;
-    LU_IDX                          lq_idx;
-    ADDR                            addr;
-    MEM_FUNC                        mem_func;
+    logic    valid;
+    LU_IDX   lq_idx;
+    ADDR     addr;
+    MEM_FUNC mem_func;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
@@ -838,5 +845,16 @@ typedef struct packed {
     DATA value;
     logic fwd_valid;
 } LU_FWD_REG;
+
+typedef struct packed {
+    logic   valid;
+    ADDR    NPC;
+    REG_IDX rs, rd;
+} ID_RAS_PACKET;
+
+typedef struct packed {
+    logic valid;
+    ADDR  ra;
+} RAS_IF_PACKET;
 
 `endif // __SYS_DEFS_SVH__

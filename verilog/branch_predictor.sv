@@ -301,7 +301,7 @@ module gshare_predictor (
 
 endmodule
 
-module tournament_predictor(
+module tournament_predictor (
     input clock, reset,
     input ADDR pc_start,
     input ROB_IF_PACKET rob_if_packet,

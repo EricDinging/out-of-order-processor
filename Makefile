@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align mem
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align mem ras
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -315,6 +315,11 @@ MEM_FILES = verilog/sys_defs.svh verilog/mem.sv
 build/mem.simv: $(MEM_FILES)
 build/mem.cov.simv: $(MEM_FILES)
 build/mem.vg: $(MEM_FILES)
+
+RAS_FILES = verilog/sys_defs.svh verilog/ras.sv
+build/ras.simv: $(RAS_FILES)
+build/ras.cov.simv: $(RAS_FILES)
+synth/ras.vg: $(RAS_FILES)
 
 #################################
 # ---- Main CPU Definition ---- #
