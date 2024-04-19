@@ -181,7 +181,7 @@ module testbench;
                         $fdisplay(ppln_fileno, "    load_state[%0d]: KNOWN", i);
                     NO_FORWARD:
                         $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", i);
-                        // $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", lq_entries_out[]);
+                        // $fdisplay(ppln_fileno, "    load_state.forwarded: %b", lq_entries_out[i].forwarded);
                     ASKED:
                         $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
                 endcase
