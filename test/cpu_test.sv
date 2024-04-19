@@ -181,6 +181,7 @@ module testbench;
                         $fdisplay(ppln_fileno, "    load_state[%0d]: KNOWN", i);
                     NO_FORWARD:
                         $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", i);
+                        // $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", lq_entries_out[]);
                     ASKED:
                         $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
                 endcase
@@ -846,7 +847,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 500000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status

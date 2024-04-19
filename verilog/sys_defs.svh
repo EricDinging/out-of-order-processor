@@ -806,6 +806,7 @@ typedef struct packed {
     logic    valid;
     // logic    signext;
     // MEM_SIZE byte_info;
+    logic [3:0] forwarded;
     MEM_FUNC byte_info;
     ADDR     addr;
     DATA     data;
@@ -830,6 +831,7 @@ typedef struct packed {
     logic valid;
     // logic signext;
     // MEM_SIZE size;
+    logic [3:0] forwarded;
     MEM_FUNC sign_size;
     ADDR addr;
     PRN prn;

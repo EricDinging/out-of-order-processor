@@ -320,6 +320,8 @@ module fu #(
     logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid;
     LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;
 
+    logic    [`NUM_FU_LOAD-1:0][3:0] forwarded;
+
     genvar i;
     generate
         for (i = 0; i < `NUM_FU_STORE; ++i) begin
@@ -440,6 +442,7 @@ module fu #(
         .load_byte_info(load_byte_info),
         .value(value),
         .fwd_valid(fwd_valid),
+        .forwarded(forwarded),
     `ifdef CPU_DEBUG_OUT
         .entries_out(sq_entries_out)
     `endif
@@ -461,6 +464,7 @@ module fu #(
         .load_byte_info(load_byte_info),
         .value(value),
         .fwd_valid(fwd_valid),
+        .forwarded(forwarded),
         // Dcache
         .dcache_lq_packet(dcache_lq_packet),
         .load_req_accept(load_req_accept),
