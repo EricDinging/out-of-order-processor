@@ -250,14 +250,14 @@ module icache (
         // prefetch
         miss_cache_valid[`N] = `FALSE;
         {miss_cache_tags[`N], miss_cache_indexes[`N]} = pref2Icache_addr[15:3];
-        pref_hit_valid_line = `FALSE
+        pref_hit_valid_line = `FALSE;
 
         if (pref2Icache_valid) begin
             if (icache_data[miss_cache_indexes[`N]].tags == miss_cache_tags[`N]
                 && icache_data[miss_cache_indexes[`N]].valid) begin
-                    pref_hit_valid_line = `TRUE
+                    pref_hit_valid_line = `TRUE;
             end else begin
-                miss_cache_valid[i] = `TRUE;
+                miss_cache_valid[`N] = `TRUE;
             end
         end
 

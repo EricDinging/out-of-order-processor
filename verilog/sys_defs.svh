@@ -60,7 +60,7 @@
 // cache
 `define CACHE_LINES 32
 `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
-`define MAX_PREFETCH_LINE 4
+`define MAX_PREFETCH_LINE 8
 
 // lsq
 `define NUM_SQ_DCACHE `N // cannot change to other value
