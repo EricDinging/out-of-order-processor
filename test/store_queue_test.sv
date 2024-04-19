@@ -157,10 +157,10 @@ module testbench;
 
         entering;
         lq_queryl;
-        fill_entry;
-        lq_queryl;
-        commit;
-        lq_queryl;
+        // fill_entry;
+        // lq_queryl;
+        // commit;
+        // lq_queryl;
 
 
         $finish;

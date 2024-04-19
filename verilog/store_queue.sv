@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-
+`define CPU_DEBUG_OUT
 /*
 typedef struct packed {
     logic valid;

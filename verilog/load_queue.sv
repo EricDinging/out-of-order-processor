@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-
+`define CPU_DEBUG_OUT
 /*
 typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
 
