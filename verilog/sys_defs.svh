@@ -43,12 +43,12 @@
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
-`define LSQ_SZ 8
+// `define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 2
 `define NUM_FU_MULT 2
-`define NUM_FU_LOAD 8
+`define NUM_FU_LOAD 4
 `define NUM_FU_STORE 2
 
 // `define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
