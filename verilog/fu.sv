@@ -294,7 +294,7 @@ module fu #(
     , output LU_REG           [`NUM_FU_LOAD-1:0]   lu_reg_debug
     , output LU_FWD_REG       [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug
     , output logic            [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
-    , output DATA            [`NUM_FU_LOAD-1:0]    load_req_data_debug
+    , output DATA             [`NUM_FU_LOAD-1:0]   load_req_data_debug
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
     , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
     , output logic [`N-1:0] store_req_accept_debug
