@@ -673,7 +673,7 @@ module testbench;
     // Count the number of posedges and number of instructions completed
     // till simulation ends
     always @(posedge clock) begin
-        if(reset) begin
+        if (reset) begin
             clock_count <= 0;
             instr_count <= 0;
         end else begin
@@ -688,10 +688,10 @@ module testbench;
         int num_cycles;
         begin
             num_cycles = clock_count + 1;
-            cpi = $itor(num_cycles) / instr_count; // must convert int to real
+            cpi = $itor(num_cycles) / (instr_count + pipeline_completed_insts); // must convert int to real
             cpi_fileno = $fopen(cpi_output_file);
             $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-                      num_cycles, instr_count, cpi);
+                      num_cycles, instr_count + pipeline_completed_insts, cpi);
             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
                       num_cycles * `CLOCK_PERIOD);
             $fclose(cpi_fileno);
