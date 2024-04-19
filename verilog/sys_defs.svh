@@ -71,8 +71,8 @@
 `define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
-`define DCACHE_LINES 32
-`define DCACHE_SETS  8
+`define DCACHE_LINES 32 // pw of 2
+`define DCACHE_SETS 8   // pw of 2
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
 
