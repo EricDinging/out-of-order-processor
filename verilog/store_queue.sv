@@ -208,11 +208,11 @@ module store_queue (
     logic flag_break;
     logic match, match_byte, match_half, match_word, match_dble;
     always_comb begin
-        flag_break = `FALSE;
         value = 0;
         fwd_valid = 0;
         idx_fwd = 0;
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            flag_break = `FALSE;
             for (int j = 0; j < `SQ_LEN; j++) begin
                 idx_fwd = (head + j) % (`SQ_LEN + 1);
 
