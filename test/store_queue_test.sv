@@ -28,6 +28,7 @@ module testbench;
     DATA     [`NUM_FU_LOAD-1:0] value;
     logic    [`NUM_FU_LOAD-1:0] fwd_valid;
     SQ_ENTRY[(`SQ_LEN+1)-1:0] entries_out;
+    logic    [`NUM_FU_LOAD-1:0][3:0] forwarded;
 
 
     store_queue dut(
@@ -48,6 +49,7 @@ module testbench;
         .load_byte_info(load_byte_info),
         .value(value),
         .fwd_valid(fwd_valid),
+        .forwarded(forwarded),
         .entries_out(entries_out)
     );
     
@@ -92,7 +94,7 @@ module testbench;
     task entering;
         for (int i = 0; i < `N; i++) begin
             id_sq_packet[i].valid = `TRUE;
-            id_sq_packet[i].byte_info = MEM_WORD;
+            id_sq_packet[i].byte_info = MEM_BYTE;
         end
         @(negedge clock);
         @(negedge clock);
@@ -104,16 +106,16 @@ module testbench;
     endtask
 
     task lq_queryl;
-        addr[0] = 32'hfeedbeef;
+        addr[0] = 32'hfeedb0ef;
         tail_store[0] = 1;
         load_byte_info[0] = MEM_WORD;
         @(negedge clock);
 
-        $display("value:0x%8x, fwd_valid:%b\n", value[0], fwd_valid[0]);
-        $display("num_sent_insns:%d", num_sent_insns);
-        for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
-            $display("sq dcache valid[%2d]=%b", i, sq_dcache_packet[i].valid);
-        end
+        $display("value:0x%8x, forwarded:%b, fwd_valid:%b", value[0], forwarded[0], fwd_valid[0]);
+        // $display("num_sent_insns:%d", num_sent_insns);
+        // for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
+        //     $display("sq dcache valid[%2d]=%b", i, sq_dcache_packet[i].valid);
+        // end
     endtask
 
     task fill_entry;
@@ -121,7 +123,7 @@ module testbench;
             rs_sq_packet[i] = '{
                 `TRUE,
                 32'hfeedb000, // base
-                12'heef,
+                12'h0ef,
                 32'hdeadface, // data
                 i
             };
@@ -157,8 +159,8 @@ module testbench;
 
         entering;
         lq_queryl;
-        // fill_entry;
-        // lq_queryl;
+        fill_entry;
+        lq_queryl;
         // commit;
         // lq_queryl;
 

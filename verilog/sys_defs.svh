@@ -49,7 +49,7 @@
 `define NUM_FU_ALU 2
 `define NUM_FU_MULT 2
 `define NUM_FU_LOAD 8
-`define NUM_FU_STORE 8
+`define NUM_FU_STORE 2
 
 // `define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
 // `define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
