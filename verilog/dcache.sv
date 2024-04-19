@@ -361,9 +361,9 @@ module dcache #(
 );
     DCACHE_ENTRY [SIZE-1:0] dcache_data, next_dcache_data;
 
-    logic store_valid, next_store_valid;
-    ADDR  store_addr, next_store_addr;
-    DATA  store_data, next_store_data;
+    logic      store_valid, next_store_valid;
+    ADDR       store_addr, next_store_addr;
+    MEM_BLOCK  store_data, next_store_data;
 
     // DMSHR input
     logic dcache_evict;
