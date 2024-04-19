@@ -1,0 +1,49 @@
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 19 17:45 2024
+
+---- Starting CPU Testbench ----
+
+Using memory file  : programs/sw_align.mem
+Using output files : output/sw_align.{cpi, wb, ppln}
+
+                 0 : Asserting Reset
+               450 : Loading Unified Memory
+              1060 : Deasserting Reset
+              1060 : Running Processor
+             14720 : Processor Finished
+
+Final memory state and exit status:
+
+@@@ Unified Memory contents hex on left, decimal on right: 
+@@@
+@@@ mem[    0] = 0ba10113cafeb137 : 837952190189318455
+@@@ mem[    8] = 0000019700000013 : 1748051689491
+@@@ mem[   16] = 000001970c218a23 : 1748255214115
+@@@ mem[   24] = 000001970c218623 : 1748255213091
+@@@ mem[   32] = 000001970c218223 : 1748255212067
+@@@ mem[   40] = 000001970a218e23 : 1748221660707
+@@@ mem[   48] = 000001970a218a23 : 1748221659683
+@@@ mem[   56] = 000001970a218623 : 1748221658659
+@@@ mem[   64] = 000001970a218223 : 1748221657635
+@@@ mem[   72] = 0000019708218e23 : 1748188106275
+@@@ mem[   80] = 0000011708218a23 : 1198432291363
+@@@ mem[   88] = 0000011708c12103 : 1198442750211
+@@@ mem[   96] = 0000011708412103 : 1198434361603
+@@@ mem[  104] = 0000011707c12103 : 1198425972995
+@@@ mem[  112] = 1050007307412103 : 1175439996786647299
+@@@
+@@@ mem[  224] = 00000000b0bacaba : 2965031610
+@@@
+@@@
+@@@ System halted on WFI instruction
+@@@
+
+---- Finished CPU Testbench ----
+
+$finish called from file "test/cpu_test.sv", line 297.
+$finish at simulation time                15720
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 1572000 ps
+CPU Time:      0.260 seconds;       Data structure size:   0.1Mb
+Fri Apr 19 17:45:29 2024

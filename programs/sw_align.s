@@ -20,4 +20,4 @@ data:
     lw x2, data
     lw x2, data
     lw x2, data
-    wfi 
+    wfi
