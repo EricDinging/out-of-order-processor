@@ -18,40 +18,50 @@ module prefetcher (
 
     logic [$clog2(`MAX_PREFETCH_LINE+1)-1:0] cnt, next_cnt;
     PREF_STATE pref_state, next_pref_state;
-    ADDR pref_addr, next_pref_addr;
+    ADDR past_pref2Icache_addr;
 
     always_comb begin
         next_cnt        = cnt;
         next_pref_state = pref_state;
-        next_pref_addr  = pref_addr;
+        pref2Icache_addr  = past_pref2Icache_addr;
+        pref2Icache_valid      = `FALSE;
 
         case (pref_state)
             RESET: begin
                 next_cnt        = 0;
-                next_pref_state = INIT;
-                next_pref_addr  = next_pc_start;
+                next_pref_state = ON;
             end
 
             ON: begin
-                // reset is handeled in always_ff block
+                pref2Icache_addr = (past_pref2Icache_addr + 4 > next_pc_start)? 
+                    past_pref2Icache_addr + 4 : next_pc_start;
+                pref2Icache_valid = `TRUE;
+                next_cnt = cnt + 1;
+                if (next_cnt >= `MAX_PREFETCH_LINE) begin
+                    next_pref_state = STOP;
+                    next_cnt        = 0;
+                end else if (hit_valid_line) begin
+                    next_pref_state = STOP;
+                end
             end
 
             STOP: begin
-
+                if (pref2Icache_addr + 4 <= next_pc_start) begin
+                    next_pref_state = ON;
+                end
             end
         endcase
-
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
             cnt        <= 0;
             pref_state <= RESET;
-            pref_addr  <= 0;
+            past_pref2Icache_addr  <= 0;
         end else begin
             cnt        <= next_cnt;
             pref_state <= next_pref_state;
-            pref_addr  <= next_pref_addr;
+            past_pref2Icache_addr  <= pref2Icache_addr;
         end
     end
 
