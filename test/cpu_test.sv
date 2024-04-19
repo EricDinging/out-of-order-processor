@@ -720,6 +720,14 @@ module testbench;
                     showing_data = 0;
                 end
             end
+            for (int k = 0; k < `DCACHE_LINES; ++k) begin
+                if (dcache_data_debug[k].valid && dcache_data_debug[k].dirty) begin
+                    $display("@@@ mem[%5d] = %x : %0d", 
+                        {dcache_data_debug[k].tag, {k/`DCACHE_WAYS}[`DCACHE_INDEX_BITS-1:0],{`DCACHE_BLOCK_OFFSET_BITS{1'b0}}}, 
+                        dcache_data_debug[k].data,
+                        dcache_data_debug[k].data);
+                end
+            end
             $display("@@@");
 
             case (final_status)
