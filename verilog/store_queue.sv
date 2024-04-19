@@ -227,6 +227,7 @@ module store_queue (
                     MEM_HALF:  match = match_half && load_byte_info[i][1:0] != WORD;
                     MEM_HALFU: match = match_half && load_byte_info[i][1:0] != WORD;
                     MEM_WORD:  match = match_word;
+                    default:   match = `FALSE;
                 endcase
 
                 flag_break |= idx_fwd == tail_store[i];
