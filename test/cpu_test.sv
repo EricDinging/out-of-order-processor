@@ -314,7 +314,7 @@ module testbench;
     task print_id_ooo_reg;
         $fdisplay(ppln_fileno, "### ID/OOO REG:");
         for (int i = 0; i < `N; ++i) begin
-            $fdisplay(ppln_fileno, "  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
+            $fdisplay(ppln_fileno, "  PC[%0d]: %0d  valid: %b", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC, id_ooo_reg_debug.rob_is_packet.valid[i]);
             $fdisplay(ppln_fileno, "  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
         end
         $fdisplay(ppln_fileno, "id structural hazard:%b", id_stall);
@@ -789,6 +789,8 @@ module testbench;
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
+            $fdisplay(ppln_fileno, "instr_count: %d", instr_count);
+
             print_if_id_reg();
             print_id_ooo_reg();
             // print_rob_if_debug();
@@ -844,7 +846,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 50000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 100000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status

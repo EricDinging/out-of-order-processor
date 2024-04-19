@@ -99,7 +99,7 @@ module load_queue (
             if (load_rs_avail[i]) begin
                 next_lu_reg[i].valid      = rs_lq_packet[i].valid;
                 next_lu_reg[i].sign_size  = rs_lq_packet[i].sign_size;
-                next_lu_reg[i].addr       = rs_lq_packet[i].base + {20'h0, rs_lq_packet[i].offset};
+                next_lu_reg[i].addr       = rs_lq_packet[i].base + 32'(signed'(rs_lq_packet[i].offset));
                 next_lu_reg[i].prn        = rs_lq_packet[i].prn;
                 next_lu_reg[i].robn       = rs_lq_packet[i].robn;
                 next_lu_reg[i].tail_store = rs_lq_packet[i].tail_store;

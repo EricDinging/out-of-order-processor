@@ -106,7 +106,7 @@ module store_queue (
         next_sq_reg = sq_reg;
         foreach (next_sq_reg[i]) begin
             next_sq_reg[i].valid  = rs_sq_packet[i].valid;
-            next_sq_reg[i].addr   = rs_sq_packet[i].base + {20'h0, rs_sq_packet[i].offset};
+            next_sq_reg[i].addr   = rs_sq_packet[i].base + 32'(signed'(rs_sq_packet[i].offset));
             next_sq_reg[i].data   = rs_sq_packet[i].data;
             next_sq_reg[i].sq_idx = rs_sq_packet[i].sq_idx;
         end
