@@ -43,13 +43,13 @@
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
-`define LSQ_SZ 8
+// `define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 2
 `define NUM_FU_MULT 2
-`define NUM_FU_LOAD 8
-`define NUM_FU_STORE 8
+`define NUM_FU_LOAD 4
+`define NUM_FU_STORE 2
 
 // `define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
 // `define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
@@ -60,7 +60,7 @@
 // cache
 `define CACHE_LINES 32
 `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
-`define MAX_PREFETCH_LINE 8
+`define MAX_PREFETCH_LINE 4
 
 // lsq
 `define NUM_SQ_DCACHE `N // cannot change to other value
@@ -811,6 +811,7 @@ typedef struct packed {
     logic    valid;
     // logic    signext;
     // MEM_SIZE byte_info;
+    logic [3:0] forwarded;
     MEM_FUNC byte_info;
     ADDR     addr;
     DATA     data;
@@ -835,6 +836,7 @@ typedef struct packed {
     logic valid;
     // logic signext;
     // MEM_SIZE size;
+    logic [3:0] forwarded;
     MEM_FUNC sign_size;
     ADDR addr;
     PRN prn;

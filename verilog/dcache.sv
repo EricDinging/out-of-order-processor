@@ -208,16 +208,16 @@ module dmshr #(
                                     && next_dmshr_entries[j].tag == lq_dcache_packet[i].addr[31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS]
                                     && next_dmshr_entries[j].index == lq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
                 if (dmshr_load_hit[i][j] && lq_dcache_miss[i]) begin
-                    push_packets[j][i] = '{
+                    push_packets[j][i+`N] = '{
                         INST_LOAD,
                         lq_dcache_packet[i].mem_func,
                         {32'b0},
                         lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0],
                         lq_dcache_packet[i].lq_idx
                     };
-                    push_valids[j][i] = `TRUE;
+                    push_valids[j][i+`N] = `TRUE;
                     // read push accept
-                    load_req_accept[i] = push_accepts[j][i];
+                    load_req_accept[i] = push_accepts[j][i+`N];
                 end
             end
             if (~(|dmshr_load_hit[i]) && lq_dcache_packet[i].valid && lq_dcache_miss[i]) begin
@@ -227,16 +227,16 @@ module dmshr #(
                         next_dmshr_entries[j].state = DMSHR_PENDING;
                         next_dmshr_entries[j].tag = lq_dcache_packet[i].addr[31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS];
                         next_dmshr_entries[j].index = lq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                        push_packets[j][i] = {
+                        push_packets[j][i+`N] = {
                             INST_LOAD,
                             lq_dcache_packet[i].mem_func,
                             {32'b0},
                             lq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0],
                             lq_dcache_packet[i].lq_idx
                         };
-                        push_valids[j][i] = `TRUE;
+                        push_valids[j][i+`N] = `TRUE;
                         // read push accept
-                        load_req_accept[i] = push_accepts[j][i];
+                        load_req_accept[i] = push_accepts[j][i+`N];
                     end
                 end
             end
@@ -250,15 +250,15 @@ module dmshr #(
                                      && next_dmshr_entries[j].tag == sq_dcache_packet[i].addr[31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS]
                                      && next_dmshr_entries[j].index == sq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
                 if (dmshr_store_hit[i][j] && sq_dcache_miss[i]) begin
-                    push_packets[j][i+`N] = '{
+                    push_packets[j][i] = '{
                         INST_STORE,               // inst_command
                         sq_dcache_packet[i].mem_func, // mem_func
                         sq_dcache_packet[i].data, // data
                         sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0], // block_offset
                         {`LU_IDX_BITS{1'b0}}    // lq_idx
                     };
-                    push_valids[j][i+`N] = `TRUE;
-                    store_req_accept[i] = push_accepts[j][i+`N];
+                    push_valids[j][i] = `TRUE;
+                    store_req_accept[i] = push_accepts[j][i];
                 end
             end
             if (~(|dmshr_store_hit[i]) && sq_dcache_packet[i].valid && sq_dcache_miss[i]) begin
@@ -268,15 +268,15 @@ module dmshr #(
                         next_dmshr_entries[j].state = DMSHR_PENDING;
                         next_dmshr_entries[j].tag = sq_dcache_packet[i].addr[31:`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS];
                         next_dmshr_entries[j].index = sq_dcache_packet[i].addr[`DCACHE_INDEX_BITS+`DCACHE_BLOCK_OFFSET_BITS-1:`DCACHE_BLOCK_OFFSET_BITS];
-                        push_packets[j][i+`N] = '{
+                        push_packets[j][i] = '{
                             INST_STORE,               // inst_command
                             sq_dcache_packet[i].mem_func, // mem_func
                             sq_dcache_packet[i].data, // data
                             sq_dcache_packet[i].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0], // block_offset
                             {`LU_IDX_BITS{1'b0}}    // lq_idx
                         };
-                        push_valids[j][i+`N] = `TRUE;
-                        store_req_accept[i] = push_accepts[j][i+`N];
+                        push_valids[j][i] = `TRUE;
+                        store_req_accept[i] = push_accepts[j][i];
                     end
                 end
             end
@@ -359,9 +359,9 @@ module dcache (
 );
     DCACHE_ENTRY [`DCACHE_SETS-1:0][`DCACHE_WAYS-1:0] dcache_data, next_dcache_data;
 
-    logic store_valid, next_store_valid;
-    ADDR  store_addr, next_store_addr;
-    DATA  store_data, next_store_data;
+    logic      store_valid, next_store_valid;
+    ADDR       store_addr, next_store_addr;
+    MEM_BLOCK  store_data, next_store_data;
 
     // DMSHR input
     logic dcache_evict;

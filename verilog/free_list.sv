@@ -33,6 +33,7 @@ module free_list #(
         next_tail              = tail;
         next_counter           = counter;
         next_free_list_entries = free_list_entries;
+        pop_packet             = 0;
 
         if (rat_squash) begin
             next_free_list_entries = input_free_list;
