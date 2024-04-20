@@ -1,6 +1,6 @@
 Chronologic VCS simulator copyright 1991-2020
 Contains Synopsys proprietary information.
-Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 12 21:47 2024
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 05:16 2024
 
 ---- Starting CPU Testbench ----
 
@@ -11,7 +11,7 @@ Using output files : output/sampler.{cpi, wb, ppln}
                450 : Loading Unified Memory
               1060 : Deasserting Reset
               1060 : Running Processor
-            165920 : Processor Finished
+             47120 : Processor Finished
 
 Final memory state and exit status:
 
@@ -94,8 +94,8 @@ Final memory state and exit status:
 ---- Finished CPU Testbench ----
 
 $finish called from file "test/cpu_test.sv", line 297.
-$finish at simulation time               166920
+$finish at simulation time                48120
            V C S   S i m u l a t i o n   R e p o r t 
-Time: 16692000 ps
-CPU Time:      0.260 seconds;       Data structure size:   0.1Mb
-Fri Apr 12 21:47:57 2024
+Time: 4812000 ps
+CPU Time:      0.280 seconds;       Data structure size:   0.1Mb
+Sat Apr 20 05:16:40 2024

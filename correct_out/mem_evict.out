@@ -1,0 +1,46 @@
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 05:16 2024
+
+---- Starting CPU Testbench ----
+
+Using memory file  : programs/mem_evict.mem
+Using output files : output/mem_evict.{cpi, wb, ppln}
+
+                 0 : Asserting Reset
+               450 : Loading Unified Memory
+              1060 : Deasserting Reset
+              1060 : Running Processor
+              8720 : Processor Finished
+
+Final memory state and exit status:
+
+@@@ Unified Memory contents hex on left, decimal on right: 
+@@@
+@@@ mem[    0] = b0bad2b7000010b7 : 12734722579764351159
+@@@ mem[    8] = 0050a023afe28293 : 22694073272009363
+@@@ mem[   16] = 20008093000010b7 : 2305984378062246071
+@@@ mem[   24] = 0ba28293cafeb2b7 : 838376051921826487
+@@@ mem[   32] = 000010b70050a023 : 18378170343459
+@@@ mem[   40] = 000000130000a283 : 81604420227
+@@@ mem[   48] = 0000001300000013 : 81604378643
+@@@ mem[   56] = 0000001300000013 : 81604378643
+@@@ mem[   64] = 0000001300000013 : 81604378643
+@@@ mem[   72] = 0000000010500073 : 273678451
+@@@
+@@@ mem[ 4096] = 00000000b0bacafe : 2965031678
+@@@
+@@@ mem[ 4608] = 00000000cafeb0ba : 3405689018
+@@@
+@@@
+@@@ System halted on WFI instruction
+@@@
+
+---- Finished CPU Testbench ----
+
+$finish called from file "test/cpu_test.sv", line 297.
+$finish at simulation time                 9720
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 972000 ps
+CPU Time:      0.260 seconds;       Data structure size:   0.1Mb
+Sat Apr 20 05:16:42 2024

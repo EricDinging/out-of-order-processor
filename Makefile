@@ -686,6 +686,16 @@ novas.rc: initialnovas.rc
 
 .PHONY: %.verdi
 
+#######################
+# ---- Comparing ---- #
+#######################
+
+correct_out/%.out:
+	./script/program.sh $(basename $(notdir $@))
+
+p3_generate_all: $(PROGRAMS:%=correct_out/%.out)
+.PHONY: p3_generate_all
+
 ################################
 # ---- Output Directories ---- #
 ################################

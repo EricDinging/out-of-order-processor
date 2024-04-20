@@ -1,0 +1,63 @@
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 05:16 2024
+
+---- Starting CPU Testbench ----
+
+Using memory file  : programs/gcd_strict.mem
+Using output files : output/gcd_strict.{cpi, wb, ppln}
+
+                 0 : Asserting Reset
+               450 : Loading Unified Memory
+              1060 : Deasserting Reset
+              1060 : Running Processor
+             28820 : Processor Finished
+
+Final memory state and exit status:
+
+@@@ Unified Memory contents hex on left, decimal on right: 
+@@@
+@@@ mem[    0] = 0001041300002137 : 285954627608887
+@@@ mem[    8] = 0180059303c00513 : 108092520038139155
+@@@ mem[   16] = 054080e700000097 : 378444098324922519
+@@@ mem[   24] = 1050007300050293 : 1175439996665266835
+@@@ mem[   32] = 0014202301010413 : 5664834247001107
+@@@ mem[   40] = 00a4242300242223 : 46201628925370915
+@@@ mem[   48] = 02b5466300b42623 : 195139549887997475
+@@@ mem[   56] = 0000009740b50533 : 649625666867
+@@@ mem[   64] = 00050293fe4080e7 : 1410209532641511
+@@@ mem[   72] = 0004208300010413 : 1161646919713811
+@@@ mem[   80] = 0084250300442103 : 37195391745401091
+@@@ mem[   88] = 0002851300c42583 : 709266617148803
+@@@ mem[   96] = 0605846300008067 : 433898499847782503
+@@@ mem[  104] = 0014202301010413 : 5664834247001107
+@@@ mem[  112] = 00a4242300242223 : 46201628925370915
+@@@ mem[  120] = 0004011300b42623 : 1127081034655267
+@@@ mem[  128] = fa0080e700000097 : 18014540239107784855
+@@@ mem[  136] = 0001041300050293 : 285954627928723
+@@@ mem[  144] = 0044210300042083 : 19176595185213571
+@@@ mem[  152] = 00c4258300842503 : 55210340014892291
+@@@ mem[  160] = 0002859300058513 : 709816360469779
+@@@ mem[  168] = fbc080e700000097 : 18140641028674158743
+@@@ mem[  176] = 0001041300050293 : 285954627928723
+@@@ mem[  184] = 0044210300042083 : 19176595185213571
+@@@ mem[  192] = 00c4258300842503 : 55210340014892291
+@@@ mem[  200] = 0000806700028513 : 141179870151955
+@@@
+@@@ mem[ 8208] = 0000200000000018 : 35184372088856
+@@@ mem[ 8216] = 000000180000003c : 103079215164
+@@@ mem[ 8224] = 0000201000000044 : 35253091565636
+@@@ mem[ 8232] = 000000180000000c : 103079215116
+@@@
+@@@
+@@@ System halted on WFI instruction
+@@@
+
+---- Finished CPU Testbench ----
+
+$finish called from file "test/cpu_test.sv", line 297.
+$finish at simulation time                29820
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 2982000 ps
+CPU Time:      0.270 seconds;       Data structure size:   0.1Mb
+Sat Apr 20 05:16:42 2024

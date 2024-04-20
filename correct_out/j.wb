@@ -1,0 +1,4 @@
+Register writeback output
+PC=00000000, REG[ 1]=00000004
+PC=00000008, ---
+PC=00000004, ---
