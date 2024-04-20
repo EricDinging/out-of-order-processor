@@ -1,6 +1,6 @@
 Chronologic VCS simulator copyright 1991-2020
 Contains Synopsys proprietary information.
-Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 05:16 2024
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 17:52 2024
 
 ---- Starting CPU Testbench ----
 
@@ -11,14 +11,14 @@ Using output files : output/fib_rec.{cpi, wb, ppln}
                450 : Loading Unified Memory
               1060 : Deasserting Reset
               1060 : Running Processor
-          12022820 : Processor Finished
+          17937920 : Processor Finished
 
 Final memory state and exit status:
 
 @@@ Unified Memory contents hex on left, decimal on right: 
 @@@
 @@@ mem[    0] = 00001fb700100413 : 34870840525843
-@@@ mem[    8] = 01000def00f00893 : 72072914202003603
+@@@ mem[    8] = 01000def00e00893 : 72072914200955027
 @@@ mem[   16] = 0011202340000113 : 4820410373767443
 @@@ mem[   24] = 0408806310500073 : 290623338929193075
 @@@ mem[   32] = fe0f8f9302888e63 : 18307008871849823843
@@ -31,12 +31,8 @@ Final memory state and exit status:
 @@@ mem[   88] = 00100093000d8067 : 4504230988447847
 @@@ mem[   96] = 00000000000d8067 : 884839
 @@@
-@@@ mem[ 1024] = 00000000000003db : 987
+@@@ mem[ 1024] = 0000000000000262 : 610
 @@@
-@@@ mem[ 3648] = 0000000000000002 : 2
-@@@ mem[ 3656] = 0000000000000001 : 1
-@@@
-@@@ mem[ 3672] = 0000000000000038 : 56
 @@@ mem[ 3680] = 0000000000000002 : 2
 @@@ mem[ 3688] = 0000000000000001 : 1
 @@@
@@ -61,32 +57,32 @@ Final memory state and exit status:
 @@@ mem[ 3848] = 0000000000000001 : 1
 @@@
 @@@ mem[ 3864] = 0000000000000038 : 56
-@@@ mem[ 3872] = 0000000000000003 : 3
-@@@ mem[ 3880] = 0000000000000002 : 2
+@@@ mem[ 3872] = 0000000000000002 : 2
+@@@ mem[ 3880] = 0000000000000001 : 1
 @@@
 @@@ mem[ 3896] = 0000000000000048 : 72
-@@@ mem[ 3904] = 0000000000000005 : 5
-@@@ mem[ 3912] = 0000000000000005 : 5
+@@@ mem[ 3904] = 0000000000000004 : 4
+@@@ mem[ 3912] = 0000000000000003 : 3
 @@@
 @@@ mem[ 3928] = 0000000000000048 : 72
-@@@ mem[ 3936] = 0000000000000007 : 7
-@@@ mem[ 3944] = 000000000000000d : 13
+@@@ mem[ 3936] = 0000000000000006 : 6
+@@@ mem[ 3944] = 0000000000000008 : 8
 @@@
 @@@ mem[ 3960] = 0000000000000048 : 72
-@@@ mem[ 3968] = 0000000000000009 : 9
-@@@ mem[ 3976] = 0000000000000022 : 34
+@@@ mem[ 3968] = 0000000000000008 : 8
+@@@ mem[ 3976] = 0000000000000015 : 21
 @@@
 @@@ mem[ 3992] = 0000000000000048 : 72
-@@@ mem[ 4000] = 000000000000000b : 11
-@@@ mem[ 4008] = 0000000000000059 : 89
+@@@ mem[ 4000] = 000000000000000a : 10
+@@@ mem[ 4008] = 0000000000000037 : 55
 @@@
 @@@ mem[ 4024] = 0000000000000048 : 72
-@@@ mem[ 4032] = 000000000000000d : 13
-@@@ mem[ 4040] = 00000000000000e9 : 233
+@@@ mem[ 4032] = 000000000000000c : 12
+@@@ mem[ 4040] = 0000000000000090 : 144
 @@@
 @@@ mem[ 4056] = 0000000000000048 : 72
-@@@ mem[ 4064] = 000000000000000f : 15
-@@@ mem[ 4072] = 0000000000000262 : 610
+@@@ mem[ 4064] = 000000000000000e : 14
+@@@ mem[ 4072] = 0000000000000179 : 377
 @@@
 @@@ mem[ 4088] = 0000000000000010 : 16
 @@@
@@ -97,8 +93,8 @@ Final memory state and exit status:
 ---- Finished CPU Testbench ----
 
 $finish called from file "test/cpu_test.sv", line 297.
-$finish at simulation time             12023820
+$finish at simulation time             17938920
            V C S   S i m u l a t i o n   R e p o r t 
-Time: 1202382000 ps
-CPU Time:      0.660 seconds;       Data structure size:   0.1Mb
-Sat Apr 20 05:16:44 2024
+Time: 1793892000 ps
+CPU Time:      0.620 seconds;       Data structure size:   0.1Mb
+Sat Apr 20 17:52:54 2024
