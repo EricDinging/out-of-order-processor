@@ -7,7 +7,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 script="$1"
-dir="/home/$USER/Documents/eecs470"
+dir="/home/$USER/eecs470"
 
 group="group9"
 
@@ -19,4 +19,4 @@ cp ${dir}/p3-w24.${USER}/output/${script}.wb ${dir}/p4-w24.${group}/correct_out/
 cp ${dir}/p3-w24.${USER}/output/${script}.out ${dir}/p4-w24.${group}/correct_out/${script}.out
 cd ${dir}/p3-w24.${USER}
 make ${script}.out 
-# ./script/compare.sh ${script}.wb
+./script/compare.sh ${script}.wb

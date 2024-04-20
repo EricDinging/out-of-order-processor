@@ -48,18 +48,15 @@ module stage_fetch (
     logic pref2Icache_valid;
     ADDR pref2Icache_addr;
 
-    local_predictor bp (
+    tournament_predictor bp (
         .clock(clock),
         .reset(reset),
         .pc_start(pc_start),
         .rob_if_packet(rob_if_packet),
         // output
         .target_pc(target_pc)
-        `ifdef CPU_DEBUG_OUT
-        // , .btb_entries_debug(btb_entries_debug)
-        // , .branch_history_table_debug(branch_history_table_debug)
-        // , .pattern_history_table_debug(pattern_history_table_debug)
-        `endif
+    `ifdef CPU_DEBUG_OUT
+    `endif
     );
 
     icache ic (

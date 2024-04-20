@@ -360,7 +360,6 @@ module tournament_predictor (
     );
 
     logic [1:0] bias, next_bias;
-    // logic bias, next_bias;
 
 `ifdef CPU_DEBUG_OUT
     assign bias_debug = bias;
@@ -373,8 +372,6 @@ module tournament_predictor (
         for (int i = 0; i < `N; ++i) if (rob_if_packet.entries[i].valid) begin
             if (lp_correct[i] && ~gp_correct[i] && next_bias != 2'b11) ++next_bias;
             if (gp_correct[i] && ~lp_correct[i] && next_bias != 2'b00) --next_bias;
-            // if (lp_correct[i] && ~gp_correct[i]) next_bias = `TRUE;
-            // if (gp_correct[i] && ~lp_correct[i]) next_bias = `FALSE;
         end
     end
 

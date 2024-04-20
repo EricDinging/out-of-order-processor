@@ -15,18 +15,20 @@ The [Project Specification](https://www.eecs.umich.edu/courses/eecs470/Projects/
 has more details on the overall structure of the project and deadlines.
 
 To summarize the deadlines:
+
 - Milestone 1 is due by **Tuesday 3/5 at 11:59pm** (one module + testbench)
 - Milestone 2 is due by **Thursday 3/28 at noon** (mult_no_lsq working)
 - Milestone 3 is due by **Thursday 4/11 at noon** (most programs correct)
 - Your final autograder submission is due by **Saturday 4/20 at 8:59pm**
 - Your final report (10-20 pages) is due by **Tuesday 4/23 at noon**
 
-### Autograder Submission
+## Autograder Submission
 
 For milestone 1, submit to the autograder like normal, but update the
 Milestone 1 Submission section in the Makefile to run your main module:
 
 Update this part of the Makefile:
+
 ```make
 MS_1_MODULE = ...
 
@@ -40,17 +42,17 @@ make targets are available for the autograder.
 
 For other autograder submissions, we have these requirements:
 
-1.  Running `make simv` will compile a simulation executable for your
+1. Running `make simv` will compile a simulation executable for your
     processor
 
-2.  Running `make syn_simv` will compile a synthesis executable for your
+2. Running `make syn_simv` will compile a synthesis executable for your
     processor
 
-3.  Running `make my_program.out` and `make my_program.syn.out` will run
+3. Running `make my_program.out` and `make my_program.syn.out` will run
     a program by loading a memory file in `programs/my_program.mem` (as
     in project 3)
 
-4.  This must write the correct memory output (lines starting with @@@)
+4. This must write the correct memory output (lines starting with @@@)
     to stdout when it runs, and you must generate the same
     `output/my_program.cpi` file exactly as in project 3.
 
@@ -135,17 +137,17 @@ make build/<module>.cov.simv  <- compiles a coverage executable for the testbenc
 
 `sys_defs` has received a few changes to prepare the final project:
 
-1.  We've defined `CACHE_MODE`, affecting `test/mem.sv` and changing
+1. We've defined `CACHE_MODE`, affecting `test/mem.sv` and changing
     the way the processor interacts with memory.
 
-2.  We've added a memory latency of 100ns, so memory is now much
+2. We've added a memory latency of 100ns, so memory is now much
     slower, and handling it with caching is necessary.
 
-3.  There is a new 'Parameters' section giving you a starting point
+3. There is a new 'Parameters' section giving you a starting point
     for some common macros that will likely need to be decided on like
     the size of the ROB, the number of functional units, etc.
 
-3.  The ALU functions have separated the multiplier operations out
+4. The ALU functions have separated the multiplier operations out
 
 ### CPU Files
 
