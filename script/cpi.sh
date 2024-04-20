@@ -33,11 +33,9 @@ file_list=(
     "gcd_strict" \
     "graph" \
     "haha" \
-    "halt" \
     "hw_test_ipc" \
     "insertion" \
     "insertionsort" \
-    "j" \
     "load_simple" \
     "load_store_simple" \
     "loop_big" \
