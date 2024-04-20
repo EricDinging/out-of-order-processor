@@ -9,7 +9,8 @@ module dmshr_queue (
     input logic                      flush,
     output logic          [2*`N-1:0] push_accept,
     output DMSHR_Q_PACKET [`N-1:0]   flush_packet,
-    output logic          [`N-1:0]   flush_valid
+    output logic          [`N-1:0]   flush_valid,
+    output logic                     squash_empty
 `ifdef CPU_DEBUG_OUT
     , output logic [`N_CNT_WIDTH-1:0] counter_debug
 `endif
@@ -21,6 +22,8 @@ module dmshr_queue (
 `ifdef CPU_DEBUG_OUT
     assign counter_debug = counter;
 `endif
+
+    assign squash_empty = squash && next_counter == 0;
 
     always_comb begin
         next_head            = head;
@@ -130,6 +133,7 @@ module dmshr #(
     logic          [SIZE-1:0][2*`N-1:0] push_accepts;
     DMSHR_Q_PACKET [SIZE-1:0][`N-1:0]   flush_packets;
     logic          [SIZE-1:0][`N-1:0]   flush_valids;
+    logic          [SIZE-1:0]           squash_empty;
 
     wire [SIZE-1:0] entries_pending;
     wire [SIZE-1:0] entries_pending_gnt_bus;
@@ -161,7 +165,8 @@ module dmshr #(
                 .flush(flushes[i]),
                 .push_accept(push_accepts[i]),
                 .flush_packet(flush_packets[i]),
-                .flush_valid(flush_valids[i])
+                .flush_valid(flush_valids[i]),
+                .squash_empty(squash_empty[i])
             `ifdef CPU_DEBUG_OUT
                 , .counter_debug(counter_debug[i])
             `endif
@@ -279,6 +284,12 @@ module dmshr #(
                         store_req_accept[i] = push_accepts[j][i];
                     end
                 end
+            end
+        end
+
+        for (int i = 0; i < SIZE; ++i) begin
+            if (squash_empty[i]) begin
+                next_dmshr_entries[i].state = DMSHR_INVALID;
             end
         end
 
