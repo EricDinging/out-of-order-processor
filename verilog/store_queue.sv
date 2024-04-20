@@ -132,7 +132,7 @@ module store_queue (
                     next_entries[next_tail] = '{
                         `TRUE,
                         id_sq_packet[i].byte_info,
-                        32'b0, 32'b0, `FALSE, `FALSE
+                        32'b0, 32'b0, `FALSE, `FALSE, `FALSE
                     };
                     next_tail = (next_tail + 1) % (`SQ_LEN + 1);
                     next_size += 1;
@@ -149,42 +149,82 @@ module store_queue (
             end
         end
         
+        // // ROB
+        // sq_dcache_packet = 0;
+        // idx = 0;
+
+        // try_to_sent_insns = 0;
+        // for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
+        //     if (num_commit_insns > try_to_sent_insns) begin
+        //         idx = (head + i) % (`SQ_LEN + 1);
+        //         if (entries[idx].valid && entries[idx].ready && !entries[idx].accepted) begin
+        //             sq_dcache_packet[i] = '{
+        //                 `TRUE,
+        //                 entries[idx].addr,
+        //                 entries[idx].byte_info,
+        //                 entries[idx].data
+        //             };
+        //             try_to_sent_insns += 1;
+        //         end else if (entries[idx].valid && ~entries[idx].ready) begin
+        //             break;
+        //         end
+        //     end
+        // end
+
+        // num_sent_insns = 0;
+        // break_flag = `FALSE;
+        // for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
+        //     idx = (head + i) % (`SQ_LEN + 1);
+        //     if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
+        //         next_entries[idx].accepted = `TRUE;
+        //         if (!break_flag) begin
+        //             num_sent_insns += 1;
+        //             next_entries[idx] = 0;
+        //             next_head = (next_head + 1) % (`SQ_LEN + 1);
+        //             next_size -= 1;
+        //         end
+        //     end else begin
+        //         break_flag = `TRUE;
+        //     end
+        // end
+
         // ROB
-        sq_dcache_packet = 0;
         idx = 0;
 
-        try_to_sent_insns = 0;
+        num_sent_insns = 0;
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
-            if (num_commit_insns > try_to_sent_insns) begin
+            if (num_commit_insns > num_sent_insns) begin
                 idx = (head + i) % (`SQ_LEN + 1);
-                if (entries[idx].valid && entries[idx].ready && !entries[idx].accepted) begin
-                    sq_dcache_packet[i] = '{
-                        `TRUE,
-                        entries[idx].addr,
-                        entries[idx].byte_info,
-                        entries[idx].data
-                    };
-                    try_to_sent_insns += 1;
+                if (entries[idx].valid && entries[idx].ready && !entries[idx].commited) begin
+                    next_entries[idx].commited = `TRUE;
+                    num_sent_insns += 1;
                 end else if (entries[idx].valid && ~entries[idx].ready) begin
                     break;
                 end
             end
         end
 
-        num_sent_insns = 0;
         break_flag = `FALSE;
+        sq_dcache_packet = 0;
         for (int i = 0; i < `NUM_SQ_DCACHE; i++) begin
             idx = (head + i) % (`SQ_LEN + 1);
-            if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
-                next_entries[idx].accepted = `TRUE;
-                if (!break_flag) begin
-                    num_sent_insns += 1;
-                    next_entries[idx] = 0;
-                    next_head = (next_head + 1) % (`SQ_LEN + 1);
-                    next_size -= 1;
+            if (entries[idx].valid && entries[idx].commited && !entries[idx].accepted) begin
+                sq_dcache_packet[i] = '{
+                    `TRUE,
+                    entries[idx].addr,
+                    entries[idx].byte_info,
+                    entries[idx].data
+                };
+                if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
+                    next_entries[idx].accepted = `TRUE;
+                    if (!break_flag) begin
+                        next_entries[idx] = 0;
+                        next_head = (next_head + 1) % (`SQ_LEN + 1);
+                        next_size -= 1;
+                    end
+                end else begin
+                    break_flag = `TRUE;
                 end
-            end else begin
-                break_flag = `TRUE;
             end
         end
     end

@@ -96,7 +96,7 @@
 # there should be no need to change anything for project 3
 
 # this is a global clock period variable used in the tcl script and referenced in testbenches
-export CLOCK_PERIOD = 15.0
+export CLOCK_PERIOD = 10.0
 
 # the Verilog Compiler command and arguments
 VCS = SW_VCS=2020.12-SP2-1 vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align mem lru onehotdec prefetcher
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align mem lru onehotdec prefetcher ras
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -247,7 +247,7 @@ build/prf.cov.simv: $(PRF_FILES)
 synth/prf.vg: $(PRF_FILES)
 
 # FU_CDB
-FU_CDB_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/fu.sv verilog/cdb.sv verilog/mult.sv verilog/onehot_mux.sv verilog/psel_gen.sv
+FU_CDB_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/fu.sv verilog/cdb.sv verilog/mult.sv verilog/onehot_mux.sv verilog/psel_gen.sv verilog/store_queue.sv verilog/load_queue.sv verilog/sign_align.sv verilog/lru.sv
 build/fu_cdb.simv: $(FU_CDB_FILES)
 build/fu_cdb.cov.simv: $(FU_CDB_FILES)
 synth/fu_cdb.vg: $(FU_CDB_FILES)
@@ -271,7 +271,7 @@ build/rrat.cov.simv: $(RRAT_FILES)
 synth/rrat.vg: $(RRAT_FILES)
 
 # OOO
-OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv
+OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv verilog/dcache.sv verilog/store_queue.sv verilog/load_queue.sv verilog/sign_align.sv verilog/onehotdec.sv verilog/lru.sv
 build/ooo.simv: $(OOO_FILES)
 build/ooo.cov.simv: $(OOO_FILES)
 synth/ooo.vg: $(OOO_FILES)
@@ -321,6 +321,11 @@ build/lru.simv: $(LRU_FILES)
 build/lru.cov.simv: $(LRU_FILES)
 synth/lru.vg: $(LRU_FILES)
 
+RAS_FILES = verilog/sys_defs.svh verilog/ras.sv
+build/ras.simv: $(RAS_FILES)
+build/ras.cov.simv: $(RAS_FILES)
+synth/ras.vg: $(RAS_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################
@@ -362,9 +367,9 @@ CPU_SOURCES = verilog/regfile.sv \
               verilog/store_queue.sv \
               verilog/load_queue.sv \
               verilog/sign_align.sv \
-			  verilog/lru.sv \
-			  verilog/onehotdec.sv \
-			  verilog/prefetcher.sv
+              verilog/lru.sv \
+              verilog/onehotdec.sv \
+              verilog/prefetcher.sv
 
 
 

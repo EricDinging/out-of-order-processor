@@ -692,10 +692,10 @@ module testbench;
         int num_cycles;
         begin
             num_cycles = clock_count + 1;
-            cpi = $itor(num_cycles) / (instr_count + pipeline_completed_insts); // must convert int to real
+            cpi = $itor(num_cycles) / (instr_count + pipeline_completed_insts - 1); // must convert int to real
             cpi_fileno = $fopen(cpi_output_file);
             $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-                      num_cycles, instr_count + pipeline_completed_insts, cpi);
+                      num_cycles, instr_count + pipeline_completed_insts - 1, cpi);
             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
                       num_cycles * `CLOCK_PERIOD);
             $fclose(cpi_fileno);
@@ -828,25 +828,25 @@ module testbench;
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
             $fdisplay(ppln_fileno, "instr_count: %d", instr_count);
 
-            print_if_id_reg();
-            print_id_ooo_reg();
-            // print_rob_if_debug();
-            print_target_memory_block();
-            print_mem_cache();
-            print_rs_lq_packet();
-            print_load_queue();
-            print_sq();
-            print_lq_dcache_packet();
-            print_sq_dcache_packet();
-            print_dcache();
-            print_dcache_lq_packet();
-            // print_fu_state_packet();
-            print_cdb_packet();
-            // print_cdb_state();
-            print_fu_rob_packet();
-            print_select();
-            print_rs();
-            print_rob();
+            // print_if_id_reg();
+            // print_id_ooo_reg();
+            print_rob_if_debug();
+            // print_target_memory_block();
+            // print_mem_cache();
+            // print_rs_lq_packet();
+            // print_load_queue();
+            // print_sq();
+            // print_lq_dcache_packet();
+            // print_sq_dcache_packet();
+            // print_dcache();
+            // print_dcache_lq_packet();
+            // // print_fu_state_packet();
+            // print_cdb_packet();
+            // // print_cdb_state();
+            // print_fu_rob_packet();
+            // print_select();
+            // print_rs();
+            // print_rob();
 
 
             // print_imshr_entries_debug();

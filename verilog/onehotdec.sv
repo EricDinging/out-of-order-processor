@@ -4,22 +4,17 @@ module onehotdec #(
     parameter WIDTH
 ) (
     input  logic [WIDTH-1:0]         in,
-    output logic [$clog2(WIDTH)-1:0] out,
+    output wor   [$clog2(WIDTH)-1:0] out,
     output logic                     valid
 );
 
-    logic [$clog2(WIDTH)-1:0] count;
+    assign valid = |in;
 
-    assign valid = count == 1;
-
-    always_comb begin
-        count = 0;
-        for (int i = 0; i < WIDTH; ++i) begin
-            if (in[i]) begin
-                out = i;
-                ++count;
-            end
+    genvar i;
+    generate
+        for (i = 0; i < WIDTH; ++i) begin
+            assign out = in[i] ? i : 0;
         end
-    end
+    endgenerate
 
 endmodule

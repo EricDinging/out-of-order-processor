@@ -513,6 +513,8 @@ module dcache (
 
         set_hits               = 0;
         cache_line_hit_indexes = 0;
+        store_tag_hits         = 0;
+        load_tag_hits          = 0;
 
         if (store_valid) begin
             proc2Dmem_addr    = store_addr;
