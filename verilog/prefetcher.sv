@@ -33,15 +33,17 @@ module prefetcher (
             end
 
             ON: begin
-                pref2Icache_addr = (past_pref2Icache_addr + 4 > next_pc_start)? 
-                    past_pref2Icache_addr + 4 : next_pc_start;
-                pref2Icache_valid = `TRUE;
-                next_cnt = cnt + 1;
-                if (next_cnt >= `MAX_PREFETCH_LINE) begin
+                if (cnt >= `MAX_PREFETCH_LINE) begin
                     next_pref_state = STOP;
                     next_cnt        = 0;
-                end else if (hit_valid_line) begin
-                    next_pref_state = STOP;
+                end else begin
+                    pref2Icache_addr = (past_pref2Icache_addr + 4 > next_pc_start)? 
+                    past_pref2Icache_addr + 4 : next_pc_start;
+                    pref2Icache_valid = `TRUE;
+                    next_cnt = cnt + 1;
+                    if (hit_valid_line) begin 
+                        next_pref_state = STOP;
+                    end
                 end
             end
 
@@ -51,6 +53,7 @@ module prefetcher (
                 end
             end
         endcase
+
     end
 
     always_ff @(posedge clock) begin
