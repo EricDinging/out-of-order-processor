@@ -158,7 +158,7 @@ module rrat_free_list #(
         .input_free_list({`PRN_WIDTH*SIZE{1'b0}}),
         .head_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
         .tail_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
-        .counter_in({`FREE_LIST_PTR_WIDTH{1'b0}}),
+        .counter_in({`FREE_LIST_CTR_WIDTH{1'b0}}),
         .rat_squash(`FALSE),
         .pop_packet(pop_packet),
         .output_free_list(output_free_list),

@@ -44,7 +44,7 @@ module cpu (
     output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug,
     // rob
     output ROB_ENTRY [`ROB_SZ-1:0]        rob_entries_out,
-    output logic     [`RS_CNT_WIDTH-1:0]  rob_counter_out,
+    output logic     [`ROB_CNT_WIDTH-1:0] rob_counter_out,
     output logic     [`ROB_PTR_WIDTH-1:0] rob_head_out,
     output logic     [`ROB_PTR_WIDTH-1:0] rob_tail_out,
     // rs
