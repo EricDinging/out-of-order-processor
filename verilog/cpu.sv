@@ -321,6 +321,9 @@ module cpu (
 
     assign proc2mem_command = dcache_request ? proc2Dmem_command : proc2Imem_command;
     assign proc2mem_addr    = dcache_request ? proc2Dmem_addr    : proc2Imem_addr;
+`ifndef CACHE_MODE
+    assign proc2mem_size    = dcache_request ? WORD : DOUBLE;
+`endif
 
     // these signals go to and from the processor and memory
     // we give precedence to the mem stage over instruction fetch

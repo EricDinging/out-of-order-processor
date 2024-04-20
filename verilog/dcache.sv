@@ -368,7 +368,7 @@ module dcache (
     // To Icache
     output logic dcache_request,
     output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
-    output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug,
+    output DMSHR_ENTRY  [`DMSHR_SIZE-1:0] dmshr_entries_debug,
     output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
 `ifdef CPU_DEBUG_OUT
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
@@ -378,9 +378,9 @@ module dcache (
 );
     DCACHE_ENTRY [`DCACHE_SETS-1:0][`DCACHE_WAYS-1:0] dcache_data, next_dcache_data;
 
-    logic      store_valid, next_store_valid;
-    ADDR       store_addr, next_store_addr;
-    MEM_BLOCK  store_data, next_store_data;
+    logic         store_valid, next_store_valid;
+    ADDR          store_addr, next_store_addr;
+    DCACHE_BLOCK  store_data, next_store_data;
 
     // DMSHR input
     logic dcache_evict;
@@ -538,7 +538,6 @@ module dcache (
             // if dirty evict, set dcache_evict
             if (dcache_data[cache_index][cache_line_lru_indexes[cache_index]].dirty 
                 && dcache_data[cache_index][cache_line_lru_indexes[cache_index]].valid) begin
-
                 next_store_valid = `TRUE;
                 next_store_addr = {
                     dcache_data[cache_index][cache_line_lru_indexes[cache_index]].tag,
@@ -559,7 +558,7 @@ module dcache (
                         dcache_lq_packet[i] = '{
                             `TRUE, // valid
                             dmshr_flush_packet[i].lq_idx, // lq_idx
-                            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level[dmshr_flush_packet[i].block_offset[2]] // data
+                            next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level // data
                         };
                     end else if (dmshr_flush_packet[i].inst_command == INST_STORE) begin
                         next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].dirty = `TRUE;
@@ -568,10 +567,10 @@ module dcache (
                                 next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.byte_level[dmshr_flush_packet[i].block_offset]
                                     = dmshr_flush_packet[i].data[7:0];
                             MEM_HALF:
-                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.half_level[dmshr_flush_packet[i].block_offset[2:1]]
+                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.half_level[dmshr_flush_packet[i].block_offset[1:1]]
                                     = dmshr_flush_packet[i].data[15:0];
                             MEM_WORD:
-                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level[dmshr_flush_packet[i].block_offset[2]]
+                                next_dcache_data[cache_index][cache_line_lru_indexes[cache_index]].data.word_level
                                     = dmshr_flush_packet[i].data[31:0];
                         endcase
                     end
@@ -595,7 +594,7 @@ module dcache (
                 if (load_cache_hits[i]) begin
                     // hit
                     load_req_accept[i]     = `TRUE;
-                    load_req_data[i]       = next_dcache_data[load_index[i]][load_way_indexes[i]].data.word_level[load_offset[i][2]];
+                    load_req_data[i]       = next_dcache_data[load_index[i]][load_way_indexes[i]].data.word_level;
                     load_req_data_valid[i] = `TRUE;
 
                     // update LRU
@@ -627,10 +626,10 @@ module dcache (
                             next_dcache_data[store_index[i]][store_way_indexes[i]].data.byte_level[store_offset[i]]
                                 = sq_dcache_packet[i].data[7:0];
                         MEM_HALF:
-                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.half_level[store_offset[i][2:1]]
+                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.half_level[store_offset[i][1:1]]
                                 = sq_dcache_packet[i].data[15:0];
                         MEM_WORD:
-                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.word_level[store_offset[i][2]]
+                            next_dcache_data[store_index[i]][store_way_indexes[i]].data.word_level
                                 = sq_dcache_packet[i].data[31:0];
                     endcase
 

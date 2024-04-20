@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 // superscalar width
-`define N 4
+`define N 2
 `define LOGN $clog2(`N)
 `define N_CNT_WIDTH $clog2(`N+1)
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -71,13 +71,13 @@
 `define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
-`define DCACHE_LINES 32 // pw of 2
-`define DCACHE_SETS 8   // pw of 2
+`define DCACHE_LINES 8 // pw of 2
+`define DCACHE_SETS 4   // pw of 2
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
 
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
-`define DCACHE_BLOCK_OFFSET_BITS 3
+`define DCACHE_BLOCK_OFFSET_BITS 2
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
 `define DMSHR_SIZE 4
 
@@ -138,7 +138,7 @@ typedef logic [`RAS_PTR_WIDTH-1:0] RAS_PTR;
 // a double word. The original processor won't work with this defined. Your new
 // processor will have to account for this effect on mem.
 // Notably, you can no longer write data without first reading.
-`define CACHE_MODE
+// `define CACHE_MODE
 
 // you are not allowed to change this definition for your final processor
 // the project 3 processor has a massive boost in performance just from having no mem latency
@@ -163,6 +163,12 @@ typedef union packed {
     logic [1:0][31:0] word_level;
     logic      [63:0] dbbl_level;
 } MEM_BLOCK; // If change mem_block to other size, be aware cache needs to change
+
+typedef union packed {
+    logic [3:0][7:0]  byte_level;
+    logic [1:0][15:0] half_level;
+    logic      [31:0] word_level;
+} DCACHE_BLOCK;
 
 typedef enum logic [1:0] {
     BYTE   = 2'h0,
@@ -777,7 +783,7 @@ typedef struct packed {
 } SQ_DCACHE_PACKET;
 
 typedef struct packed {
-    MEM_BLOCK                    data;
+    DCACHE_BLOCK                 data;
     logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
     logic                        valid;
     logic                        dirty;

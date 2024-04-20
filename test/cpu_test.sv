@@ -7,7 +7,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-// `define CPU_DEBUG_OUT
+`define CPU_DEBUG_OUT
 
 // P4 TODO: Add your own debugging framework. Basic printing of data structures
 //          is an absolute necessity for the project. You can use C functions
@@ -451,6 +451,13 @@ module testbench;
             $fdisplay(ppln_fileno, "proc2mem_command: MEM_STORE");
             $fdisplay(ppln_fileno, "proc2mem_addr: %h, proc2mem_data: %x", proc2mem_addr, proc2mem_data);
         end
+        if (proc2mem_size == WORD) begin
+            $fdisplay(ppln_fileno, "proc2mem_size: WORD");
+        end else if (proc2mem_size == DOUBLE) begin
+            $fdisplay(ppln_fileno, "proc2mem_size: DOUBLE");
+        end else begin
+            $fdisplay(ppln_fileno, "proc2mem_size: %b", proc2mem_size);
+        end
         $fdisplay(ppln_fileno,
             "transcation_tag: %2d, data_tag: %2d, data: %x", 
             mem2proc_transaction_tag, mem2proc_data_tag,
@@ -721,6 +728,7 @@ module testbench;
         int block_index;
         int sq_idx;
         int block_offset;
+        int addr;
         begin
             mem_temp = mem.unified_memory;
             $display("\nFinal memory state and exit status:\n");
@@ -730,24 +738,29 @@ module testbench;
 
             for (int k = 0; k < `DCACHE_LINES; ++k) begin
                 if (dcache_data_debug[k].valid && dcache_data_debug[k].dirty) begin
-                    block_index = {dcache_data_debug[k].tag[`DCACHE_TAG_BITS-1:0], {k >> $clog2(`DCACHE_WAYS)}[`DCACHE_INDEX_BITS-1:0]};
-                    mem_temp[block_index] = dcache_data_debug[k].data;
+                    addr = {dcache_data_debug[k].tag[`DCACHE_TAG_BITS-1:0], {k >> $clog2(`DCACHE_WAYS)}[`DCACHE_INDEX_BITS-1:0], {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}};
+                    block_index = addr[31:3];
+                    block_offset = addr[2:0];
+                    mem_temp[block_index].word_level[block_offset[2]] = dcache_data_debug[k].data;
                 end
             end
+
             for (int k = 0; k < `DMSHR_SIZE; ++k) begin
                 if (dmshr_entries_debug[k].state != DMSHR_INVALID) begin
-                    block_index = {dmshr_entries_debug[k].tag, dmshr_entries_debug[k].index};
                     for (int x = 0; x < `N; ++x) begin
                         if (dmshr_q_debug[k][x].inst_command == INST_STORE) begin
+                            addr = {dcache_data_debug[k].tag, dmshr_entries_debug[k].index, dmshr_q_debug[k][x].block_offset};
+                            block_index = addr[31:3];
+                            block_offset = addr[2:0];
                             case (dmshr_q_debug[k][x].mem_func)
                                 MEM_BYTE: 
-                                    mem_temp[block_index].byte_level[dmshr_q_debug[k][x].block_offset]
+                                    mem_temp[block_index].byte_level[block_offset[2:0]]
                                         = dmshr_q_debug[k][x].data[7:0];
                                 MEM_HALF:
-                                    mem_temp[block_index].half_level[dmshr_q_debug[k][x].block_offset[2:1]]
+                                    mem_temp[block_index].half_level[block_offset[2:1]]
                                         = dmshr_q_debug[k][x].data[15:0];
                                 MEM_WORD:
-                                    mem_temp[block_index].word_level[dmshr_q_debug[k][x].block_offset[2]]
+                                    mem_temp[block_index].word_level[block_offset[2]]
                                         = dmshr_q_debug[k][x].data[31:0];
                             endcase
                         end
@@ -758,8 +771,8 @@ module testbench;
             for (int k = 0; k < `SQ_LEN + 1; k++) begin
                 sq_idx = (sq_commit_head_debug + k) % (`SQ_LEN + 1);
                 if (sq_idx == sq_commit_tail_debug) break;
-                block_index = sq_entries_debug[sq_idx].addr[31:`DCACHE_BLOCK_OFFSET_BITS];
-                block_offset = sq_entries_debug[sq_idx].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
+                block_index = sq_entries_debug[sq_idx].addr[31:3];
+                block_offset = sq_entries_debug[sq_idx].addr[2:0];
                 case (sq_entries_debug[sq_idx].byte_info)
                     MEM_BYTE:
                         mem_temp[block_index].byte_level[block_offset]
@@ -870,8 +883,8 @@ module testbench;
             // // print_cdb_state();
             // print_fu_rob_packet();
             // print_select();
-            print_rs();
-            print_rob();
+            // print_rs();
+            // print_rob();
 
 
             // print_imshr_entries_debug();
