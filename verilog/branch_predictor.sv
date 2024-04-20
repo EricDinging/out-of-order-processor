@@ -203,16 +203,16 @@ module gshare_predictor (
     output logic    [`N-1:0] correct
 `ifdef CPU_DEBUG_OUT
     , output BTB_ENTRY [`BTB_SIZE-1:0]       btb_entries_debug
-    , output logic [`BHT_WIDTH-1:0]          branch_history_reg_debug
-    , output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug
+    , output logic [`GSHARE_HS_WIDTH-1:0]          branch_history_reg_debug
+    , output PHT_ENTRY_STATE [`GSHARE_PHT_SIZE-1:0] pattern_history_table_debug
 `endif
 );
 
-    function logic [`BHT_IDX_WIDTH-1:0] mask (
-        input logic [`BHT_WIDTH-1:0]     history,
-        input logic [`BHT_IDX_WIDTH-1:0] index
+    function logic [`GSHARE_PC_WIDTH-1:0] mask (
+        input logic [`GSHARE_HS_WIDTH-1:0] history,
+        input logic [`GSHARE_PC_WIDTH-1:0] pc
     );
-        return history ^ index;
+        return {pc[`GSHARE_PC_WIDTH-1:`GSHARE_PC_WIDTH - `GSHARE_HS_WIDTH] ^ history, pc[`GSHARE_PC_WIDTH - `GSHARE_HS_WIDTH-1:0]};
     endfunction
 
     ADDR [`N:0] pcs;
@@ -220,10 +220,10 @@ module gshare_predictor (
     assign pcs[0] = pc_start;
 
     // branch history table
-    logic [`BHT_WIDTH-1:0] branch_history_reg, next_branch_history_reg;
+    logic [`GSHARE_HS_WIDTH-1:0] branch_history_reg, next_branch_history_reg;
 
     // pattern history table
-    PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table, next_pattern_history_table;
+    PHT_ENTRY_STATE [`GSHARE_PHT_SIZE-1:0] pattern_history_table, next_pattern_history_table;
 
 `ifdef CPU_DEBUG_OUT
     assign branch_history_reg_debug    = branch_history_reg;
@@ -233,14 +233,14 @@ module gshare_predictor (
     logic [`N-1:0] hits;
     ADDR  [`N-1:0] btb_pcs;
 
-    wire [`N-1:0][`BHT_IDX_WIDTH-1:0] pc_bht_index;
-    wire [`N-1:0][`BHT_IDX_WIDTH-1:0] rob_bht_index;
+    wire [`N-1:0][`GSHARE_PC_WIDTH-1:0] pc_bht_index;
+    wire [`N-1:0][`GSHARE_PC_WIDTH-1:0] rob_bht_index;
 
     genvar i;
     generate
         for (i = 0; i < `N; ++i) begin
-            assign pc_bht_index[i]  = pcs[i][`BHT_IDX_WIDTH+2-1:2];
-            assign rob_bht_index[i] = rob_if_packet.entries[i].PC[`BHT_IDX_WIDTH+2-1:2];
+            assign pc_bht_index[i]  = pcs[i][`GSHARE_PC_WIDTH+2-1:2];
+            assign rob_bht_index[i] = rob_if_packet.entries[i].PC[`GSHARE_PC_WIDTH+2-1:2];
         end
     endgenerate
 
@@ -285,7 +285,7 @@ module gshare_predictor (
             if (rob_if_packet.entries[i].valid) begin
                 // modify bht
                 next_branch_history_reg = {
-                    next_branch_history_reg[`BHT_WIDTH-2:0],
+                    next_branch_history_reg[`GSHARE_HS_WIDTH-2:0],
                     rob_if_packet.entries[i].resolve_taken
                 };
                 // modify pht
@@ -365,7 +365,10 @@ module tournament_predictor (
     assign bias_debug = bias;
 `endif
 
-    assign target_pc = bias ? lp_target_pc : gp_target_pc;
+    assign target_pc = bias[1] ? lp_target_pc : gp_target_pc;
+    // assign target_pc = gp_target_pc;
+    
+
 
     always_comb begin
         next_bias = bias;

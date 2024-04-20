@@ -361,6 +361,7 @@ module ooo (
             rob_if_packet.entries[i].resolve_taken  = rob_ct_packet.entries[i].resolve_taken;
             rob_if_packet.entries[i].resolve_target = rob_ct_packet.entries[i].resolve_target;
             rob_if_packet.entries[i].PC             = rob_ct_packet.entries[i].PC;
+            rob_if_packet.entries[i].is_branch      = rob_ct_packet.entries[i].uncond_branch || rob_ct_packet.entries[i].cond_branch;
         end
 
         // prf input

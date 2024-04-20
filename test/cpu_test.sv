@@ -148,6 +148,9 @@ module testbench;
     logic [63:0] target_mem_block_debug;
     MEM_BLOCK mem_temp [`MEM_64BIT_LINES-1:0];
 
+    // branch predictor test
+    DATA branches, correct_branch;
+
 `endif
 
     task print_target_memory_block;
@@ -704,6 +707,8 @@ module testbench;
                       num_cycles, instr_count + pipeline_completed_insts - 1, cpi);
             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
                       num_cycles * `CLOCK_PERIOD);
+            $fdisplay(cpi_fileno, "predictor hit rate: %0d correct / %0d branches = %d", correct_branch, branches, correct_branch * 100 / branches);
+
             $fclose(cpi_fileno);
         end
     endtask // task output_cpi_file
@@ -801,6 +806,8 @@ module testbench;
 
     initial begin
         $display("\n---- Starting CPU Testbench ----\n");
+        branches = 0;
+        correct_branch = 0;
 
         // set paramterized strings, see comment at start of module
         if ($value$plusargs("MEMORY=%s", program_memory_file)) begin
@@ -886,6 +893,14 @@ module testbench;
             // print_branch_predictor();
         
             $fdisplay(ppln_fileno, "=========");
+            for (int i = 0; i < `N; i++) begin
+                if (rob_if_packet_debug.entries[i].valid && rob_if_packet_debug.entries[i].is_branch) begin
+                    branches += 1;
+                    if (rob_if_packet_debug.entries[i].predict_taken == rob_if_packet_debug.entries[i].resolve_taken) begin
+                        correct_branch += 1;
+                    end
+                end
+            end
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);
@@ -920,8 +935,10 @@ module testbench;
                     // output the final CPI
                     output_cpi_file();
                     // close the writeback and pipeline output files
+
                     $fclose(ppln_fileno);
                     $fclose(wb_fileno);
+
 
                     $display("\n---- Finished CPU Testbench ----\n");
 
