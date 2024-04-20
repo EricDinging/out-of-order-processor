@@ -86,7 +86,7 @@
 `define BHT_SIZE  8
 `define BHT_IDX_WIDTH $clog2(`BHT_SIZE)
 // BTB
-`define BTB_SIZE 16
+`define BTB_SIZE 32
 `define BTB_INDEX_BITS $clog2(`BTB_SIZE)
 `define BTB_TAG_BITS 32-2-`BTB_INDEX_BITS
 
