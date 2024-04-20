@@ -213,7 +213,7 @@ ALL_HEADERS = $(CPU_HEADERS)
 
 # TODO: add extra source file dependencies below
 
-ICACHE_FILES = verilog/sys_defs.svh verilog/psel_gen.sv verilog/prefetcher.sv
+ICACHE_FILES = verilog/sys_defs.svh verilog/psel_gen.sv verilog/prefetcher.sv verilog/lru.sv verilog/onehotdec.sv
 build/icache.simv: $(ICACHE_FILES)
 build/icache.cov.simv: $(ICACHE_FILES)
 synth/icache.vg: $(ICACHE_FILES)

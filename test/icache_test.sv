@@ -25,6 +25,9 @@ module testbench;
 
     ADDR moving_addr;
 
+    ADDR  pref2Icache_addr;
+    logic pref2Icache_valid;
+
     icache dut(
         .clock(clock),
         .reset(reset),
@@ -35,6 +38,8 @@ module testbench;
         .proc2Icache_addr(proc2Icache_addr),
         .valid(valid),
         .dcache_request(dcache_request),
+        .pref2Icache_addr(pref2Icache_addr),
+        .pref2Icache_valid(pref2Icache_valid),
         // output
         .proc2Imem_command(proc2Imem_command),
         .proc2Imem_addr(proc2Imem_addr),
@@ -144,6 +149,8 @@ module testbench;
         correct_Icache_valid_out = {`N{`FALSE}};
         moving_addr = 0;
 
+        pref2Icache_addr = 0;
+        pref2Icache_valid = 0;
         @(negedge clock);
         reset = 0;
         @(negedge clock);

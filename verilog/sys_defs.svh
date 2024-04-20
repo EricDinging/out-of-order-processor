@@ -58,8 +58,15 @@
 `define MULT_STAGES 4
 
 // cache
-`define CACHE_LINES 32
-`define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+`define ICACHE_LINES 4
+`define ICACHE_SETS 2
+`define ICACHE_WAYS `ICACHE_LINES / `ICACHE_SETS
+`define ILRU_WIDTH $clog2(`ICACHE_WAYS)
+`define ICACHE_INDEX_BITS $clog2(`ICACHE_SETS)
+`define ICACHE_BLOCK_OFFSET_BITS 3
+`define ICACHE_TAG_BITS 32-`ICACHE_BLOCK_OFFSET_BITS-`ICACHE_INDEX_BITS
+
+// `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
 `define MAX_PREFETCH_LINE 4
 
 // lsq
@@ -71,8 +78,8 @@
 `define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
-`define DCACHE_LINES 32 // pw of 2
-`define DCACHE_SETS 8   // pw of 2
+`define DCACHE_LINES 4 // pw of 2
+`define DCACHE_SETS 2   // pw of 2
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
 
@@ -727,8 +734,8 @@ typedef struct packed {
 } ID_OOO_PACKET;
 
 typedef struct packed {
-    logic [`CACHE_LINE_BITS-1:0]  index;           // cache index
-    logic [12-`CACHE_LINE_BITS:0] tag;             // cache tag
+    logic [`ICACHE_INDEX_BITS-1:0]  index;           // cache index
+    logic [`ICACHE_TAG_BITS-1:0]  tag;             // cache tag
     MEM_TAG                       transaction_tag; // tag returned from memory
     IMSHR_STATE                   state;           // MISS, WAIT
 } IMSHR_ENTRY;

@@ -10,8 +10,7 @@ calculate_cpi() {
 }
 
 # List of filenames in an array
-file_list=("alu_add" "copy")
-
+file_list=("alu_add" "copy" "btest1" "copy_long" "countdown" "fib_long" "insertion" "mult_no_lsq" "mult_orig" "parallel" "saxpy")
 # Initialize variables to hold total cycles and instructions
 total_cycles=0
 total_instrs=0
