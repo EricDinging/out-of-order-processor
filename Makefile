@@ -271,7 +271,7 @@ build/rrat.cov.simv: $(RRAT_FILES)
 synth/rrat.vg: $(RRAT_FILES)
 
 # OOO
-OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv
+OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv verilog/dcache.sv verilog/store_queue.sv verilog/load_queue.sv verilog/sign_align.sv verilog/onehotdec.sv verilog/lru.sv
 build/ooo.simv: $(OOO_FILES)
 build/ooo.cov.simv: $(OOO_FILES)
 synth/ooo.vg: $(OOO_FILES)

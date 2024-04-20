@@ -56,9 +56,9 @@ module stage_fetch (
         // output
         .target_pc(target_pc)
         `ifdef CPU_DEBUG_OUT
-        , .btb_entries_debug(btb_entries_debug)
-        , .branch_history_table_debug(branch_history_table_debug)
-        , .pattern_history_table_debug(pattern_history_table_debug)
+        // , .btb_entries_debug(btb_entries_debug)
+        // , .branch_history_table_debug(branch_history_table_debug)
+        // , .pattern_history_table_debug(pattern_history_table_debug)
         `endif
     );
 
