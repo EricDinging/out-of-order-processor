@@ -45,10 +45,13 @@ module dmshr_queue (
             end
         end
 
+        for (int i = 0; i < next_counter; ++i) begin
+            flush_packet[i] = dmshr_q_entries[(head + i) % `N];
+        end
+
         if (flush) begin
             for (int i = 0; i < next_counter; ++i) begin
                 flush_valid[i]  = `TRUE;
-                flush_packet[i] = dmshr_q_entries[(head + i) % `N];
             end
             next_head = 0;
             next_tail = 0;
@@ -110,9 +113,10 @@ module dmshr #(
     output logic [`DCACHE_INDEX_BITS-1:0] cache_index,
     output logic                          ready,
     output DMSHR_Q_PACKET        [`N-1:0] dmshr_flush_packet,
-    output logic                 [`N-1:0] dmshr_flush_valid
+    output logic                 [`N-1:0] dmshr_flush_valid,
+    output DMSHR_ENTRY [SIZE-1:0] dmshr_entries_debug,
+    output DMSHR_Q_PACKET [SIZE-1:0][`N-1:0] dmshr_q_debug
     `ifdef CPU_DEBUG_OUT
-    , output DMSHR_ENTRY [SIZE-1:0] dmshr_entries_debug
     , output logic [SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     `endif
 );
@@ -138,9 +142,7 @@ module dmshr #(
     wire [SIZE-1:0] entries_pending;
     wire [SIZE-1:0] entries_pending_gnt_bus;
 
-`ifdef CPU_DEBUG_OUT
     assign dmshr_entries_debug = dmshr_entries;
-`endif
 
     psel_gen #(
         .WIDTH(SIZE),
@@ -171,6 +173,11 @@ module dmshr #(
                 , .counter_debug(counter_debug[i])
             `endif
             );
+        end
+    endgenerate
+    generate 
+        for (i = 0; i < SIZE; ++i) begin
+            assign dmshr_q_debug[i] = flush_packets[i];
         end
     endgenerate
 
@@ -359,9 +366,10 @@ module dcache (
     // To LSQ future result
     output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet,
     // To Icache
-    output logic dcache_request
+    output logic dcache_request,
+    output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug,
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug
 `ifdef CPU_DEBUG_OUT
-    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
     , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output logic [`N-1:0] store_req_accept_debug
@@ -462,9 +470,10 @@ module dcache (
         .cache_index(cache_index),
         .ready(ready),
         .dmshr_flush_packet(dmshr_flush_packet),
-        .dmshr_flush_valid(dmshr_flush_valid)
+        .dmshr_flush_valid(dmshr_flush_valid),
+        .dmshr_entries_debug(dmshr_entries_debug),
+        .dmshr_q_debug(dmshr_q_debug)
     `ifdef CPU_DEBUG_OUT
-        , .dmshr_entries_debug(dmshr_entries_debug)
         , .counter_debug(counter_debug)
     `endif
     );

@@ -55,9 +55,11 @@ module store_queue (
     input  MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info, // TODO connect
     output DATA     [`NUM_FU_LOAD-1:0] value,          // TODO connect
     output logic    [`NUM_FU_LOAD-1:0] fwd_valid,       // TODO connect
-    output logic    [`NUM_FU_LOAD-1:0][3:0] forwarded
+    output logic    [`NUM_FU_LOAD-1:0][3:0] forwarded,
+    output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
+    output SQ_IDX                     sq_commit_head_debug,
+    output SQ_IDX                     sq_commit_tail_debug
 `ifdef CPU_DEBUG_OUT
-    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] entries_out
 `endif
 );
 
@@ -92,20 +94,19 @@ module store_queue (
 
     SQ_ENTRY [(`SQ_LEN+1)-1:0] entries, next_entries;
 
-`ifdef CPU_DEBUG_OUT
-    assign entries_out = entries;
-`endif
-
     SQ_IDX size, next_size, next_head, next_tail;
     SQ_REG [`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
     DATA [`SQ_LEN-1:0] realigned_data;
 
-    assign almost_full = size > `SQ_LEN - `N;
-
     SQ_IDX try_to_sent_insns;
     SQ_IDX commit_size, commit_head, commit_tail;
     SQ_IDX next_commit_size, next_commit_head, next_commit_tail;
+
+    assign almost_full = size > `SQ_LEN - `N;
+    assign sq_entries_debug = entries;
+    assign sq_commit_head = commit_head;
+    assign sq_commit_tail = commit_tail;
 
     always_comb begin
         next_sq_reg = sq_reg;
