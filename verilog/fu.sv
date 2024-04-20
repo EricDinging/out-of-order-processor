@@ -178,71 +178,6 @@ module mult_impl (
     );
 endmodule
 
-// module load (
-//     input logic clock, reset,
-//     input FU_PACKET fu_load_packet,
-//     input logic avail,
-//     output logic prepared,
-//     output FU_STATE_BASIC_PACKET fu_state_load_packet
-// );
-
-//     assign prepared = 0;
-//     assign fu_state_load_packet = 0;
-// endmodule
-
-
-
-/*
-typedef struct packed {
-    logic   valid;
-    INST    inst;
-    ADDR    PC;
-    FU_FUNC func;
-    DATA    op1, op2;
-    PRN     dest_prn;
-    ROBN    robn;
-    ALU_OPA_SELECT opa_select; // used for select signal in FU
-    ALU_OPB_SELECT opb_select; // same as above
-    logic cond_branch;
-    logic uncond_branch;
-} FU_PACKET;
-
-typedef struct packed {
-    PRN   dest_prn;
-    DATA  value;
-} CDB_PACKET;
-
-typedef struct packed {
-    ROBN  robn;
-    logic executed;
-    logic branch_taken;
-    ADDR target_addr;
-} FU_ROB_PACKET;
-
-typedef struct packed {
-    ROBN robn;
-    PRN dest_prn;
-    DATA result;
-} FU_STATE_BASIC_PACKET;
-
-typedef struct packed {
-    FU_STATE_BASIC_PACKET basic;
-    logic take_branch;
-    logic cond_branch;
-    logic uncond_branch;
-    ADDR PC;
-} FU_STATE_ALU_PACKET;
-
-typedef struct packed {
-    logic [`NUM_FU_ALU-1:0] alu_prepared;
-    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
-    logic [`NUM_FU_MULT-1:0] mult_prepared;
-    FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic [`NUM_FU_LOAD-1:0] load_prepared;
-    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
-} FU_STATE_PACKET;
-*/
-
 
 module fu #(
 
@@ -413,16 +348,11 @@ module fu #(
         .prepared(fu_state_packet.mult_prepared),
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     );
-
-    // TODO remove
-    // assign sq_almost_full = `FALSE;
-    // assign sq_tail        = 0;
-    // assign sq_tail_ready  = 0;
-    // assign sq_num_sent_insns = 0;
  
     store_queue store_component (
         .clock(clock),
-        .reset(reset || squash),
+        .reset(reset),
+        .squash(squash),
         // id
         .id_sq_packet(id_sq_packet),
         .almost_full(sq_almost_full),
@@ -483,16 +413,6 @@ module fu #(
     `ifdef CPU_DEBUG_OUT
         assign lq_dcache_packet_debug = lq_dcache_packet;
     `endif
-    // load load_components [`NUM_FU_LOAD-1:0] (
-    //     .clock(clock),
-    //     .reset(reset),
-    //     .fu_load_packet(fu_load_packet),
-    //     .avail(load_avail),
-    //     //output
-    //     .prepared(fu_state_packet.load_prepared),
-    //     .fu_state_load_packet(fu_state_packet.load_packet)
-    // );
-
 
     always_comb begin
         store_avail = {`NUM_FU_STORE{`TRUE}};
@@ -506,13 +426,3 @@ module fu #(
     end
 
 endmodule
-
-
-/*
-typedef struct packed {
-    ROBN  robn;
-    logic executed;
-    logic branch_taken;
-    ADDR target_addr;
-} FU_ROB_PACKET;
-*/
