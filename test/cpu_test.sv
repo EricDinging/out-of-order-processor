@@ -261,7 +261,7 @@ module testbench;
     task print_sq;
         $fdisplay(ppln_fileno, "### SQ ENTRIES:");
         for (int i = 0; i < `SQ_LEN + 1; i++) begin
-            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b", i, sq_entries_out[i].valid, sq_entries_out[i].addr, sq_entries_out[i].data, sq_entries_out[i].ready, sq_entries_out[i].accepted);
+            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b, commited:%b", i, sq_entries_out[i].valid, sq_entries_out[i].addr, sq_entries_out[i].data, sq_entries_out[i].ready, sq_entries_out[i].accepted, sq_entries_out[i].commited);
             case (sq_entries_out[i].byte_info)
                     MEM_BYTE:
                         $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
