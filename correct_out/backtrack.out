@@ -1,6 +1,6 @@
 Chronologic VCS simulator copyright 1991-2020
 Contains Synopsys proprietary information.
-Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 05:16 2024
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 11:19 2024
 
 ---- Starting CPU Testbench ----
 
@@ -258,5 +258,5 @@ $finish called from file "test/cpu_test.sv", line 297.
 $finish at simulation time              3919920
            V C S   S i m u l a t i o n   R e p o r t 
 Time: 391992000 ps
-CPU Time:      0.410 seconds;       Data structure size:   0.1Mb
-Sat Apr 20 05:16:43 2024
+CPU Time:      0.380 seconds;       Data structure size:   0.1Mb
+Sat Apr 20 11:19:27 2024

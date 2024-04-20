@@ -7,7 +7,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 script="$1"
-dir="/home/$USER/eecs470"
+dir="/home/$USER/Documents/eecs470"
 
 group="group9"
 
