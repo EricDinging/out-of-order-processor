@@ -20,5 +20,4 @@ cp ${dir}/p3-w24.${USER}/output/${script}.wb ${dir}/p4-w24.${group}/correct_out/
 cp ${dir}/p3-w24.${USER}/output/${script}.out ${dir}/p4-w24.${group}/correct_out/${script}.out
 cp ${dir}/p3-w24.${USER}/output/${script}.cpi ${dir}/p4-w24.${group}/correct_out/${script}.cpi
 cd ${dir}/p3-w24.${USER}
-make ${script}.out 
-# ./script/compare.sh ${script}.wb
+make ${script}.out

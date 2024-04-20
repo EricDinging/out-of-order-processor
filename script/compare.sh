@@ -8,4 +8,6 @@ fi
 
 file="$1"
 
-diff --color "output/$file" "correct_out/$file"
+diff "output/$file.out" "correct_out/$file.out" > "diff/$file.out.diff" || true
+diff "output/$file.wb"  "correct_out/$file.wb"  > "diff/$file.wb.diff"  || true
+diff "output/$file.cpi" "correct_out/$file.cpi" > "diff/$file.cpi.diff" || true

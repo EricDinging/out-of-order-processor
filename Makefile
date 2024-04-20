@@ -696,6 +696,12 @@ correct_out/%.out:
 p3_generate_all: $(PROGRAMS:%=correct_out/%.out)
 .PHONY: p3_generate_all
 
+diff/%.out.diff: output/%.out correct_out/%.out
+	./script/compare.sh $(basename $(notdir $<))
+
+compare_all: $(PROGRAMS:programs/%=diff/%.out.diff)
+.PHONY: compare_all
+
 ################################
 # ---- Output Directories ---- #
 ################################
@@ -726,7 +732,7 @@ output:
 # 'make clean' does not remove .mem or .dump files
 # clean_* commands remove certain groups of files
 
-clean: clean_exe clean_run_files
+clean: clean_exe clean_run_files clean_diff_files
 	@$(call PRINT_COLOR, 6, note: clean is split into multiple commands you can call separately: $^)
 
 # removes all extra synthesis files and the entire output directory
@@ -747,6 +753,10 @@ clean_exe:
 clean_run_files:
 	@$(call PRINT_COLOR, 3, removing per-run outputs)
 	rm -rf output/*.out output/*.cpi output/*.wb output/*.ppln
+
+clean_diff_files:
+	@$(call PRINT_COLOR, 3, removing per-run diff outputs)
+	rm -rf diff/*.diff
 
 clean_synth:
 	@$(call PRINT_COLOR, 1, removing synthesis files)
