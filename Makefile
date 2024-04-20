@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align mem lru onehotdec prefetcher
+MODULES = cpu mult rob rs rrat icache dcache rat prf free_list fu cdb fu_cdb onehot_mux ooo stage_decode stage_fetch store_queue load_queue branch_predictor sign_align mem lru onehotdec prefetcher ras
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -271,7 +271,7 @@ build/rrat.cov.simv: $(RRAT_FILES)
 synth/rrat.vg: $(RRAT_FILES)
 
 # OOO
-OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv verilog/store_queue.sv verilog/load_queue.sv verilog/sign_align.sv verilog/onehotdec.sv verilog/lru.sv
+OOO_FILES = verilog/sys_defs.svh verilog/ISA.svh verilog/rs.sv verilog/fu_cdb.sv verilog/prf.sv verilog/rob.sv verilog/rat.sv verilog/rrat.sv verilog/psel_gen.sv verilog/fu.sv verilog/cdb.sv verilog/free_list.sv verilog/mult.sv verilog/onehot_mux.sv verilog/dcache.sv verilog/store_queue.sv verilog/load_queue.sv verilog/sign_align.sv verilog/onehotdec.sv verilog/lru.sv
 build/ooo.simv: $(OOO_FILES)
 build/ooo.cov.simv: $(OOO_FILES)
 synth/ooo.vg: $(OOO_FILES)
@@ -320,6 +320,11 @@ LRU_FILES = verilog/lru.sv
 build/lru.simv: $(LRU_FILES)
 build/lru.cov.simv: $(LRU_FILES)
 synth/lru.vg: $(LRU_FILES)
+
+RAS_FILES = verilog/sys_defs.svh verilog/ras.sv
+build/ras.simv: $(RAS_FILES)
+build/ras.cov.simv: $(RAS_FILES)
+synth/ras.vg: $(RAS_FILES)
 
 #################################
 # ---- Main CPU Definition ---- #

@@ -79,19 +79,23 @@
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
 `define DCACHE_BLOCK_OFFSET_BITS 3
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
-`define DMSHR_SIZE 8
+`define DMSHR_SIZE 4
 
 // local history table
 `define BHT_WIDTH 8
-`define BHT_SIZE  8
+`define BHT_SIZE  16
 `define BHT_IDX_WIDTH $clog2(`BHT_SIZE)
 // BTB
-`define BTB_SIZE 16
+`define BTB_SIZE 32
 `define BTB_INDEX_BITS $clog2(`BTB_SIZE)
 `define BTB_TAG_BITS 32-2-`BTB_INDEX_BITS
 
 // pattern history table
 `define PHT_SIZE 2**`BHT_WIDTH
+
+`define RAS_SIZE 16
+`define RAS_CTR_WIDTH $clog2(`RAS_SIZE+1)
+`define RAS_PTR_WIDTH $clog2(`RAS_SIZE)
 
 ///////////////////////////////
 // ---- Basic Constants ---- //
@@ -114,6 +118,9 @@ typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
 
 typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
+
+typedef logic [`RAS_PTR_WIDTH  :0] RAS_CTR;
+typedef logic [`RAS_PTR_WIDTH-1:0] RAS_PTR;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
@@ -750,16 +757,16 @@ typedef struct packed {
 } RS_SQ_PACKET;
 
 typedef struct packed {
-    logic                               valid;
-    LU_IDX                              lq_idx;
-    DATA                                data;
+    logic  valid;
+    LU_IDX lq_idx;
+    DATA   data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
-    logic                           valid;
-    LU_IDX                          lq_idx;
-    ADDR                            addr;
-    MEM_FUNC                        mem_func;
+    logic    valid;
+    LU_IDX   lq_idx;
+    ADDR     addr;
+    MEM_FUNC mem_func;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
@@ -846,5 +853,16 @@ typedef struct packed {
     DATA value;
     logic fwd_valid;
 } LU_FWD_REG;
+
+typedef struct packed {
+    logic   valid;
+    ADDR    NPC;
+    REG_IDX rs, rd;
+} ID_RAS_PACKET;
+
+typedef struct packed {
+    logic valid;
+    ADDR  ra;
+} RAS_IF_PACKET;
 
 `endif // __SYS_DEFS_SVH__
