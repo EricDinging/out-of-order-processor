@@ -105,8 +105,8 @@ module store_queue (
 
     assign almost_full = size > `SQ_LEN - `N;
     assign sq_entries_debug = entries;
-    assign sq_commit_head = commit_head;
-    assign sq_commit_tail = commit_tail;
+    assign sq_commit_head_debug = commit_head;
+    assign sq_commit_tail_debug = commit_tail;
 
     always_comb begin
         next_sq_reg = sq_reg;

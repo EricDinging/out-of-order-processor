@@ -754,11 +754,16 @@ module testbench;
                 end
             end
 
+            // for (int i = 0; i < `SQ_LEN + 1; i++) begin
+            //     $display("valid[%b]")
+            // end
+            // $display("head:%d, tail:%d", sq_commit_head_debug, sq_commit_tail_debug);
             for (int k = 0; k < `SQ_LEN + 1; k++) begin
                 sq_idx = (sq_commit_head_debug + k) % (`SQ_LEN + 1);
                 if (sq_idx == sq_commit_tail_debug) break;
-                block_index = sq_entries_debug[sq_idx].addr >> `DCACHE_BLOCK_OFFSET_BITS;
-                block_offset = sq_entries_debug[sq_idx].addr % `DCACHE_BLOCK_OFFSET_BITS;
+                // $display("addr:%h, sq_idx:%d", sq_entries_debug[sq_idx].addr, sq_idx);
+                block_index = sq_entries_debug[sq_idx].addr[31:`DCACHE_BLOCK_OFFSET_BITS];
+                block_offset = sq_entries_debug[sq_idx].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
                 case (sq_entries_debug[sq_idx].byte_info)
                     MEM_BYTE:
                         mem_temp[block_index].byte_level[block_offset]
