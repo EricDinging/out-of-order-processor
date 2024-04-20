@@ -12,4 +12,4 @@ module=$1
 mkdir -p syn_log
 
 # Run the command and redirect its output to a log file
-make synth/$module.vg > syn_log/$module.syn.log
+make synth/$module.vg > syn_log/$module.syn.log && make slack > syn_log/slack.log
