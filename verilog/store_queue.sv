@@ -31,7 +31,7 @@ typedef struct packed {
 */
 
 module store_queue (
-    input logic clock, reset,
+    input logic clock, reset, squash,
     // ID
     input ID_SQ_PACKET [`N-1:0] id_sq_packet,
     output logic almost_full,   // also to rs
@@ -104,6 +104,8 @@ module store_queue (
     assign almost_full = size > `SQ_LEN - `N;
 
     SQ_IDX try_to_sent_insns;
+    SQ_IDX commit_size, commit_head, commit_tail;
+    SQ_IDX next_commit_size, next_commit_head, next_commit_tail;
 
     always_comb begin
         next_sq_reg = sq_reg;
@@ -124,6 +126,10 @@ module store_queue (
         next_head = head;
         next_tail = tail;
         next_size = size;
+        
+        next_commit_head = commit_head;
+        next_commit_tail = commit_tail;
+        next_commit_size = commit_size;
 
         // ID
         if (!almost_full) begin
@@ -197,7 +203,9 @@ module store_queue (
                 idx = (head + i) % (`SQ_LEN + 1);
                 if (entries[idx].valid && entries[idx].ready && !entries[idx].commited) begin
                     next_entries[idx].commited = `TRUE;
+                    next_commit_size += 1;
                     num_sent_insns += 1;
+                    next_commit_tail = (next_commit_tail + 1) % (`SQ_LEN + 1);
                 end else if (entries[idx].valid && ~entries[idx].ready) begin
                     break;
                 end
@@ -214,17 +222,19 @@ module store_queue (
                     entries[idx].addr,
                     entries[idx].byte_info,
                     entries[idx].data
-                };
-                if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
-                    next_entries[idx].accepted = `TRUE;
-                    if (!break_flag) begin
-                        next_entries[idx] = 0;
-                        next_head = (next_head + 1) % (`SQ_LEN + 1);
-                        next_size -= 1;
-                    end
-                end else begin
-                    break_flag = `TRUE;
+                };  
+            end
+            if (dcache_accept[i] || (entries[idx].valid && entries[idx].accepted)) begin
+                next_entries[idx].accepted = `TRUE;
+                if (!break_flag) begin
+                    next_entries[idx] = 0;
+                    next_head = (next_head + 1) % (`SQ_LEN + 1);
+                    next_size -= 1;
+                    next_commit_size -= 1;
+                    next_commit_head = (next_commit_head + 1) % (`SQ_LEN + 1);
                 end
+            end else begin
+                break_flag = `TRUE;
             end
         end
     end
@@ -334,6 +344,10 @@ module store_queue (
         end
     end
 
+    always_comb begin
+
+    end
+
 
 
     always_ff @(posedge clock) begin
@@ -344,6 +358,21 @@ module store_queue (
             head <= 0;
             tail <= 0;
 
+            commit_size <= 0;
+            commit_head <= 0;
+            commit_tail <= 0;
+
+            sq_reg <= 0;
+        end else if (squash) begin
+            for (int i = 0; i < `SQ_LEN + 1; i++) begin
+                entries[i] <= next_entries[i].commited? next_entries[i]: 0;
+            end
+            size <= next_commit_size;
+            head <= next_commit_head;
+            tail <= next_commit_tail;
+            commit_size <= next_commit_size;
+            commit_head <= next_commit_head;
+            commit_tail <= next_commit_tail;
             sq_reg <= 0;
         end else begin
             entries <= next_entries;
@@ -351,6 +380,9 @@ module store_queue (
             size <= next_size;
             head <= next_head;
             tail <= next_tail;
+            commit_size <= next_commit_size;
+            commit_head <= next_commit_head;
+            commit_tail <= next_commit_tail;
 
             sq_reg <= next_sq_reg;
         end
