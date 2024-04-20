@@ -1,5 +1,5 @@
 `include "verilog/sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module dmshr_queue (
     input clock, reset,
@@ -367,10 +367,10 @@ module dcache (
     output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet,
     // To Icache
     output logic dcache_request,
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
     output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug,
-    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug
+    output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
 `ifdef CPU_DEBUG_OUT
-    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output logic [`N-1:0] store_req_accept_debug
     , output logic [`N-1:0] load_req_accept_debug
@@ -411,8 +411,8 @@ module dcache (
     logic [`N-1:0]                  load_cache_hits, store_cache_hits; // from one hot decoder
 
 
-`ifdef CPU_DEBUG_OUT
     assign dcache_data_debug = dcache_data;
+`ifdef CPU_DEBUG_OUT
     assign store_req_accept_debug = store_req_accept;
     assign load_req_accept_debug = load_req_accept;
 `endif

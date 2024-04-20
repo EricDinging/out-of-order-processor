@@ -10,7 +10,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module mem (
     input           clock,         // Memory clock

@@ -7,7 +7,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 // P4 TODO: Add your own debugging framework. Basic printing of data structures
 //          is an absolute necessity for the project. You can use C functions
@@ -108,11 +108,6 @@ module testbench;
     logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug;
     PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug;
 
-    // dcache
-    DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug;
-    DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug;
-
-    DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug;
     logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] dmshr_counter_debug;
     LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug;
     logic [`N-1:0] store_req_accept_debug;
@@ -129,9 +124,6 @@ module testbench;
     DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug;
 
     // sq
-    SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug;
-    SQ_IDX                     sq_commit_head_debug;
-    SQ_IDX                     sq_commit_tail_debug;
     SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug;
     logic id_stall;
     logic rob_stall;
@@ -146,10 +138,20 @@ module testbench;
 
     // memory
     logic [63:0] target_mem_block_debug;
-    MEM_BLOCK mem_temp [`MEM_64BIT_LINES-1:0];
 
 `endif
 
+    // memory output
+    DCACHE_ENTRY [`DCACHE_LINES-1:0]         dcache_data_debug;
+    DMSHR_ENTRY    [`DMSHR_SIZE-1:0]         dmshr_entries_debug;
+    DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug;
+    SQ_ENTRY       [(`SQ_LEN+1)-1:0]         sq_entries_debug;
+    SQ_IDX                                   sq_commit_head_debug;
+    SQ_IDX                                   sq_commit_tail_debug;
+    MEM_BLOCK mem_temp                       [`MEM_64BIT_LINES-1:0];
+
+
+`ifdef CPU_DEBUG_OUT
     task print_target_memory_block;
         $fdisplay(ppln_fileno, "### target_mem_block 508 (FE0):");
         $fdisplay(ppln_fileno, "mem block: %x", target_mem_block_debug);
@@ -198,7 +200,6 @@ module testbench;
             end
         end
         $fdisplay(ppln_fileno, "    cdb_load_selected: %b", load_selected_debug);
-
     endtask
 
     task print_rs_lq_packet;
@@ -208,7 +209,6 @@ module testbench;
              i, rs_lq_packet_debug[i].valid, i, rs_lq_packet_debug[i].base, i, rs_lq_packet_debug[i].offset, rs_lq_packet_debug[i].tail_store);
             $fdisplay(ppln_fileno, "  lu_reg[%0d]: %0d, lu_fwd_reg[%0d]: %0d", i, lu_reg_debug[i].valid, i, lu_fwd_reg_debug[i].valid);
         end
-
     endtask
 
     task print_fu_load_packet_debug;
@@ -544,6 +544,7 @@ module testbench;
             end
         end
     endtask
+`endif
 
     // Instantiate the Pipeline
     cpu verisimpleV (
@@ -558,6 +559,7 @@ module testbench;
         .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
+        .dcache_data_debug(dcache_data_debug),
         .dmshr_entries_debug(dmshr_entries_debug),
         .dmshr_q_debug(dmshr_q_debug),
         .sq_entries_debug(sq_entries_debug),
@@ -604,7 +606,6 @@ module testbench;
         .branch_history_table_debug(branch_history_table_debug),
         .pattern_history_table_debug(pattern_history_table_debug),
         // dcache
-        .dcache_data_debug(dcache_data_debug),
         .counter_debug(dmshr_counter_debug),
         .lq_dcache_packet_debug(lq_dcache_packet_debug),
         .store_req_accept_debug(store_req_accept_debug),
@@ -754,14 +755,9 @@ module testbench;
                 end
             end
 
-            // for (int i = 0; i < `SQ_LEN + 1; i++) begin
-            //     $display("valid[%b]")
-            // end
-            // $display("head:%d, tail:%d", sq_commit_head_debug, sq_commit_tail_debug);
             for (int k = 0; k < `SQ_LEN + 1; k++) begin
                 sq_idx = (sq_commit_head_debug + k) % (`SQ_LEN + 1);
                 if (sq_idx == sq_commit_tail_debug) break;
-                // $display("addr:%h, sq_idx:%d", sq_entries_debug[sq_idx].addr, sq_idx);
                 block_index = sq_entries_debug[sq_idx].addr[31:`DCACHE_BLOCK_OFFSET_BITS];
                 block_offset = sq_entries_debug[sq_idx].addr[`DCACHE_BLOCK_OFFSET_BITS-1:0];
                 case (sq_entries_debug[sq_idx].byte_info)
@@ -854,23 +850,23 @@ module testbench;
     always @(negedge clock) begin
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
+`ifdef CPU_DEBUG_OUT
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
             $fdisplay(ppln_fileno, "instr_count: %d", instr_count);
-
-            print_if_id_reg();
-            print_id_ooo_reg();
-            print_rob_if_debug();
+            // print_if_id_reg();
+            // print_id_ooo_reg();
+            // print_rob_if_debug();
             // print_target_memory_block();
-            print_mem_cache();
+            // print_mem_cache();
             // print_rs_lq_packet();
-            print_load_queue();
-            print_sq();
-            print_lq_dcache_packet();
-            print_sq_dcache_packet();
-            print_dcache();
+            // print_load_queue();
+            // print_sq();
+            // print_lq_dcache_packet();
+            // print_sq_dcache_packet();
+            // print_dcache();
             // print_dcache_lq_packet();
             // // print_fu_state_packet();
-            print_cdb_packet();
+            // print_cdb_packet();
             // // print_cdb_state();
             // print_fu_rob_packet();
             // print_select();
@@ -884,8 +880,8 @@ module testbench;
             // print_rrat();
             // print_prf();
             // print_branch_predictor();
-        
             $fdisplay(ppln_fileno, "=========");
+`endif
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);
