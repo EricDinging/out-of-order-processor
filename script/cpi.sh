@@ -12,7 +12,7 @@ calculate_cpi() {
 # List of filenames in an array
 file_list=(
     "alexnet" \
-    # "alu_add" \
+    "alu_add" \
     "backtrack" \
     "basic_malloc"
     "bfs"
@@ -100,3 +100,4 @@ average_hit=$(calculate_cpi "$total_correct" "$total_branches")
 # Print the average CPI
 echo "Average CPI: $average_cpi"
 echo "Average hit: $average_hit"
+

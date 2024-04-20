@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module cpu (
     input clock, // System clock
@@ -27,6 +27,8 @@ module cpu (
     output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
     output SQ_IDX                     sq_commit_head_debug,
     output SQ_IDX                     sq_commit_tail_debug,
+    output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug,
+
 
 `ifndef CACHE_MODE // no longer sending size to memory
     output MEM_SIZE    proc2mem_size,    // Data size sent to memory
@@ -71,7 +73,6 @@ module cpu (
     output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug,
     output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug,
     // dcache
-    output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug,
     output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug,
     output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug,
     // lq
@@ -234,14 +235,16 @@ module cpu (
         .Dmem2proc_data_tag(mem2proc_data_tag),
         // Outputs
         .structural_hazard(structural_hazard),
-        .rob_if_packet(rob_if_packet),
         .squash(squash),
+        .rob_if_packet(rob_if_packet),
         .ooo_ct_packet(ooo_ct_packet),
         // from dcache to memory
         .proc2Dmem_command(proc2Dmem_command),
         .proc2Dmem_addr(proc2Dmem_addr),
         .proc2Dmem_data(proc2mem_data),
         .dcache_request(dcache_request),
+        // memory out
+        .dcache_data_debug(dcache_data_debug),
         .dmshr_entries_debug(dmshr_entries_debug),
         .dmshr_q_debug(dmshr_q_debug),
         .sq_entries_debug(sq_entries_debug),
@@ -277,7 +280,6 @@ module cpu (
         , .fu_load_packet_debug(fu_load_packet_debug)
         , .fu_store_packet_debug(fu_store_packet_debug)
         // dcache
-        , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
         , .lq_dcache_packet_debug(lq_dcache_packet_debug)
         , .dcache_lq_packet_debug(dcache_lq_packet_debug)
@@ -319,6 +321,9 @@ module cpu (
 
     assign proc2mem_command = dcache_request ? proc2Dmem_command : proc2Imem_command;
     assign proc2mem_addr    = dcache_request ? proc2Dmem_addr    : proc2Imem_addr;
+`ifndef CACHE_MODE
+    assign proc2mem_size    = dcache_request ? WORD : DOUBLE;
+`endif
 
     // these signals go to and from the processor and memory
     // we give precedence to the mem stage over instruction fetch

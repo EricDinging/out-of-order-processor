@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module not_taken_predictor (
     input clock, reset,
@@ -260,6 +260,7 @@ module gshare_predictor (
         next_branch_history_reg    = branch_history_reg;
         next_pattern_history_table = pattern_history_table;
         target_pc = 0;
+        correct   = 0;
 
         // prediction taken + target
         for (int i = 0; i < `N; ++i) begin

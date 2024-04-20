@@ -28,7 +28,7 @@
 `define FU_ROB_PACKET_SZ `NUM_FU_ALU + `N
 
 // sizes
-`define ROB_SZ 16
+`define ROB_SZ 32
 `define RS_SZ 16
 `define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
@@ -58,8 +58,16 @@
 `define MULT_STAGES 4
 
 // cache
-`define CACHE_LINES 4
-`define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+`define ICACHE_LINES 4
+`define ICACHE_SETS 2
+`define ICACHE_WAYS `ICACHE_LINES / `ICACHE_SETS
+`define ILRU_WIDTH $clog2(`ICACHE_WAYS)
+`define ICACHE_INDEX_BITS $clog2(`ICACHE_SETS)
+`define ICACHE_BLOCK_OFFSET_BITS 3
+`define ICACHE_TAG_BITS 32-`ICACHE_BLOCK_OFFSET_BITS-`ICACHE_INDEX_BITS
+
+// `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
 `define MAX_PREFETCH_LINE 4
 
 // lsq
@@ -71,13 +79,14 @@
 `define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
-`define DCACHE_LINES 4 // pw of 2
-`define DCACHE_SETS 2   // pw of 2
+`define DCACHE_LINES 8 // pw of 2
+`define DCACHE_SETS 4   // pw of 2
+
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
 
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
-`define DCACHE_BLOCK_OFFSET_BITS 3
+`define DCACHE_BLOCK_OFFSET_BITS 2
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
 `define DMSHR_SIZE 4
 
@@ -143,7 +152,7 @@ typedef logic [`RAS_PTR_WIDTH-1:0] RAS_PTR;
 // a double word. The original processor won't work with this defined. Your new
 // processor will have to account for this effect on mem.
 // Notably, you can no longer write data without first reading.
-`define CACHE_MODE
+// `define CACHE_MODE
 
 // you are not allowed to change this definition for your final processor
 // the project 3 processor has a massive boost in performance just from having no mem latency
@@ -168,6 +177,12 @@ typedef union packed {
     logic [1:0][31:0] word_level;
     logic      [63:0] dbbl_level;
 } MEM_BLOCK; // If change mem_block to other size, be aware cache needs to change
+
+typedef union packed {
+    logic [3:0][7:0]  byte_level;
+    logic [1:0][15:0] half_level;
+    logic      [31:0] word_level;
+} DCACHE_BLOCK;
 
 typedef enum logic [1:0] {
     BYTE   = 2'h0,
@@ -733,8 +748,8 @@ typedef struct packed {
 } ID_OOO_PACKET;
 
 typedef struct packed {
-    logic [`CACHE_LINE_BITS-1:0]  index;           // cache index
-    logic [12-`CACHE_LINE_BITS:0] tag;             // cache tag
+    logic [`ICACHE_INDEX_BITS-1:0]  index;           // cache index
+    logic [`ICACHE_TAG_BITS-1:0]  tag;             // cache tag
     MEM_TAG                       transaction_tag; // tag returned from memory
     IMSHR_STATE                   state;           // MISS, WAIT
 } IMSHR_ENTRY;
@@ -783,7 +798,7 @@ typedef struct packed {
 } SQ_DCACHE_PACKET;
 
 typedef struct packed {
-    MEM_BLOCK                    data;
+    DCACHE_BLOCK                 data;
     logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
     logic                        valid;
     logic                        dirty;

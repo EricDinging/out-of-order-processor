@@ -1,10 +1,10 @@
 `include "verilog/sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 typedef struct packed {
     MEM_BLOCK                     data;
     // (13 bits) since only need 16 bits to access all memory and 3 are the offset
-    logic [12-`CACHE_LINE_BITS:0] tags;
+    logic [`ICACHE_TAG_BITS-1:0]  tags;
     logic                         valid;
 } ICACHE_ENTRY;
 
@@ -17,16 +17,16 @@ module imshr (
     input MEM_TAG   Imem2proc_transaction_tag,
     input MEM_TAG   Imem2proc_data_tag,
     // From icache
-    input logic [`N:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes,
-    input logic [`N:0][12-`CACHE_LINE_BITS:0] miss_cache_tags,
-    input logic [`N:0]                        miss_cache_valid,
+    input logic [`N:0][`ICACHE_INDEX_BITS-1:0] miss_cache_indexes,
+    input logic [`N:0][`ICACHE_TAG_BITS-1:0]   miss_cache_tags,
+    input logic [`N:0]                         miss_cache_valid,
 
     // Output to memory via cache
     output ADDR        proc2Imem_addr,
     output MEM_COMMAND proc2Imem_command,
     // Output to cache
-    output logic [`CACHE_LINE_BITS-1:0]  cache_index,
-    output logic [12-`CACHE_LINE_BITS:0] cache_tag,
+    output logic [`ICACHE_INDEX_BITS-1:0]  cache_index,
+    output logic [`ICACHE_TAG_BITS-1:0] cache_tag,
     output logic ready
 `ifdef CPU_DEBUG_OUT
     , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
@@ -198,15 +198,24 @@ module icache (
 `endif
 );
 
-    ICACHE_ENTRY [`CACHE_LINES-1:0] icache_data, next_icache_data;
+    ICACHE_ENTRY [`ICACHE_SETS-1:0][`ICACHE_WAYS-1:0] icache_data, next_icache_data;
 
-    logic [`N:0][12-`CACHE_LINE_BITS:0] miss_cache_tags;
-    logic [`N:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes;
-    logic [`N:0]                        miss_cache_valid;
+    logic [`N:0][`ICACHE_TAG_BITS-1:0]   miss_cache_tags;
+    logic [`N:0][`ICACHE_INDEX_BITS-1:0] miss_cache_indexes;
+    logic [`N:0]                         miss_cache_valid;
 
-    logic [`CACHE_LINE_BITS-1:0]  cache_index;
-    logic [12-`CACHE_LINE_BITS:0] cache_tag;
+    logic [`ICACHE_INDEX_BITS-1:0] cache_index;
+    logic [`ICACHE_TAG_BITS-1:0]   cache_tag;
     logic ready;
+
+    // lru
+    logic [`ICACHE_SETS-1:0] set_hits;
+    logic [`ICACHE_SETS-1:0][`ILRU_WIDTH-1:0] cache_line_hit_indexes;
+    logic [`ICACHE_SETS-1:0][`ILRU_WIDTH-1:0] cache_line_lru_indexes;
+
+    logic [`N:0][`ICACHE_WAYS-1:0] tag_hits;
+    logic [`N:0][`ILRU_WIDTH-1:0]  way_indexes; // from one hot decoder
+    logic [`N:0]                   cache_hits; 
 
     imshr mshr (
         .clock(clock),
@@ -228,44 +237,97 @@ module icache (
     `endif
     );
 
+    genvar i;
+    generate
+        for (i = 0; i < `ICACHE_SETS; ++i) begin
+            lru #(
+                .WIDTH(`ILRU_WIDTH)
+            ) lru_policy (
+                .clock(clock),
+                .reset(reset),
+                .hit(set_hits[i]),
+                .index_hit(cache_line_hit_indexes[i]),
+                // output
+                .index_lru(cache_line_lru_indexes[i])
+            );
+        end
+    endgenerate
+
+    generate
+        for (i = 0; i <= `N; ++i) begin
+            onehotdec #(
+                .WIDTH(`ICACHE_WAYS)
+            ) ohd (
+                .in(tag_hits[i]),
+                .out(way_indexes[i]),
+                .valid(cache_hits[i])
+            );
+        end
+    endgenerate
+
     always_comb begin
         next_icache_data = icache_data;
+        set_hits = 0;
+        cache_line_hit_indexes = 0;
+
+        tag_hits = 0;
+
+        // Update cache
+        if (ready) begin
+            next_icache_data[cache_index][cache_line_lru_indexes[cache_index]].valid = `TRUE;
+            next_icache_data[cache_index][cache_line_lru_indexes[cache_index]].tags = cache_tag;
+            next_icache_data[cache_index][cache_line_lru_indexes[cache_index]].data = Imem2proc_data;
+
+            set_hits[cache_index] = `TRUE;
+            cache_line_hit_indexes[cache_index] = cache_line_lru_indexes[cache_index];
+        end
+
         // Handle cache queries
         for (int i = 0; i < `N; ++i) begin
             miss_cache_valid[i] = `FALSE;
             Icache_valid_out[i] = `FALSE;
             Icache_data_out[i]  = 0;
-            {miss_cache_tags[i], miss_cache_indexes[i]} = proc2Icache_addr[i][15:3];
+            {miss_cache_tags[i], miss_cache_indexes[i]} = proc2Icache_addr[i][31:`ICACHE_BLOCK_OFFSET_BITS];
 
             if (valid[i]) begin
-                if (icache_data[miss_cache_indexes[i]].tags == miss_cache_tags[i]
-                 && icache_data[miss_cache_indexes[i]].valid) begin
-                    Icache_data_out[i]  = icache_data[miss_cache_indexes[i]].data;
+                for (int j = 0; j < `ICACHE_WAYS; ++j) begin
+                    tag_hits[i][j] = next_icache_data[miss_cache_indexes[i]][j].tags 
+                        == miss_cache_tags[i] 
+                        && next_icache_data[miss_cache_indexes[i]][j].valid;
+                end
+
+                if (cache_hits[i]) begin
+                    Icache_data_out[i]  = next_icache_data[miss_cache_indexes[i]][way_indexes[i]].data;
                     Icache_valid_out[i] = `TRUE;
+                    
+                    set_hits[miss_cache_indexes[i]] = `TRUE;
+                    cache_line_hit_indexes[miss_cache_indexes[i]] = way_indexes[i];
                 end else begin
                     miss_cache_valid[i] = `TRUE;
                 end
             end
         end
+
         // prefetch
         miss_cache_valid[`N] = `FALSE;
-        {miss_cache_tags[`N], miss_cache_indexes[`N]} = pref2Icache_addr[15:3];
+        {miss_cache_tags[`N], miss_cache_indexes[`N]} = pref2Icache_addr[31:`ICACHE_BLOCK_OFFSET_BITS];
         pref_hit_valid_line = `FALSE;
 
         if (pref2Icache_valid) begin
-            if (icache_data[miss_cache_indexes[`N]].tags == miss_cache_tags[`N]
-                && icache_data[miss_cache_indexes[`N]].valid) begin
-                    pref_hit_valid_line = `TRUE;
+            for (int j = 0; j < `ICACHE_WAYS; ++j) begin
+                tag_hits[`N][j] = next_icache_data[miss_cache_indexes[`N]][j].tags 
+                    == miss_cache_tags[`N] 
+                    && next_icache_data[miss_cache_indexes[`N]][j].valid;
+            end
+
+            if (cache_hits[`N]) begin
+                pref_hit_valid_line = `TRUE;
+                
+                set_hits[miss_cache_indexes[`N]] = `TRUE;
+                cache_line_hit_indexes[miss_cache_indexes[`N]] = way_indexes[`N];
             end else begin
                 miss_cache_valid[`N] = `TRUE;
             end
-        end
-
-        // Update cache
-        if (ready) begin
-            next_icache_data[cache_index].valid = `TRUE;
-            next_icache_data[cache_index].tags  = cache_tag;
-            next_icache_data[cache_index].data  = Imem2proc_data;
         end
     end
 

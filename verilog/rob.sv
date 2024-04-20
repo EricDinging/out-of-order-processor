@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module rob #(
     parameter SIZE = `ROB_SZ,
@@ -20,7 +20,7 @@ module rob #(
     output logic         squash
 `ifdef CPU_DEBUG_OUT
     , output ROB_ENTRY [SIZE-1:0]           entries_out
-    , output logic     [`RS_CNT_WIDTH-1:0]  counter_out
+    , output logic     [`ROB_CNT_WIDTH-1:0] counter_out
     , output logic     [`ROB_PTR_WIDTH-1:0] head_out
     , output logic     [`ROB_PTR_WIDTH-1:0] tail_out
 `endif

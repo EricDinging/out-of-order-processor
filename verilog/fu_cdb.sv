@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module fu_cdb(
     input clock, reset, squash,
@@ -35,13 +35,13 @@ module fu_cdb(
     output logic       dcache_request,
     output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
     output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug,
     output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
     output SQ_IDX                     sq_commit_head_debug,
     output SQ_IDX                     sq_commit_tail_debug
     `ifdef CPU_DEBUG_OUT
     , output FU_STATE_PACKET fu_state_packet_debug
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug
-    , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
     , output LD_ENTRY [`NUM_FU_LOAD-1:0] lq_entries_out
@@ -107,11 +107,11 @@ module fu_cdb(
         .dcache_request(dcache_request),
         .dmshr_entries_debug(dmshr_entries_debug),
         .dmshr_q_debug(dmshr_q_debug),
+        .dcache_data_debug(dcache_data_debug),
         .sq_entries_debug(sq_entries_debug),
         .sq_commit_head_debug(sq_commit_head_debug),
         .sq_commit_tail_debug(sq_commit_tail_debug)
     `ifdef CPU_DEBUG_OUT
-        , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
         , .lq_dcache_packet_debug(lq_dcache_packet_debug)
         , .lq_entries_out(lq_entries_out)

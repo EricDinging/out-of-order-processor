@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module free_list #(
     parameter SIZE = `PHYS_REG_SZ_R10K
