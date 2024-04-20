@@ -110,6 +110,8 @@ module testbench;
 
     // dcache
     DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug;
+    DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug;
+
     DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug;
     logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] dmshr_counter_debug;
     LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug;
@@ -140,6 +142,7 @@ module testbench;
 
     // memory
     logic [63:0] target_mem_block_debug;
+    MEM_BLOCK mem_temp [`MEM_64BIT_LINES-1:0];
 
 `endif
 
@@ -551,6 +554,8 @@ module testbench;
         .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
+        .dmshr_entries_debug(dmshr_entries_debug),
+        .dmshr_q_debug(dmshr_q_debug),
 `ifndef CACHE_MODE
         .proc2mem_size    (proc2mem_size),
 `endif
@@ -592,7 +597,6 @@ module testbench;
         .branch_history_table_debug(branch_history_table_debug),
         .pattern_history_table_debug(pattern_history_table_debug),
         // dcache
-        .dmshr_entries_debug(dmshr_entries_debug),
         .dcache_data_debug(dcache_data_debug),
         .counter_debug(dmshr_counter_debug),
         .lq_dcache_packet_debug(lq_dcache_packet_debug),
@@ -707,27 +711,50 @@ module testbench;
         input [31:0] start_addr;
         input [31:0] end_addr;
         int showing_data;
+        int block_index;
         begin
+            mem_temp = mem.unified_memory;
             $display("\nFinal memory state and exit status:\n");
             $display("@@@ Unified Memory contents hex on left, decimal on right: ");
             $display("@@@");
             showing_data = 0;
+
+            for (int k = 0; k < `DCACHE_LINES; ++k) begin
+                if (dcache_data_debug[k].valid && dcache_data_debug[k].dirty) begin
+                    block_index = {dcache_data_debug[k].tag[`DCACHE_TAG_BITS-1:0], {k >> $clog2(`DCACHE_WAYS)}[`DCACHE_INDEX_BITS-1:0]};
+                    mem_temp[block_index] = dcache_data_debug[k].data;
+                end
+            end
+            for (int k = 0; k < `DMSHR_SIZE; ++k) begin
+                if (dmshr_entries_debug[k].state != DMSHR_INVALID) begin
+                    block_index = {dmshr_entries_debug[k].tag, dmshr_entries_debug[k].index};
+                    for (int x = 0; x < `N; ++x) begin
+                        if (dmshr_q_debug[k][x].inst_command == INST_STORE) begin
+                            case (dmshr_q_debug[k][x].mem_func)
+                            MEM_BYTE: 
+                                mem_temp[block_index].byte_level[dmshr_q_debug[k][x].block_offset]
+                                    = dmshr_q_debug[k][x].data[7:0];
+                            MEM_HALF:
+                                mem_temp[block_index].half_level[dmshr_q_debug[k][x].block_offset[2:1]]
+                                    = dmshr_q_debug[k][x].data[15:0];
+                            MEM_WORD:
+                                mem_temp[block_index].word_level[dmshr_q_debug[k][x].block_offset[2]]
+                                    = dmshr_q_debug[k][x].data[31:0];
+                        endcase
+                        end
+                    end
+                end
+            end
+
+            // TODO store queue
             for (int k = start_addr; k <= end_addr; k = k+1) begin
-                if (memory.unified_memory[k] != 0) begin
-                    $display("@@@ mem[%5d] = %x : %0d", k*8, memory.unified_memory[k],
-                                                             memory.unified_memory[k]);
+                if (mem_temp[k] != 0) begin
+                    $display("@@@ mem[%5d] = %x : %0d", k*8, mem_temp[k],
+                                                             mem_temp[k]);
                     showing_data = 1;
                 end else if (showing_data != 0) begin
                     $display("@@@");
                     showing_data = 0;
-                end
-            end
-            for (int k = 0; k < `DCACHE_LINES; ++k) begin
-                if (dcache_data_debug[k].valid && dcache_data_debug[k].dirty) begin
-                    $display("@@@ mem[%5d] = %x : %0d", 
-                        {dcache_data_debug[k].tag[`DCACHE_TAG_BITS-1:0], {k >> $clog2(`DCACHE_WAYS)}[`DCACHE_INDEX_BITS-1:0], {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}}, 
-                        dcache_data_debug[k].data,
-                        dcache_data_debug[k].data);
                 end
             end
             $display("@@@");

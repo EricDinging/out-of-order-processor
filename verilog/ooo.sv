@@ -22,7 +22,9 @@ module ooo (
     output ADDR        proc2Dmem_addr,
     output MEM_BLOCK   proc2Dmem_data,
     // To icache from dcache
-    output logic       dcache_request
+    output logic       dcache_request,
+    output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug
 `ifdef CPU_DEBUG_OUT
     , output CDB_PACKET [`N-1:0] cdb_packet_debug
     , output FU_STATE_PACKET fu_state_packet_debug
@@ -50,7 +52,6 @@ module ooo (
     , output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug
     , output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug
     // dcache
-    , output DMSHR_ENTRY [`DMSHR_SIZE-1:0] dmshr_entries_debug
     , output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
@@ -196,11 +197,12 @@ module ooo (
         .proc2Dmem_command(proc2Dmem_command),
         .proc2Dmem_addr(proc2Dmem_addr),
         .proc2Dmem_data(proc2Dmem_data),
-        .dcache_request(dcache_request)
+        .dcache_request(dcache_request),
+        .dmshr_entries_debug(dmshr_entries_debug),
+        .dmshr_q_debug(dmshr_q_debug)
         `ifdef CPU_DEBUG_OUT
         , .fu_state_packet_debug(fu_state_packet_debug)
         , .select_debug(select_debug)
-        , .dmshr_entries_debug(dmshr_entries_debug)
         , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
         , .lq_dcache_packet_debug(lq_dcache_packet_debug)
