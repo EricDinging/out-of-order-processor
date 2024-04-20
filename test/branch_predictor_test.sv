@@ -9,7 +9,7 @@ module testbench;
     // output
     PC_ENTRY [`N-1:0] target_pc;
 
-    local_predictor bp(
+    tournament_predictor bp (
         .clock(clock),
         .reset(reset),
         .pc_start(pc_start),
@@ -37,4 +37,6 @@ module testbench;
         $display("@@@ Passed");
         $finish;
     end
+
 endmodule
+ 
