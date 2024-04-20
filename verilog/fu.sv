@@ -1,21 +1,21 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
-
+// `define CPU_DEBUG_OUT
 
 // ALU: computes the result of FUNC applied with operands A and B
 // This module is purely combinational
 module alu (
-    input DATA opa,
-    input DATA opb,
-    input ALU_FUNC   func,
+    input DATA     opa,
+    input DATA     opb,
+    input ALU_FUNC func,
 
     output DATA result
 );
 
-    logic signed [31:0]   signed_opa, signed_opb;
+    logic signed [31:0] signed_opa, signed_opb;
 
-    assign signed_opa   = opa;
-    assign signed_opb   = opb;
+    assign signed_opa = opa;
+    assign signed_opb = opb;
 
     always_comb begin
         case (func)
@@ -100,6 +100,7 @@ module alu_cond (
     end
 
     assign fu_state_alu_packet.take_branch = fu_alu_packet.uncond_branch || (fu_alu_packet.cond_branch && internal_take);
+    assign fu_state_alu_packet.NPC = fu_alu_packet.PC + 4;
     alu alu_0 (
         // Inputs
         .opa(opa_mux_out),
@@ -177,96 +178,162 @@ module mult_impl (
     );
 endmodule
 
-module load (
-    input logic clock, reset,
-    input FU_PACKET fu_load_packet,
-    input logic avail,
-    output logic prepared,
-    output FU_STATE_BASIC_PACKET fu_state_load_packet
-);
-
-    assign prepared = 0;
-    assign fu_state_load_packet = 0;
-endmodule
-
-
-
-/*
-typedef struct packed {
-    logic   valid;
-    INST    inst;
-    ADDR    PC;
-    FU_FUNC func;
-    DATA    op1, op2;
-    PRN     dest_prn;
-    ROBN    robn;
-    ALU_OPA_SELECT opa_select; // used for select signal in FU
-    ALU_OPB_SELECT opb_select; // same as above
-    logic cond_branch;
-    logic uncond_branch;
-} FU_PACKET;
-
-typedef struct packed {
-    PRN   dest_prn;
-    DATA  value;
-} CDB_PACKET;
-
-typedef struct packed {
-    ROBN  robn;
-    logic executed;
-    logic branch_taken;
-    ADDR target_addr;
-} FU_ROB_PACKET;
-
-typedef struct packed {
-    ROBN robn;
-    PRN dest_prn;
-    DATA result;
-} FU_STATE_BASIC_PACKET;
-
-typedef struct packed {
-    FU_STATE_BASIC_PACKET basic;
-    logic take_branch;
-    logic cond_branch;
-    logic uncond_branch;
-    ADDR PC;
-} FU_STATE_ALU_PACKET;
-
-typedef struct packed {
-    logic [`NUM_FU_ALU-1:0] alu_prepared;
-    FU_STATE_ALU_PACKET   [`NUM_FU_ALU-1:0] alu_packet;
-    logic [`NUM_FU_MULT-1:0] mult_prepared;
-    FU_STATE_BASIC_PACKET [`NUM_FU_MULT-1:0] mult_packet;
-    logic [`NUM_FU_LOAD-1:0] load_prepared;
-    FU_STATE_BASIC_PACKET [`NUM_FU_LOAD-1:0] load_packet;
-} FU_STATE_PACKET;
-*/
-
 
 module fu #(
 
 )(
     input clock, reset,
+    input squash,
     input FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet,
     input FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet,
     input FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet,
     input FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet,
 
-    // given back from priority selector
-    input logic [`NUM_FU_ALU-1:0]  alu_avail,
-    input logic [`NUM_FU_MULT-1:0] mult_avail,
-    input logic [`NUM_FU_LOAD-1:0] load_avail,
+    // From memory to dcache
+    input MEM_TAG   Dmem2proc_transaction_tag,
+    input MEM_BLOCK Dmem2proc_data,
+    input MEM_TAG   Dmem2proc_data_tag,
 
-    // TODO: packet for store, to rob and maybe prf
-    // tell rs whether it the next value will be accepted
+    // given back from priority selector
+    input logic  [`NUM_FU_ALU-1:0]  alu_avail,
+    input logic  [`NUM_FU_MULT-1:0] mult_avail,
+    input logic  [`NUM_FU_LOAD-1:0] load_avail,
+    output logic [`NUM_FU_LOAD-1:0] load_rs_avail,
+
+    // store_queue
+    input ID_SQ_PACKET [`N-1:0]            id_sq_packet,
+    input SQ_IDX                   rob_num_commit_insns,
+
+    // tell rs whether the next value will be accepted
     output logic           [`NUM_FU_STORE-1:0] store_avail,
+    output SQ_IDX                              sq_head,
+    output SQ_IDX                              sq_tail,
+    output SQ_IDX                              sq_tail_ready,
+    output logic                               sq_almost_full,
+    output SQ_IDX                              sq_num_sent_insns,
     output FU_ROB_PACKET   [`NUM_FU_ALU-1:0]   cond_rob_packet,
-    output FU_STATE_PACKET                     fu_state_packet
+    output FU_STATE_PACKET                     fu_state_packet,
+    // To memory from dcache
+    output MEM_COMMAND proc2Dmem_command,
+    output ADDR        proc2Dmem_addr,
+    output MEM_BLOCK   proc2Dmem_data,
+    // To icache from dcache
+    output logic       dcache_request,
+    output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output DCACHE_ENTRY     [`DCACHE_LINES-1:0] dcache_data_debug,
+    output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
+    output SQ_IDX                     sq_commit_head_debug,
+    output SQ_IDX                     sq_commit_tail_debug
+`ifdef CPU_DEBUG_OUT
+    , output logic            [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
+    , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
+    , output LD_ENTRY         [`NUM_FU_LOAD-1:0]   lq_entries_out
+    , output RS_LQ_PACKET     [`NUM_FU_LOAD-1:0]   rs_lq_packet_debug
+    , output LU_REG           [`NUM_FU_LOAD-1:0]   lu_reg_debug
+    , output LU_FWD_REG       [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug
+    , output logic            [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
+    , output DATA             [`NUM_FU_LOAD-1:0]   load_req_data_debug
+    , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
+    , output logic [`N-1:0] store_req_accept_debug
+    , output logic [`N-1:0] load_req_accept_debug
+    , output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug
+`endif
 );
+    
+    RS_SQ_PACKET [`NUM_FU_STORE-1:0] rs_sq_packet;
+
+    // store_queue and load_queue
+    ADDR     [`NUM_FU_LOAD-1:0] addr;
+    SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store;
+    MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info;
+    DATA     [`NUM_FU_LOAD-1:0] value;
+    logic    [`NUM_FU_LOAD-1:0] fwd_valid;
+    SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet;
+    logic            [`NUM_SQ_DCACHE-1:0] dcache_sq_accept;
+    // load queue - dcache
+    DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet;
+    logic            [`NUM_LU_DCACHE-1:0] load_req_accept;
+    DATA             [`NUM_LU_DCACHE-1:0] load_req_data;
+    logic            [`NUM_LU_DCACHE-1:0] load_req_data_valid;
+    LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet;
+
+    logic    [`NUM_FU_LOAD-1:0][3:0] forwarded;
+
+    genvar i;
+    generate
+        for (i = 0; i < `NUM_FU_STORE; ++i) begin
+            assign rs_sq_packet[i] = '{
+                fu_store_packet[i].valid,                      // valid
+                fu_store_packet[i].op1,                        // base
+                {fu_store_packet[i].inst.s.off, fu_store_packet[i].inst.s.set}, // offset
+                fu_store_packet[i].op2,                        // data
+                fu_store_packet[i].sq_idx                      // sq_idx
+            };
+        end
+    endgenerate
+
+    RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet;
+    generate
+        for (i = 0; i < `NUM_FU_LOAD; ++i) begin
+            assign rs_lq_packet[i] = '{
+                fu_load_packet[i].valid,    // logic valid;
+                fu_load_packet[i].mem_func, // MEM_FUNC sign_size;
+                fu_load_packet[i].op1,      // ADDR base;
+                fu_load_packet[i].inst.i.imm, // logic [11:0] offset;
+                fu_load_packet[i].dest_prn, // PRN prn;
+                fu_load_packet[i].robn,     // ROBN robn;
+                fu_load_packet[i].sq_idx    // SQ_IDX   tail_store;
+            };
+        end
+    endgenerate
+    `ifdef CPU_DEBUG_OUT
+        assign rs_lq_packet_debug = rs_lq_packet;
+        assign sq_dcache_packet_debug = sq_dcache_packet;
+        assign dcache_lq_packet_debug = dcache_lq_packet;
+    `endif
+
+    dcache cache (
+        .clock(clock),
+        .reset(reset),
+        .squash(squash),
+        // from memory
+        .Dmem2proc_transaction_tag(Dmem2proc_transaction_tag),
+        .Dmem2proc_data(Dmem2proc_data),
+        .Dmem2proc_data_tag(Dmem2proc_data_tag),
+        // from lsq
+        .lq_dcache_packet(lq_dcache_packet),
+        .sq_dcache_packet(sq_dcache_packet),
+        // to memory
+        .proc2Dmem_command(proc2Dmem_command),
+        .proc2Dmem_addr(proc2Dmem_addr),
+        .proc2Dmem_data(proc2Dmem_data),
+        // to lsq
+        .store_req_accept(dcache_sq_accept),
+        .load_req_accept(load_req_accept),
+        .load_req_data(load_req_data),
+        .load_req_data_valid(load_req_data_valid),
+        .dcache_lq_packet(dcache_lq_packet),
+        // to Icache
+        .dcache_request(dcache_request),
+        .dcache_data_debug(dcache_data_debug),
+        .dmshr_entries_debug(dmshr_entries_debug),
+        .dmshr_q_debug(dmshr_q_debug)
+    `ifdef CPU_DEBUG_OUT
+        , .counter_debug(counter_debug)
+        , .store_req_accept_debug(store_req_accept_debug)
+        , .load_req_accept_debug(load_req_accept_debug)
+    `endif
+    );
+
+    `ifdef CPU_DEBUG_OUT
+        assign load_req_data_valid_debug = load_req_data_valid;
+        assign load_req_data_debug = load_req_data;
+    `endif
 
     alu_cond alu_components [`NUM_FU_ALU-1:0] (
         .clock(clock), // not needed for 1-cycle alu
-        .reset(reset), // not needed for 1-cycle alu
+        .reset(reset || squash), // not needed for 1-cycle alu
         .fu_alu_packet(fu_alu_packet),
         .avail(alu_avail), // not needed for 1-cycle alu
         //output
@@ -276,30 +343,83 @@ module fu #(
 
     mult_impl mult_components [`NUM_FU_MULT-1:0] (
         .clock(clock),
-        .reset(reset),
+        .reset(reset || squash),
         .fu_mult_packet(fu_mult_packet),
         .avail(mult_avail),
         //output
         .prepared(fu_state_packet.mult_prepared),
         .fu_state_mult_packet(fu_state_packet.mult_packet)
     );
-
-    load load_components [`NUM_FU_LOAD-1:0] (
+ 
+    store_queue store_component (
         .clock(clock),
         .reset(reset),
-        .fu_load_packet(fu_load_packet),
-        .avail(load_avail),
-        //output
-        .prepared(fu_state_packet.load_prepared),
-        .fu_state_load_packet(fu_state_packet.load_packet)
+        .squash(squash),
+        // id
+        .id_sq_packet(id_sq_packet),
+        .almost_full(sq_almost_full),
+        // rs
+        .rs_sq_packet(rs_sq_packet),
+        // rob
+        .num_commit_insns(rob_num_commit_insns),
+        .num_sent_insns(sq_num_sent_insns),
+        // dcache
+        .sq_dcache_packet(sq_dcache_packet),
+        .dcache_accept(dcache_sq_accept),
+        // rs for load
+        .head(sq_head),
+        .tail(sq_tail),
+        .tail_ready(sq_tail_ready),
+        // lq
+        .addr(addr),
+        .tail_store(tail_store),
+        .load_byte_info(load_byte_info),
+        .value(value),
+        .fwd_valid(fwd_valid),
+        .forwarded(forwarded),
+        .sq_entries_debug(sq_entries_debug),
+        .sq_commit_head_debug(sq_commit_head_debug),
+        .sq_commit_tail_debug(sq_commit_tail_debug)
+    `ifdef CPU_DEBUG_OUT
+    `endif
     );
 
-    // TODO store
-    // assign store_avail = 0;
-
+    load_queue load_unit (
+        .clock(clock),
+        .reset(reset || squash),
+        // rs
+        .rs_lq_packet(rs_lq_packet),
+        .load_rs_avail(load_rs_avail),
+        // cdb
+        .load_avail(load_avail),
+        .load_prepared(fu_state_packet.load_prepared),
+        .load_packet(fu_state_packet.load_packet),
+        // sq
+        .sq_addr(addr),
+        .store_range(tail_store),
+        .load_byte_info(load_byte_info),
+        .value(value),
+        .fwd_valid(fwd_valid),
+        .forwarded(forwarded),
+        // Dcache
+        .dcache_lq_packet(dcache_lq_packet),
+        .load_req_accept(load_req_accept),
+        .load_req_data(load_req_data),
+        .load_req_data_valid(load_req_data_valid),
+        .lq_dcache_packet(lq_dcache_packet)
+    `ifdef CPU_DEBUG_OUT
+        , .entries_out(lq_entries_out)
+        , .lu_reg_debug(lu_reg_debug)
+        , .lu_fwd_reg_debug(lu_fwd_reg_debug)
+    `endif
+    );
+    
+    `ifdef CPU_DEBUG_OUT
+        assign lq_dcache_packet_debug = lq_dcache_packet;
+    `endif
 
     always_comb begin
-        store_avail = {`NUM_FU_STORE{1'b0}};
+        store_avail = {`NUM_FU_STORE{`TRUE}};
         
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
             cond_rob_packet[i].robn         = fu_state_packet.alu_packet[i].basic.robn;
@@ -310,13 +430,3 @@ module fu #(
     end
 
 endmodule
-
-
-/*
-typedef struct packed {
-    ROBN  robn;
-    logic executed;
-    logic branch_taken;
-    ADDR target_addr;
-} FU_ROB_PACKET;
-*/

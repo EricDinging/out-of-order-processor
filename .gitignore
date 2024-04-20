@@ -55,4 +55,5 @@ novas*
 # ignore the output folder
 # don't ignore the correct_out folder
 output/
+diff/
 !correct_out/*

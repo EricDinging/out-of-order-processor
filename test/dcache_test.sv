@@ -199,7 +199,7 @@ module testbench;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){4}}, // lq_idx
+            {(`LU_IDX_BITS){4}}, // lq_idx
             {(32){8}},  // addr
             MEM_WORD    // mem_func
         };
@@ -236,7 +236,7 @@ module testbench;
         Dmem2proc_data_tag = 0;
         correct_dcache_lq_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){4}},
+            {(`LU_IDX_BITS){4}},
             1
         };
         correct = correct && (dcache_lq_packet[0].data === 1);
@@ -285,15 +285,15 @@ module testbench;
         end
 
         Dmem2proc_data_tag = 1;
-        Dmem2proc_data = 1;
+        Dmem2proc_data = 0;
         
         #(`CLOCK_PERIOD/4);
-        // print_dmshr_entries_debug();
-        // print_dcache_data_debug();
+        print_dmshr_entries_debug();
+        print_dcache_data_debug();
         $display("check first load");
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){4}}, // lq_idx
+            {(`LU_IDX_BITS){4}}, // lq_idx
             {(32){8}},  // addr
             MEM_WORD    // mem_func
         };
@@ -303,26 +303,28 @@ module testbench;
         correct_load_req_data_valid[0] = `TRUE;
         correct_load_req_data[0] = 32'h12345678;
         correct = correct && (load_req_accept == correct_load_req_accept) 
-                && (correct_load_req_data_valid == load_req_data) && (load_req_data == correct_load_req_data);
+                && (correct_load_req_data_valid == load_req_data_valid) && (load_req_data == correct_load_req_data);
 
         @(negedge clock);
+        // print_dcache_data_debug();
         Dmem2proc_data_tag = 0;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){1}}, // lq_idx
+            {(`LU_IDX_BITS){1}}, // lq_idx
             {(32){10}},  // addr
             MEM_HALF    // mem_func
         };
 
-        #(`CLOCK_PERIOD/5);
+        #(`CLOCK_PERIOD/3);
         $display("check second load");
         correct_load_req_accept[0] = `TRUE;
         correct_load_req_data_valid[0] = `TRUE;
-        correct_load_req_data[0] = 16'h1234;
+        correct_load_req_data[0] = {(32){32'h12345678}};
         correct = correct && (load_req_accept == correct_load_req_accept) 
-                && (correct_load_req_data_valid == load_req_data) && (load_req_data == correct_load_req_data);
-        
+                && (correct_load_req_data_valid == load_req_data_valid) && (load_req_data == correct_load_req_data);
+        $display("!!!");
+        print_current_req_resp();
         @(negedge clock);
         @(negedge clock);
         $display("@@@ Passed test_store_load");
@@ -334,7 +336,7 @@ module testbench;
         for (int i = 0; i < `N; ++i) begin
             lq_dcache_packet[i] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){i}}, // lq_idx
+                {(`LU_IDX_BITS){i}}, // lq_idx
                 {(32){i * 8}},  // addr
                 MEM_WORD    // mem_func
             };
@@ -369,7 +371,7 @@ module testbench;
             #(`CLOCK_PERIOD/4);
             correct_dcache_lq_packet[0] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){dcache_lq_packet[0].lq_idx}},
+                {(`LU_IDX_BITS){dcache_lq_packet[0].lq_idx}},
                 i * 100
             };
             correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
@@ -390,7 +392,7 @@ module testbench;
             if (is_load) begin
                 lq_dcache_packet[i] = '{
                     `TRUE,
-                    {(`LOAD_Q_INDEX_WIDTH){moving_idx + i}}, // lq_idx
+                    {(`LU_IDX_BITS){(moving_idx + i)%`NUM_FU_LOAD}}, // lq_idx
                     {(32){(moving_idx + i) * 4}},  // addr
                     MEM_WORD    // mem_func
                 };
@@ -444,7 +446,7 @@ module testbench;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}}, // lq_idx
+            {(`LU_IDX_BITS){(moving_idx+1)%`NUM_FU_LOAD}}, // lq_idx
             {(32){`MEM_SIZE_IN_BYTES-8}},  // addr
             MEM_WORD    // mem_func
         };
@@ -480,7 +482,7 @@ module testbench;
         $display("check clean evict, data return");
         correct_dcache_lq_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}},
+            {(`LU_IDX_BITS){(moving_idx+1)%`NUM_FU_LOAD}},
             32'h12345678
         };
         $display("moving_idx: %d", moving_idx + 1);
@@ -515,7 +517,7 @@ module testbench;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}}, // lq_idx
+            {(`LU_IDX_BITS){(moving_idx+1)%`NUM_FU_LOAD}}, // lq_idx
             {(32){`MEM_SIZE_IN_BYTES-8}},  // addr
             MEM_WORD    // mem_func
         };
@@ -551,12 +553,15 @@ module testbench;
         $display("check dirty evict, data return");
         correct_dcache_lq_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){moving_idx+1}},
+            {(`LU_IDX_BITS){(moving_idx+1)%`NUM_FU_LOAD}},
             32'h12345678
         };
+        
+        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
+
+        @(negedge clock);
         correct_dcache_request = `TRUE;
         correct_proc2Dmem_command = MEM_STORE;
-        correct = correct && (dcache_lq_packet == correct_dcache_lq_packet);
         correct = correct && (proc2Dmem_command == correct_proc2Dmem_command)
             && (dcache_request == correct_dcache_request);
 
@@ -571,7 +576,7 @@ module testbench;
 
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){0}}, // lq_idx
+            {(`LU_IDX_BITS){0}}, // lq_idx
             {(32){0}},  // addr
             MEM_WORD    // mem_func
         };
@@ -627,14 +632,14 @@ module testbench;
         // check store success
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){1}}, // lq_idx
+            {(`LU_IDX_BITS){1}}, // lq_idx
             {(32){8}},  // addr
             MEM_WORD    // mem_func
         };
         if (`N >= 2) begin
             lq_dcache_packet[1] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){2}}, // lq_idx
+                {(`LU_IDX_BITS){2}}, // lq_idx
                 {(32){4}},  // addr
                 MEM_WORD    // mem_func
             };
@@ -663,7 +668,7 @@ module testbench;
             for (int i = 0; i < 2; ++i) begin
                 lq_dcache_packet[i] = '{
                     `TRUE,
-                    {(`LOAD_Q_INDEX_WIDTH){i}}, // lq_idx
+                    {(`LU_IDX_BITS){i}}, // lq_idx
                     {(32){8}},  // addr
                     MEM_WORD    // mem_func
                 };
@@ -691,7 +696,7 @@ module testbench;
 
             lq_dcache_packet[0] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){`N}}, // lq_idx
+                {(`LU_IDX_BITS){`N}}, // lq_idx
                 {(32){8}},  // addr
                 MEM_WORD    // mem_func
             };
@@ -707,17 +712,17 @@ module testbench;
             #(`CLOCK_PERIOD/4);
             correct_dcache_lq_packet[0] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){0}},
+                {(`LU_IDX_BITS){0}},
                 0
             };
             correct_dcache_lq_packet[1] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){1}},
+                {(`LU_IDX_BITS){1}},
                 0
             };
             correct_dcache_lq_packet[4] = '{
                 `TRUE,
-                {(`LOAD_Q_INDEX_WIDTH){`N}},
+                {(`LU_IDX_BITS){`N}},
                 1000
             };
             print_ld_packet();
@@ -748,7 +753,7 @@ module testbench;
         sq_dcache_packet = 0;
         lq_dcache_packet[0] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){`N}}, // lq_idx
+            {(`LU_IDX_BITS){`N}}, // lq_idx
             {(32){11}},  // addr
             MEM_BYTE    // mem_func
         };
@@ -762,7 +767,7 @@ module testbench;
         #(`CLOCK_PERIOD/4);
         correct_dcache_lq_packet[1] = '{
             `TRUE,
-            {(`LOAD_Q_INDEX_WIDTH){`N}},
+            {(`LU_IDX_BITS){`N}},
             32'h12340000
         };
         print_ld_packet();
@@ -778,13 +783,13 @@ module testbench;
         clock = 0;
         clock_cycle = 0;
 
-        // test_cache_miss();
-        // test_store_load();
-        // test_non_blocking();
-        // test_clean_evict();
-        // test_dirty_evict();
-        // test_mixed_input();
-        // test_mixed_queue();
+        test_cache_miss();
+        test_store_load();
+        test_non_blocking();
+        test_clean_evict();
+        test_dirty_evict();
+        test_mixed_input();
+        test_mixed_queue();
         test_mem_func();
 
         $display("@@@ Passed");

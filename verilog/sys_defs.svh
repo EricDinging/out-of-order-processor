@@ -43,30 +43,66 @@
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
-`define LSQ_SZ 8
+// `define LSQ_SZ 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 2
 `define NUM_FU_MULT 2
-`define NUM_FU_LOAD 2
+`define NUM_FU_LOAD 4
 `define NUM_FU_STORE 2
 
-`define LOAD_Q_INDEX_WIDTH 32 // TODO: merge
-`define STORE_Q_INDEX_WIDTH 32 // TODO: merge
+// `define LOAD_Q_INDEX_WIDTH $clog2(`NUM_FU_LOAD)
+// `define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
 
 // cache
-`define CACHE_LINES 32
-`define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+`define ICACHE_LINES 4
+`define ICACHE_SETS 2
+`define ICACHE_WAYS `ICACHE_LINES / `ICACHE_SETS
+`define ILRU_WIDTH $clog2(`ICACHE_WAYS)
+`define ICACHE_INDEX_BITS $clog2(`ICACHE_SETS)
+`define ICACHE_BLOCK_OFFSET_BITS 3
+`define ICACHE_TAG_BITS 32-`ICACHE_BLOCK_OFFSET_BITS-`ICACHE_INDEX_BITS
+
+// `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+`define MAX_PREFETCH_LINE 4
+
+// lsq
+`define NUM_SQ_DCACHE `N // cannot change to other value
+`define SQ_LEN  2 * `N
+`define SQ_IDX_BITS $clog2(`SQ_LEN + 2)
+
+`define NUM_LU_DCACHE `N // cannot change to other value
+`define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
-`define DCACHE_LINES 32
-`define DCACHE_INDEX_BITS $clog2(`DCACHE_LINES)
-`define DCACHE_BLOCK_OFFSET_BITS 3
+`define DCACHE_LINES 8 // pw of 2
+`define DCACHE_SETS 4   // pw of 2
+`define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
+`define LRU_WIDTH $clog2(`DCACHE_WAYS)
+
+`define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
+`define DCACHE_BLOCK_OFFSET_BITS 2
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
-`define DMSHR_SIZE 8
+`define DMSHR_SIZE 4
+
+// local history table
+`define BHT_WIDTH 8
+`define BHT_SIZE  16
+`define BHT_IDX_WIDTH $clog2(`BHT_SIZE)
+// BTB
+`define BTB_SIZE 32
+`define BTB_INDEX_BITS $clog2(`BTB_SIZE)
+`define BTB_TAG_BITS 32-2-`BTB_INDEX_BITS
+
+// pattern history table
+`define PHT_SIZE 2**`BHT_WIDTH
+
+`define RAS_SIZE 16
+`define RAS_CTR_WIDTH $clog2(`RAS_SIZE+1)
+`define RAS_PTR_WIDTH $clog2(`RAS_SIZE)
 
 ///////////////////////////////
 // ---- Basic Constants ---- //
@@ -86,6 +122,13 @@ typedef logic [4:0] REG_IDX;
 typedef logic [`PRN_WIDTH-1:0]         PRN;
 typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 
+typedef logic [`SQ_IDX_BITS-1:0] SQ_IDX;
+
+typedef logic [`LU_IDX_BITS-1:0] LU_IDX;
+
+typedef logic [`RAS_PTR_WIDTH  :0] RAS_CTR;
+typedef logic [`RAS_PTR_WIDTH-1:0] RAS_PTR;
+
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away
 `define ZERO_REG 5'd0
@@ -102,7 +145,7 @@ typedef logic [`ROB_CNT_WIDTH-1:0]     ROBN;
 // a double word. The original processor won't work with this defined. Your new
 // processor will have to account for this effect on mem.
 // Notably, you can no longer write data without first reading.
-`define CACHE_MODE
+// `define CACHE_MODE
 
 // you are not allowed to change this definition for your final processor
 // the project 3 processor has a massive boost in performance just from having no mem latency
@@ -126,7 +169,13 @@ typedef union packed {
     logic [3:0][15:0] half_level;
     logic [1:0][31:0] word_level;
     logic      [63:0] dbbl_level;
-} MEM_BLOCK;
+} MEM_BLOCK; // If change mem_block to other size, be aware cache needs to change
+
+typedef union packed {
+    logic [3:0][7:0]  byte_level;
+    logic [1:0][15:0] half_level;
+    logic      [31:0] word_level;
+} DCACHE_BLOCK;
 
 typedef enum logic [1:0] {
     BYTE   = 2'h0,
@@ -168,6 +217,18 @@ typedef enum logic [1:0] {
     DMSHR_WAIT_TAG  = 2'h2,
     DMSHR_WAIT_DATA = 2'h3
 } DMSHR_STATE;
+
+// pattern history state
+typedef enum logic {
+    NOT_TAKEN = 1'h0,
+    TAKEN     = 1'h1
+} PHT_ENTRY_STATE;
+
+typedef struct packed {
+    logic                     valid;
+    ADDR                      PC;
+    logic [`BTB_TAG_BITS-1:0] tag;
+} BTB_ENTRY;
 
 ///////////////////////////////
 // ---- Exception Codes ---- //
@@ -460,6 +521,8 @@ typedef struct packed {
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
     logic cond_branch;
     logic uncond_branch;
+    SQ_IDX sq_idx;
+    MEM_FUNC mem_func;
 } RS_ENTRY;
 
 typedef struct packed {
@@ -476,6 +539,7 @@ typedef struct packed {
     ALU_OPB_SELECT opb_select; // same as above, 4 bits
     logic cond_branch;
     logic uncond_branch;
+    MEM_FUNC mem_func;
 } ID_RS_PACKET;
 
 
@@ -493,17 +557,19 @@ typedef struct packed {
  * Data exchanged between reservation stations and the FU
  */
 typedef struct packed {
-    logic   valid;
-    INST    inst;
-    ADDR    PC;
-    FU_FUNC func;
-    DATA    op1, op2;
-    PRN     dest_prn;
-    ROBN    robn;
+    logic    valid;
+    INST     inst;
+    ADDR     PC;
+    FU_FUNC  func;
+    DATA     op1, op2;
+    PRN      dest_prn;
+    ROBN     robn;
     ALU_OPA_SELECT opa_select; // used for select signal in FU
     ALU_OPB_SELECT opb_select; // same as above
-    logic cond_branch;
-    logic uncond_branch;
+    logic    cond_branch;
+    logic    uncond_branch;
+    SQ_IDX   sq_idx;
+    MEM_FUNC mem_func;
 } FU_PACKET;
 
 /**
@@ -621,6 +687,7 @@ typedef struct packed {
     logic take_branch;
     logic cond_branch;
     logic uncond_branch;
+    ADDR NPC;
 } FU_STATE_ALU_PACKET;
 
 typedef struct packed {
@@ -640,11 +707,13 @@ typedef struct packed {
 // } CDB_PREDICTOR_PfACKET;
 
 typedef struct packed {
+    logic valid;
     logic success;
     logic predict_taken;
     ADDR  predict_target;
     logic resolve_taken;
     ADDR  resolve_target;
+    ADDR  PC;
 } ROB_IF_ENTRY;
 
 typedef struct packed {
@@ -654,18 +723,25 @@ typedef struct packed {
 typedef struct packed {
     logic taken;
     logic valid;
-    ADDR  pc;
+    ADDR  PC;
 } PC_ENTRY;
 
 typedef struct packed {
+    logic valid;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+} ID_SQ_PACKET;
+
+typedef struct packed {
     ID_RS_PACKET  [`N-1:0] id_rs_packet;
-    ROB_IS_PACKET rob_is_packet;
-    RAT_IS_INPUT  rat_is_input;
+    ID_SQ_PACKET  [`N-1:0] id_sq_packet;
+    ROB_IS_PACKET          rob_is_packet;
+    RAT_IS_INPUT           rat_is_input;
 } ID_OOO_PACKET;
 
 typedef struct packed {
-    logic [`CACHE_LINE_BITS-1:0]  index;           // cache index
-    logic [12-`CACHE_LINE_BITS:0] tag;             // cache tag
+    logic [`ICACHE_INDEX_BITS-1:0]  index;           // cache index
+    logic [`ICACHE_TAG_BITS-1:0]  tag;             // cache tag
     MEM_TAG                       transaction_tag; // tag returned from memory
     IMSHR_STATE                   state;           // MISS, WAIT
 } IMSHR_ENTRY;
@@ -682,20 +758,28 @@ typedef struct packed {
     MEM_FUNC                              mem_func;
     DATA                                  data;
     logic [`DCACHE_BLOCK_OFFSET_BITS-1:0] block_offset;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0]       lq_idx;
+    LU_IDX                                lq_idx;
 } DMSHR_Q_PACKET;
 
 typedef struct packed {
-    logic                           valid;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
-    DATA                            data;
+    logic valid;
+    ADDR  base;
+    logic signed [11:0] offset;
+    DATA  data;
+    SQ_IDX sq_idx;
+} RS_SQ_PACKET;
+
+typedef struct packed {
+    logic  valid;
+    LU_IDX lq_idx;
+    DATA   data;
 } DCACHE_LQ_PACKET;
 
 typedef struct packed {
-    logic                           valid;
-    logic [`LOAD_Q_INDEX_WIDTH-1:0] lq_idx;
-    ADDR                            addr;
-    MEM_FUNC                        mem_func;
+    logic    valid;
+    LU_IDX   lq_idx;
+    ADDR     addr;
+    MEM_FUNC mem_func;
 } LQ_DCACHE_PACKET;
 
 typedef struct packed {
@@ -706,10 +790,92 @@ typedef struct packed {
 } SQ_DCACHE_PACKET;
 
 typedef struct packed {
-    MEM_BLOCK                    data;
+    DCACHE_BLOCK                 data;
     logic [`DCACHE_TAG_BITS-1:0] tag; // 32 - block index bits
     logic                        valid;
     logic                        dirty;
 } DCACHE_ENTRY;
+
+typedef struct packed {
+    logic    valid;
+    // MEM_SIZE byte_info;
+    MEM_FUNC byte_info;
+    ADDR     addr;
+    DATA     data;
+    logic    ready;
+    logic    accepted;
+    logic    commited;
+} SQ_ENTRY;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR base;
+    logic signed [11:0] offset;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+} RS_LQ_PACKET;
+
+typedef struct packed {
+    logic  valid;
+    ADDR   addr;
+    DATA   data;
+    SQ_IDX sq_idx;
+} SQ_REG;
+
+typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
+
+typedef struct packed {
+    logic    valid;
+    // logic    signext;
+    // MEM_SIZE byte_info;
+    logic [3:0] forwarded;
+    MEM_FUNC byte_info;
+    ADDR     addr;
+    DATA     data;
+    SQ_IDX   tail_store;
+    PRN      prn;
+    ROBN     robn;
+    LU_STATE load_state;
+} LD_ENTRY;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    MEM_FUNC sign_size;
+    ADDR addr;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+} LU_REG;
+
+typedef struct packed {
+    logic valid;
+    // logic signext;
+    // MEM_SIZE size;
+    logic [3:0] forwarded;
+    MEM_FUNC sign_size;
+    ADDR addr;
+    PRN prn;
+    ROBN robn;
+    SQ_IDX   tail_store;
+    DATA value;
+    logic fwd_valid;
+} LU_FWD_REG;
+
+typedef struct packed {
+    logic   valid;
+    ADDR    NPC;
+    REG_IDX rs, rd;
+} ID_RAS_PACKET;
+
+typedef struct packed {
+    logic valid;
+    ADDR  ra;
+} RAS_IF_PACKET;
 
 `endif // __SYS_DEFS_SVH__

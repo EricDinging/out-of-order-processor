@@ -21,13 +21,16 @@ module decoder (
     output logic          cond_branch, uncond_branch,
     output logic          csr_op, // used for CSR operations, we only use this as a cheap way to get the return code out
     output logic          halt,   // non-zero on a halt
-    output logic          illegal // non-zero on an illegal instruction
+    output logic          illegal, // non-zero on an illegal instruction
+    output logic          wr_mem,
+    output logic          rd_mem,
+    output MEM_FUNC       mem_func
 );
 
 
     ALU_FUNC  alu_func;
     MULT_FUNC mult_func;
-    logic     mult, rd_mem, wr_mem;
+    logic     mult;
     
     always_comb begin
         if (mult) begin
@@ -59,6 +62,7 @@ module decoder (
         uncond_branch = `FALSE;
         halt          = `FALSE;
         illegal       = `FALSE;
+        mem_func      = MEM_WORD;
 
         if (valid) begin
             casez (inst)
@@ -102,11 +106,13 @@ module decoder (
                     has_dest   = `TRUE;
                     opb_select = OPB_IS_I_IMM;
                     rd_mem     = `TRUE;
+                    mem_func   = inst.r.funct3;
                     // stage_ex uses inst.r.funct3 as the load size and signedness
                 end
                 `RV32_SB, `RV32_SH, `RV32_SW: begin
                     opb_select = OPB_IS_S_IMM;
                     wr_mem     = `TRUE;
+                    mem_func   = inst.r.funct3;
                     // stage_ex uses inst.r.funct3 as the store size
                 end
                 `RV32_ADDI: begin

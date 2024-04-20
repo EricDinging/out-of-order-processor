@@ -1,0 +1,36 @@
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 20 05:16 2024
+
+---- Starting CPU Testbench ----
+
+Using memory file  : programs/countdown.mem
+Using output files : output/countdown.{cpi, wb, ppln}
+
+                 0 : Asserting Reset
+               450 : Loading Unified Memory
+              1060 : Deasserting Reset
+              1060 : Running Processor
+             15320 : Processor Finished
+
+Final memory state and exit status:
+
+@@@ Unified Memory contents hex on left, decimal on right: 
+@@@
+@@@ mem[    0] = 0802a28300000297 : 577202385781260951
+@@@ mem[    8] = fff2829300028a63 : 18442946991907572323
+@@@ mem[   16] = 0653a82300000397 : 455892855571874711
+@@@ mem[   24] = 10500073fe9ff06f : 1175440000936833135
+@@@
+@@@
+@@@ System halted on WFI instruction
+@@@
+
+---- Finished CPU Testbench ----
+
+$finish called from file "test/cpu_test.sv", line 297.
+$finish at simulation time                16320
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 1632000 ps
+CPU Time:      0.280 seconds;       Data structure size:   0.1Mb
+Sat Apr 20 05:16:40 2024

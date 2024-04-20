@@ -11,7 +11,7 @@
       long i, fib;
 
       output[0] = 1;
-      output[1] = 2;
+      output[1] = 1;
       for (i=2; i < 16; i++)
         output[i] = output[i-1] + output[i-2];
     }
@@ -27,7 +27,7 @@
     sw	x2, 0(x5)
 loop:	lw	x2, 0(x4)
     lw	x3, 0(x5)
-    add	x3,	x3,	x2 #
+    add	x3,	x3,	x2
     addi	x4,	x4,	0x8 #
     addi	x5,	x5,	0x8 #
     addi	x10,	x10,	0x1 #

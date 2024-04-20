@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module cdb #(
     parameter SIZE = `CDB_SZ
@@ -20,6 +20,7 @@ module cdb #(
 
     `ifdef CPU_DEBUG_OUT
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD - 1:0] select_debug
+    , output FU_STATE_PACKET cdb_state_debug
     `endif
 );
 
@@ -44,6 +45,7 @@ module cdb #(
 
 `ifdef CPU_DEBUG_OUT
     assign select_debug = {alu_selected, mult_selected, load_selected};
+    assign cdb_state_debug = cdb_state;
 `endif
 
     psel_gen #(
@@ -81,8 +83,10 @@ module cdb #(
                 cdb_state.alu_packet[i].basic.result
             };
             alu_cdb_packet[i] = cdb_state.alu_prepared[i] ?
-            '{cdb_state.alu_packet[i].basic.dest_prn, cdb_state.alu_packet[i].basic.result}
-            : '{{`PRN_WIDTH{1'b0}}, 32'b0};
+                '{
+                    cdb_state.alu_packet[i].basic.dest_prn, 
+                    cdb_state.alu_packet[i].uncond_branch ? cdb_state.alu_packet[i].NPC : cdb_state.alu_packet[i].basic.result
+                } : '{{`PRN_WIDTH{1'b0}}, 32'b0};
         end
 
         // load
@@ -93,8 +97,9 @@ module cdb #(
                 1'b0,  // not taken
                 32'b0  // null address
             };
-            other_cdb_packet[i] = '{{`PRN_WIDTH{1'b0}}, 32'b0};
-            // TODO: assign cdb to rs/prf load packet
+            other_cdb_packet[i] = cdb_state.load_prepared[i] ? 
+            '{cdb_state.load_packet[i].dest_prn, cdb_state.load_packet[i].result}
+            : '{{`PRN_WIDTH{1'b0}}, 32'b0};
         end
 
         // mult
@@ -170,13 +175,13 @@ module cdb #(
             cdb_state.load_prepared <= {`NUM_FU_LOAD{1'b0}};
 
             for (int i = 0; i < `NUM_FU_ALU; ++i) begin
-                cdb_state.alu_packet[i] <= '{'{{`ROB_CNT_WIDTH{1'b0}}, {`PRN_WIDTH{1'b0}}, 32'b0}, 1'b0, 1'b0, 1'b0};
+                cdb_state.alu_packet[i] <= 0;
             end
             for (int i = 0; i < `NUM_FU_MULT; ++i) begin
-                cdb_state.mult_packet[i] <= '{{`ROB_CNT_WIDTH{1'b0}}, {`PRN_WIDTH{1'b0}}, 32'b0};
+                cdb_state.mult_packet[i] <= 0;
             end
             for (int i = 0; i < `NUM_FU_LOAD; ++i) begin
-                cdb_state.load_packet[i] <= '{{`ROB_CNT_WIDTH{1'b0}}, {`PRN_WIDTH{1'b0}}, 32'b0};
+                cdb_state.load_packet[i] <= 0;
             end
         end else begin
             cdb_state <= next_cdb_state;

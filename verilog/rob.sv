@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module rob #(
     parameter SIZE = `ROB_SZ,
@@ -11,6 +11,9 @@ module rob #(
 
     input FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0] fu_rob_packet,
 
+    input SQ_IDX sq_sent_insns_num,
+
+    output SQ_IDX        rob_commit_insns_num,
     output logic         almost_full,
     output ROB_CT_PACKET rob_ct_packet, 
     output ROBN [`N-1:0] tail_entries,
@@ -29,8 +32,7 @@ module rob #(
 
     ROB_ENTRY [SIZE-1:0] rob_entries, next_rob_entries;
 
-    // commit control logic
-    logic is_block;
+    SQ_IDX internal_num_sent_insns;
 
     always_comb begin
         next_head = head;
@@ -39,7 +41,8 @@ module rob #(
         next_rob_entries = rob_entries;
         squash = 0;
 
-        is_block = `FALSE;
+        rob_commit_insns_num = 0;
+        internal_num_sent_insns = sq_sent_insns_num;
 
         for (int i = 0; i < `N; ++i) begin
             rob_ct_packet.entries[i] = '{
@@ -62,11 +65,35 @@ module rob #(
                 };
         end
 
+        // to SQ
+        for (int i = 0; i < `N; ++i) begin
+            if (counter <= i) begin
+                break;
+            end
+            if (~rob_entries[(next_head + i) % SIZE].executed) begin
+                if (rob_entries[(next_head + i) % SIZE].is_store) begin
+                    rob_commit_insns_num += 1;
+                end else begin
+                    break;
+                end
+            end else if (~rob_entries[(next_head + i) % SIZE].success) begin
+                break;
+            end
+        end
+
+        // from SQ
+        for (int i = 0; i < `N; ++i) begin
+            if (rob_entries[(next_head + i) % SIZE].is_store && ~rob_entries[(next_head + i) % SIZE].executed && internal_num_sent_insns > 0) begin
+                internal_num_sent_insns -= 1;
+                next_rob_entries[(next_head + i) % SIZE].executed = `TRUE;
+            end
+        end
+
         // Commit
         for (int i = 0; i < `N; ++i) begin
-            if (~is_block && next_counter > 0 && rob_entries[next_head].executed) begin
-                rob_ct_packet.entries[i] = rob_entries[next_head]; // TODO verify this op does not break if not success
-                if (rob_entries[next_head].success) begin
+            if (next_counter > 0 && next_rob_entries[next_head].executed) begin
+                rob_ct_packet.entries[i] = next_rob_entries[next_head]; // TODO verify this op does not break if not success
+                if (next_rob_entries[next_head].success) begin
                     next_head = (next_head + 1) % SIZE;
                     next_counter = next_counter - 1;
                 end else begin
@@ -76,7 +103,7 @@ module rob #(
                     next_counter = {`ROB_PTR_WIDTH{1'b0}};
                 end
             end else begin
-                is_block = `TRUE;
+                break;
             end
         end
 
@@ -90,13 +117,13 @@ module rob #(
                 end
             end
         end
-        
+
         // CDB update
         for (int i = 0; i < `FU_ROB_PACKET_SZ; ++i) begin
             if (fu_rob_packet[i].executed) begin
                 next_rob_entries[fu_rob_packet[i].robn].executed       = `TRUE;
                 next_rob_entries[fu_rob_packet[i].robn].resolve_taken  = fu_rob_packet[i].branch_taken;
-                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].branch_taken? fu_rob_packet[i].target_addr : next_rob_entries[fu_rob_packet[i].robn].NPC;
+                next_rob_entries[fu_rob_packet[i].robn].resolve_target = fu_rob_packet[i].branch_taken ? fu_rob_packet[i].target_addr : next_rob_entries[fu_rob_packet[i].robn].NPC;
                 if (rob_entries[fu_rob_packet[i].robn].cond_branch || rob_entries[fu_rob_packet[i].robn].uncond_branch) begin
                     next_rob_entries[fu_rob_packet[i].robn].success = (next_rob_entries[fu_rob_packet[i].robn].resolve_taken  == next_rob_entries[fu_rob_packet[i].robn].predict_taken)
                                                                    && (next_rob_entries[fu_rob_packet[i].robn].resolve_target == next_rob_entries[fu_rob_packet[i].robn].predict_target);

@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 module cpu (
     input clock, // System clock
@@ -22,6 +22,13 @@ module cpu (
     output logic [1:0] proc2mem_command, // Command sent to memory
     output ADDR        proc2mem_addr,    // Address sent to memory
     output MEM_BLOCK   proc2mem_data,    // Data sent to memory
+    output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
+    output SQ_IDX                     sq_commit_head_debug,
+    output SQ_IDX                     sq_commit_tail_debug,
+    output DCACHE_ENTRY [`DCACHE_LINES-1:0] dcache_data_debug,
+
 
 `ifndef CACHE_MODE // no longer sending size to memory
     output MEM_SIZE    proc2mem_size,    // Data size sent to memory
@@ -41,8 +48,9 @@ module cpu (
     output logic     [`ROB_PTR_WIDTH-1:0] rob_head_out,
     output logic     [`ROB_PTR_WIDTH-1:0] rob_tail_out,
     // rs
-    output RS_ENTRY  [`RS_SZ-1:0]         rs_entries_out,
-    output logic     [`RS_CNT_WIDTH-1:0]  rs_counter_out,
+    output RS_ENTRY  [`RS_SZ-1:0]             rs_entries_out,
+    output logic     [`RS_CNT_WIDTH-1:0]      rs_counter_out,
+    output logic [`RS_SZ-1:0][`NUM_FU_ALU-1:0] alu_sel_debug,
     // prf
     output PRF_ENTRY [`PHYS_REG_SZ_R10K-1:0] prf_entries_debug,
     // rat
@@ -54,11 +62,37 @@ module cpu (
     output PRN   [`ARCH_REG_SZ-1:0]         rrat_entries,
     // fu_packet (rs output state)
     output FU_PACKET [`NUM_FU_ALU-1:0]   fu_alu_packet_debug,
+    output FU_PACKET [`NUM_FU_ALU-1:0]   next_fu_alu_packet_debug,
     output FU_PACKET [`NUM_FU_MULT-1:0]  fu_mult_packet_debug,
     output FU_PACKET [`NUM_FU_LOAD-1:0]  fu_load_packet_debug,
     output FU_PACKET [`NUM_FU_STORE-1:0] fu_store_packet_debug,
     // icache
     output IMSHR_ENTRY [`N-1:0] imshr_entries_debug,
+    // branch predictor
+    output BTB_ENTRY [`BTB_SIZE-1:0] btb_entries_debug,
+    output logic [`BHT_SIZE-1:0][`BHT_WIDTH-1:0] branch_history_table_debug,
+    output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug,
+    // dcache
+    output logic [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug,
+    output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug,
+    // lq
+    output LD_ENTRY [`NUM_FU_LOAD-1:0]     lq_entries_out,
+    output RS_LQ_PACKET [`NUM_FU_LOAD-1:0] rs_lq_packet_debug,
+    output LU_REG     [`NUM_FU_LOAD-1:0]   lu_reg_debug,
+    output LU_FWD_REG [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug,
+    output logic      [`NUM_FU_LOAD-1:0]   load_selected_debug,
+    output logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug,
+    output DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug,
+    output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug,
+    output logic id_stall,
+    output logic rob_stall,
+    output logic rs_stall,
+    output logic sq_stall,
+    output FU_ROB_PACKET [`FU_ROB_PACKET_SZ-1:0]   fu_rob_packet_debug,
+    output FU_STATE_PACKET cdb_state_debug,
+    output logic [`N-1:0] store_req_accept_debug,
+    output logic [`N-1:0] load_req_accept_debug,
+    output DCACHE_LQ_PACKET [`N-1:0] dcache_lq_packet_debug,
 `endif
 
     // Note: these are assigned at the very bottom of the module
@@ -112,6 +146,12 @@ module cpu (
     logic         squash;
     OOO_CT_PACKET ooo_ct_packet;
 
+    // To memory
+    logic [1:0] proc2Dmem_command, proc2Imem_command;
+    ADDR        proc2Dmem_addr, proc2Imem_addr;
+
+    logic dcache_request;
+
     //////////////////////////////////////////////////
     //                                              //
     //                  Stage Fetch                 //
@@ -123,15 +163,19 @@ module cpu (
         .reset(reset),
         .stall(squash ? `FALSE : structural_hazard),
         .squash(squash),
+        .dcache_request(dcache_request),
         .mem2proc_transaction_tag(mem2proc_transaction_tag),
         .mem2proc_data(mem2proc_data),
         .mem2proc_data_tag(mem2proc_data_tag),
         .rob_if_packet(rob_if_packet),
-        .proc2Imem_command(proc2mem_command),
-        .proc2Imem_addr(proc2mem_addr),
+        .proc2Imem_command(proc2Imem_command), // TODO
+        .proc2Imem_addr(proc2Imem_addr),
         .if_id_packet(if_packet)
     `ifdef CPU_DEBUG_OUT
         , .imshr_entries_debug(imshr_entries_debug)
+        , .btb_entries_debug(btb_entries_debug)
+        , .branch_history_table_debug(branch_history_table_debug)
+        , .pattern_history_table_debug(pattern_history_table_debug)
     `endif
     );
 
@@ -172,6 +216,7 @@ module cpu (
 
 `ifdef CPU_DEBUG_OUT
     assign id_ooo_reg_debug = id_ooo_reg;
+    assign id_stall = structural_hazard;
 `endif
 
     //////////////////////////////////////////////////
@@ -184,10 +229,27 @@ module cpu (
         .clock(clock),
         .reset(reset),
         .id_ooo_packet(id_ooo_reg),
+        // from memory to dcache
+        .Dmem2proc_transaction_tag(mem2proc_transaction_tag),
+        .Dmem2proc_data(mem2proc_data),
+        .Dmem2proc_data_tag(mem2proc_data_tag),
+        // Outputs
         .structural_hazard(structural_hazard),
-        .rob_if_packet(rob_if_packet),
         .squash(squash),
-        .ooo_ct_packet(ooo_ct_packet)
+        .rob_if_packet(rob_if_packet),
+        .ooo_ct_packet(ooo_ct_packet),
+        // from dcache to memory
+        .proc2Dmem_command(proc2Dmem_command),
+        .proc2Dmem_addr(proc2Dmem_addr),
+        .proc2Dmem_data(proc2mem_data),
+        .dcache_request(dcache_request),
+        // memory out
+        .dcache_data_debug(dcache_data_debug),
+        .dmshr_entries_debug(dmshr_entries_debug),
+        .dmshr_q_debug(dmshr_q_debug),
+        .sq_entries_debug(sq_entries_debug),
+        .sq_commit_head_debug(sq_commit_head_debug),
+        .sq_commit_tail_debug(sq_commit_tail_debug)
     `ifdef CPU_DEBUG_OUT
         , .cdb_packet_debug(cdb_packet_debug)
         , .fu_state_packet_debug(fu_state_packet_debug)
@@ -202,6 +264,7 @@ module cpu (
         // rs
         , .rs_entries_out(rs_entries_out)
         , .rs_counter_out(rs_counter_out)
+        , .alu_sel_debug(alu_sel_debug)
         // rat
         , .rat_head(rat_head)
         , .rat_tail(rat_tail)
@@ -212,9 +275,30 @@ module cpu (
         , .rrat_entries(rrat_entries)
         // fu_state_packet
         , .fu_alu_packet_debug(fu_alu_packet_debug)
+        , .next_fu_alu_packet_debug(next_fu_alu_packet_debug)
         , .fu_mult_packet_debug(fu_mult_packet_debug)
         , .fu_load_packet_debug(fu_load_packet_debug)
         , .fu_store_packet_debug(fu_store_packet_debug)
+        // dcache
+        , .counter_debug(counter_debug)
+        , .lq_dcache_packet_debug(lq_dcache_packet_debug)
+        , .dcache_lq_packet_debug(dcache_lq_packet_debug)
+        // lq
+        , .lq_entries_out(lq_entries_out)
+        , .rs_lq_packet_debug(rs_lq_packet_debug)
+        , .lu_reg_debug(lu_reg_debug)
+        , .lu_fwd_reg_debug(lu_fwd_reg_debug)
+        , .load_selected_debug(load_selected_debug)
+        , .load_req_data_valid_debug(load_req_data_valid_debug)
+        , .load_req_data_debug(load_req_data_debug)
+        , .sq_dcache_packet_debug(sq_dcache_packet_debug)
+        , .rob_stall(rob_stall)
+        , .rs_stall(rs_stall)
+        , .sq_stall(sq_stall)
+        , .fu_rob_packet_debug(fu_rob_packet_debug)
+        , .cdb_state_debug(cdb_state_debug)
+        , .store_req_accept_debug(store_req_accept_debug)
+        , .load_req_accept_debug(load_req_accept_debug)
     `endif
     );
 
@@ -234,6 +318,12 @@ module cpu (
     //                Memory Outputs                //
     //                                              //
     //////////////////////////////////////////////////
+
+    assign proc2mem_command = dcache_request ? proc2Dmem_command : proc2Imem_command;
+    assign proc2mem_addr    = dcache_request ? proc2Dmem_addr    : proc2Imem_addr;
+`ifndef CACHE_MODE
+    assign proc2mem_size    = dcache_request ? WORD : DOUBLE;
+`endif
 
     // these signals go to and from the processor and memory
     // we give precedence to the mem stage over instruction fetch
