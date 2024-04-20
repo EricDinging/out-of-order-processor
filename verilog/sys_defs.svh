@@ -784,6 +784,7 @@ typedef struct packed {
     DATA     data;
     logic    ready;
     logic    accepted;
+    logic    commited;
 } SQ_ENTRY;
 
 typedef struct packed {
