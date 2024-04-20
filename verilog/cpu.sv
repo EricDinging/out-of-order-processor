@@ -24,6 +24,9 @@ module cpu (
     output MEM_BLOCK   proc2mem_data,    // Data sent to memory
     output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
     output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
+    output SQ_IDX                     sq_commit_head_debug,
+    output SQ_IDX                     sq_commit_tail_debug,
 
 `ifndef CACHE_MODE // no longer sending size to memory
     output MEM_SIZE    proc2mem_size,    // Data size sent to memory
@@ -79,7 +82,6 @@ module cpu (
     output logic      [`NUM_FU_LOAD-1:0]   load_selected_debug,
     output logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug,
     output DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug,
-    output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out,
     output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug,
     output logic id_stall,
     output logic rob_stall,
@@ -241,7 +243,10 @@ module cpu (
         .proc2Dmem_data(proc2mem_data),
         .dcache_request(dcache_request),
         .dmshr_entries_debug(dmshr_entries_debug),
-        .dmshr_q_debug(dmshr_q_debug)
+        .dmshr_q_debug(dmshr_q_debug),
+        .sq_entries_debug(sq_entries_debug),
+        .sq_commit_head_debug(sq_commit_head_debug),
+        .sq_commit_tail_debug(sq_commit_tail_debug)
     `ifdef CPU_DEBUG_OUT
         , .cdb_packet_debug(cdb_packet_debug)
         , .fu_state_packet_debug(fu_state_packet_debug)
@@ -284,7 +289,6 @@ module cpu (
         , .load_selected_debug(load_selected_debug)
         , .load_req_data_valid_debug(load_req_data_valid_debug)
         , .load_req_data_debug(load_req_data_debug)
-        , .sq_entries_out(sq_entries_out)
         , .sq_dcache_packet_debug(sq_dcache_packet_debug)
         , .rob_stall(rob_stall)
         , .rs_stall(rs_stall)

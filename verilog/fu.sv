@@ -220,7 +220,10 @@ module fu #(
     // To icache from dcache
     output logic       dcache_request,
     output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
-    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
+    output SQ_IDX                     sq_commit_head_debug,
+    output SQ_IDX                     sq_commit_tail_debug
 `ifdef CPU_DEBUG_OUT
     , output DCACHE_ENTRY     [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic            [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
@@ -231,7 +234,6 @@ module fu #(
     , output LU_FWD_REG       [`NUM_FU_LOAD-1:0]   lu_fwd_reg_debug
     , output logic            [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug
     , output DATA             [`NUM_FU_LOAD-1:0]   load_req_data_debug
-    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
     , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
     , output logic [`N-1:0] store_req_accept_debug
     , output logic [`N-1:0] load_req_accept_debug
@@ -375,8 +377,10 @@ module fu #(
         .value(value),
         .fwd_valid(fwd_valid),
         .forwarded(forwarded),
+        .sq_entries_debug(sq_entries_debug),
+        .sq_commit_head_debug(sq_commit_head_debug),
+        .sq_commit_tail_debug(sq_commit_tail_debug)
     `ifdef CPU_DEBUG_OUT
-        .entries_out(sq_entries_out)
     `endif
     );
 

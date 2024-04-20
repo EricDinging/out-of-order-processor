@@ -127,7 +127,11 @@ module testbench;
     logic      [`NUM_FU_LOAD-1:0]   load_selected_debug;
     logic      [`NUM_FU_LOAD-1:0]   load_req_data_valid_debug;
     DATA       [`NUM_FU_LOAD-1:0]   load_req_data_debug;
-    SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out;
+
+    // sq
+    SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug;
+    SQ_IDX                     sq_commit_head_debug;
+    SQ_IDX                     sq_commit_tail_debug;
     SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug;
     logic id_stall;
     logic rob_stall;
@@ -264,8 +268,8 @@ module testbench;
     task print_sq;
         $fdisplay(ppln_fileno, "### SQ ENTRIES:");
         for (int i = 0; i < `SQ_LEN + 1; i++) begin
-            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b, commited:%b", i, sq_entries_out[i].valid, sq_entries_out[i].addr, sq_entries_out[i].data, sq_entries_out[i].ready, sq_entries_out[i].accepted, sq_entries_out[i].commited);
-            case (sq_entries_out[i].byte_info)
+            $fdisplay(ppln_fileno, "valid[%0d]: %b, addr: %h, data: %h, ready: %b, accepted: %b, commited:%b", i, sq_entries_debug[i].valid, sq_entries_debug[i].addr, sq_entries_debug[i].data, sq_entries_debug[i].ready, sq_entries_debug[i].accepted, sq_entries_debug[i].commited);
+            case (sq_entries_debug[i].byte_info)
                     MEM_BYTE:
                         $fdisplay(ppln_fileno, "    byte_info[%0d]: MEM_BYTE", i);
                     MEM_HALF: 
@@ -556,6 +560,9 @@ module testbench;
         .proc2mem_data    (proc2mem_data),
         .dmshr_entries_debug(dmshr_entries_debug),
         .dmshr_q_debug(dmshr_q_debug),
+        .sq_entries_debug(sq_entries_debug),
+        .sq_commit_head_debug(sq_commit_head_debug),
+        .sq_commit_tail_debug(sq_commit_tail_debug),
 `ifndef CACHE_MODE
         .proc2mem_size    (proc2mem_size),
 `endif
@@ -610,7 +617,6 @@ module testbench;
         .load_selected_debug(load_selected_debug),
         .load_req_data_valid_debug(load_req_data_valid_debug),
         .load_req_data_debug(load_req_data_debug),
-        .sq_entries_out(sq_entries_out),
         .sq_dcache_packet_debug(sq_dcache_packet_debug),
         .id_stall(id_stall),
         .rob_stall(rob_stall),
@@ -712,6 +718,8 @@ module testbench;
         input [31:0] end_addr;
         int showing_data;
         int block_index;
+        int sq_idx;
+        int block_offset;
         begin
             mem_temp = mem.unified_memory;
             $display("\nFinal memory state and exit status:\n");
@@ -731,22 +739,38 @@ module testbench;
                     for (int x = 0; x < `N; ++x) begin
                         if (dmshr_q_debug[k][x].inst_command == INST_STORE) begin
                             case (dmshr_q_debug[k][x].mem_func)
-                            MEM_BYTE: 
-                                mem_temp[block_index].byte_level[dmshr_q_debug[k][x].block_offset]
-                                    = dmshr_q_debug[k][x].data[7:0];
-                            MEM_HALF:
-                                mem_temp[block_index].half_level[dmshr_q_debug[k][x].block_offset[2:1]]
-                                    = dmshr_q_debug[k][x].data[15:0];
-                            MEM_WORD:
-                                mem_temp[block_index].word_level[dmshr_q_debug[k][x].block_offset[2]]
-                                    = dmshr_q_debug[k][x].data[31:0];
-                        endcase
+                                MEM_BYTE: 
+                                    mem_temp[block_index].byte_level[dmshr_q_debug[k][x].block_offset]
+                                        = dmshr_q_debug[k][x].data[7:0];
+                                MEM_HALF:
+                                    mem_temp[block_index].half_level[dmshr_q_debug[k][x].block_offset[2:1]]
+                                        = dmshr_q_debug[k][x].data[15:0];
+                                MEM_WORD:
+                                    mem_temp[block_index].word_level[dmshr_q_debug[k][x].block_offset[2]]
+                                        = dmshr_q_debug[k][x].data[31:0];
+                            endcase
                         end
                     end
                 end
             end
 
-            // TODO store queue
+            for (int k = 0; k < `SQ_LEN + 1; k++) begin
+                sq_idx = (sq_commit_head_debug + k) % (`SQ_LEN + 1);
+                if (sq_idx == sq_commit_tail_debug) break;
+                block_index = sq_entries_debug[sq_idx].addr >> `DCACHE_BLOCK_OFFSET_BITS;
+                block_offset = sq_entries_debug[sq_idx].addr % `DCACHE_BLOCK_OFFSET_BITS;
+                case (sq_entries_debug[sq_idx].byte_info)
+                    MEM_BYTE:
+                        mem_temp[block_index].byte_level[block_offset]
+                            = sq_entries_debug[sq_idx].data[7:0];
+                    MEM_HALF:
+                        mem_temp[block_index].half_level[block_offset[2:1]]
+                            = sq_entries_debug[sq_idx].data[15:0];
+                    MEM_WORD:
+                        mem_temp[block_index].word_level[block_offset[2]]
+                            = sq_entries_debug[sq_idx].data[31:0];
+                endcase
+            end
             for (int k = start_addr; k <= end_addr; k = k+1) begin
                 if (mem_temp[k] != 0) begin
                     $display("@@@ mem[%5d] = %x : %0d", k*8, mem_temp[k],

@@ -34,7 +34,10 @@ module fu_cdb(
     // To icache from dcache
     output logic       dcache_request,
     output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
-    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug
+    output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
+    output SQ_IDX                     sq_commit_head_debug,
+    output SQ_IDX                     sq_commit_tail_debug
     `ifdef CPU_DEBUG_OUT
     , output FU_STATE_PACKET fu_state_packet_debug
     , output logic [`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD-1:0] select_debug
@@ -48,7 +51,6 @@ module fu_cdb(
     , output logic      [`NUM_FU_LOAD-1:0]    load_selected_debug
     , output logic      [`NUM_FU_LOAD-1:0]    load_req_data_valid_debug
     , output DATA       [`NUM_FU_LOAD-1:0]    load_req_data_debug
-    , output SQ_ENTRY[(`SQ_LEN+1)-1:0] sq_entries_out
     , output SQ_DCACHE_PACKET [`NUM_SQ_DCACHE-1:0] sq_dcache_packet_debug
     , output FU_STATE_PACKET cdb_state_debug
     , output logic [`N-1:0] store_req_accept_debug
@@ -104,7 +106,10 @@ module fu_cdb(
         .proc2Dmem_data(proc2Dmem_data),
         .dcache_request(dcache_request),
         .dmshr_entries_debug(dmshr_entries_debug),
-        .dmshr_q_debug(dmshr_q_debug)
+        .dmshr_q_debug(dmshr_q_debug),
+        .sq_entries_debug(sq_entries_debug),
+        .sq_commit_head_debug(sq_commit_head_debug),
+        .sq_commit_tail_debug(sq_commit_tail_debug)
     `ifdef CPU_DEBUG_OUT
         , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
@@ -115,7 +120,6 @@ module fu_cdb(
         , .lu_fwd_reg_debug(lu_fwd_reg_debug)
         , .load_req_data_valid_debug(load_req_data_valid_debug)
         , .load_req_data_debug(load_req_data_debug)
-        , .sq_entries_out(sq_entries_out)
         , .sq_dcache_packet_debug(sq_dcache_packet_debug)
         , .store_req_accept_debug(store_req_accept_debug)
         , .load_req_accept_debug(load_req_accept_debug)
