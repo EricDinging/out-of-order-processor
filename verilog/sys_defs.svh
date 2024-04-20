@@ -79,11 +79,11 @@
 `define DCACHE_INDEX_BITS $clog2(`DCACHE_SETS)
 `define DCACHE_BLOCK_OFFSET_BITS 3
 `define DCACHE_TAG_BITS 32-`DCACHE_BLOCK_OFFSET_BITS-`DCACHE_INDEX_BITS
-`define DMSHR_SIZE 8
+`define DMSHR_SIZE 4
 
 // local history table
 `define BHT_WIDTH 8
-`define BHT_SIZE  8
+`define BHT_SIZE  16
 `define BHT_IDX_WIDTH $clog2(`BHT_SIZE)
 // BTB
 `define BTB_SIZE 32

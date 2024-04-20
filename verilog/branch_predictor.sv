@@ -182,7 +182,10 @@ module local_predictor (
     always_ff @(posedge clock) begin
         if (reset) begin
             branch_history_table  <= 0;
-            pattern_history_table <= 0;
+            // pattern_history_table <= 0;
+            foreach (pattern_history_table[i]) begin
+                pattern_history_table[i] <= i[0] ? TAKEN : NOT_TAKEN;
+            end
         end else begin
             branch_history_table  <= next_branch_history_table;
             pattern_history_table <= next_pattern_history_table;
@@ -204,6 +207,13 @@ module gshare_predictor (
     , output PHT_ENTRY_STATE [`PHT_SIZE-1:0] pattern_history_table_debug
 `endif
 );
+
+    function logic [`BHT_IDX_WIDTH-1:0] mask (
+        input logic [`BHT_WIDTH-1:0]     history,
+        input logic [`BHT_IDX_WIDTH-1:0] index
+    );
+        return history ^ index;
+    endfunction
 
     ADDR [`N:0] pcs;
 
@@ -253,7 +263,7 @@ module gshare_predictor (
 
         // prediction taken + target
         for (int i = 0; i < `N; ++i) begin
-            case (pattern_history_table[branch_history_reg ^ pc_bht_index[i]])
+            case (pattern_history_table[mask(branch_history_reg, pc_bht_index[i])])
                 NOT_TAKEN:
                     begin
                         target_pc[i].taken = `FALSE;
@@ -279,12 +289,12 @@ module gshare_predictor (
                     rob_if_packet.entries[i].resolve_taken
                 };
                 // modify pht
-                next_pattern_history_table[branch_history_reg ^ rob_bht_index[i]] =
+                next_pattern_history_table[mask(branch_history_reg, rob_bht_index[i])] =
                     rob_if_packet.entries[i].resolve_taken ? TAKEN : NOT_TAKEN;
                 // report correctness
                 correct[i] =
-                    pattern_history_table[branch_history_reg ^ rob_bht_index[i]] ==
-                    next_pattern_history_table[branch_history_reg ^ rob_bht_index[i]];
+                    pattern_history_table[mask(branch_history_reg, rob_bht_index[i])] ==
+                    next_pattern_history_table[mask(branch_history_reg, rob_bht_index[i])];
             end
         end
     end
@@ -350,24 +360,27 @@ module tournament_predictor (
     );
 
     logic [1:0] bias, next_bias;
+    // logic bias, next_bias;
 
 `ifdef CPU_DEBUG_OUT
     assign bias_debug = bias;
 `endif
 
-    assign target_pc = bias[1] ? lp_target_pc : gp_target_pc;
+    assign target_pc = bias ? lp_target_pc : gp_target_pc;
 
     always_comb begin
         next_bias = bias;
         for (int i = 0; i < `N; ++i) if (rob_if_packet.entries[i].valid) begin
             if (lp_correct[i] && ~gp_correct[i] && next_bias != 2'b11) ++next_bias;
             if (gp_correct[i] && ~lp_correct[i] && next_bias != 2'b00) --next_bias;
+            // if (lp_correct[i] && ~gp_correct[i]) next_bias = `TRUE;
+            // if (gp_correct[i] && ~lp_correct[i]) next_bias = `FALSE;
         end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            bias <= 0;
+            bias <= 2'b11;
         end else begin
             bias <= next_bias;
         end
