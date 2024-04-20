@@ -1,6 +1,6 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
-`define CPU_DEBUG_OUT
+// `define CPU_DEBUG_OUT
 
 // ALU: computes the result of FUNC applied with operands A and B
 // This module is purely combinational
@@ -221,11 +221,11 @@ module fu #(
     output logic       dcache_request,
     output DMSHR_ENTRY    [`DMSHR_SIZE-1:0]   dmshr_entries_debug,
     output DMSHR_Q_PACKET [`DMSHR_SIZE-1:0][`N-1:0] dmshr_q_debug,
+    output DCACHE_ENTRY     [`DCACHE_LINES-1:0] dcache_data_debug,
     output SQ_ENTRY [(`SQ_LEN+1)-1:0] sq_entries_debug,
     output SQ_IDX                     sq_commit_head_debug,
     output SQ_IDX                     sq_commit_tail_debug
 `ifdef CPU_DEBUG_OUT
-    , output DCACHE_ENTRY     [`DCACHE_LINES-1:0] dcache_data_debug
     , output logic            [`DMSHR_SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
     , output LQ_DCACHE_PACKET [`NUM_LU_DCACHE-1:0] lq_dcache_packet_debug
     , output LD_ENTRY         [`NUM_FU_LOAD-1:0]   lq_entries_out
@@ -316,10 +316,10 @@ module fu #(
         .dcache_lq_packet(dcache_lq_packet),
         // to Icache
         .dcache_request(dcache_request),
+        .dcache_data_debug(dcache_data_debug),
         .dmshr_entries_debug(dmshr_entries_debug),
         .dmshr_q_debug(dmshr_q_debug)
     `ifdef CPU_DEBUG_OUT
-        , .dcache_data_debug(dcache_data_debug)
         , .counter_debug(counter_debug)
         , .store_req_accept_debug(store_req_accept_debug)
         , .load_req_accept_debug(load_req_accept_debug)
