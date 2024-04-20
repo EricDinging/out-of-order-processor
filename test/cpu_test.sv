@@ -749,7 +749,7 @@ module testbench;
                 if (dmshr_entries_debug[k].state != DMSHR_INVALID) begin
                     for (int x = 0; x < `N; ++x) begin
                         if (dmshr_q_debug[k][x].inst_command == INST_STORE) begin
-                            addr = {dcache_data_debug[k].tag, dmshr_entries_debug[k].index, dmshr_q_debug[k][x].block_offset};
+                            addr = {dmshr_entries_debug[k].tag, dmshr_entries_debug[k].index, dmshr_q_debug[k][x].block_offset};
                             block_index = addr[31:3];
                             block_offset = addr[2:0];
                             case (dmshr_q_debug[k][x].mem_func)

@@ -114,7 +114,7 @@ module dmshr #(
     output logic                          ready,
     output DMSHR_Q_PACKET        [`N-1:0] dmshr_flush_packet,
     output logic                 [`N-1:0] dmshr_flush_valid,
-    output DMSHR_ENTRY [SIZE-1:0] dmshr_entries_debug,
+    output DMSHR_ENTRY    [SIZE-1:0] dmshr_entries_debug,
     output DMSHR_Q_PACKET [SIZE-1:0][`N-1:0] dmshr_q_debug
     `ifdef CPU_DEBUG_OUT
     , output logic [SIZE-1:0][`N_CNT_WIDTH-1:0] counter_debug
