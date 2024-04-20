@@ -179,8 +179,10 @@ module testbench;
                 case (lq_entries_out[i].load_state)
                     KNOWN:
                         $fdisplay(ppln_fileno, "    load_state[%0d]: KNOWN", i);
-                    NO_FORWARD:
+                    NO_FORWARD: begin
                         $fdisplay(ppln_fileno, "    load_state[%0d]: NO_FORWARD", i);
+                        $fdisplay(ppln_fileno, "    load_state.forwarded: %b", lq_entries_out[i].forwarded);
+                    end
                     ASKED:
                         $fdisplay(ppln_fileno, "    load_state[%0d]: ASKED", i);
                 endcase
@@ -314,7 +316,7 @@ module testbench;
     task print_id_ooo_reg;
         $fdisplay(ppln_fileno, "### ID/OOO REG:");
         for (int i = 0; i < `N; ++i) begin
-            $fdisplay(ppln_fileno, "  PC[%0d]: %0d", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC);
+            $fdisplay(ppln_fileno, "  PC[%0d]: %0d  valid: %b", i, id_ooo_reg_debug.rob_is_packet.entries[i].PC, id_ooo_reg_debug.rob_is_packet.valid[i]);
             $fdisplay(ppln_fileno, "  dest_arn[%0d]: %0d", i, id_ooo_reg_debug.rat_is_input.entries[i].dest_arn);
         end
         $fdisplay(ppln_fileno, "id structural hazard:%b", id_stall);
@@ -671,7 +673,7 @@ module testbench;
     // Count the number of posedges and number of instructions completed
     // till simulation ends
     always @(posedge clock) begin
-        if(reset) begin
+        if (reset) begin
             clock_count <= 0;
             instr_count <= 0;
         end else begin
@@ -686,10 +688,10 @@ module testbench;
         int num_cycles;
         begin
             num_cycles = clock_count + 1;
-            cpi = $itor(num_cycles) / instr_count; // must convert int to real
+            cpi = $itor(num_cycles) / (instr_count + pipeline_completed_insts); // must convert int to real
             cpi_fileno = $fopen(cpi_output_file);
             $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-                      num_cycles, instr_count, cpi);
+                      num_cycles, instr_count + pipeline_completed_insts, cpi);
             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
                       num_cycles * `CLOCK_PERIOD);
             $fclose(cpi_fileno);
@@ -718,6 +720,14 @@ module testbench;
                 end else if (showing_data != 0) begin
                     $display("@@@");
                     showing_data = 0;
+                end
+            end
+            for (int k = 0; k < `DCACHE_LINES; ++k) begin
+                if (dcache_data_debug[k].valid && dcache_data_debug[k].dirty) begin
+                    $display("@@@ mem[%5d] = %x : %0d", 
+                        {dcache_data_debug[k].tag[`DCACHE_TAG_BITS-1:0], {k >> $clog2(`DCACHE_WAYS)}[`DCACHE_INDEX_BITS-1:0], {`DCACHE_BLOCK_OFFSET_BITS{1'b0}}}, 
+                        dcache_data_debug[k].data,
+                        dcache_data_debug[k].data);
                 end
             end
             $display("@@@");
@@ -789,6 +799,8 @@ module testbench;
         if (!reset) begin
             #2; // wait a short time to avoid a clock edge
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
+            $fdisplay(ppln_fileno, "instr_count: %d", instr_count);
+
             print_if_id_reg();
             print_id_ooo_reg();
             // print_rob_if_debug();
@@ -844,7 +856,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 500000) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status

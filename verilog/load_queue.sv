@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-
+`define CPU_DEBUG_OUT
 /*
 typedef enum logic [1:0] {KNOWN, NO_FORWARD, ASKED} LU_STATE;
 
@@ -48,6 +48,7 @@ module load_queue (
     output MEM_FUNC              [`NUM_FU_LOAD-1:0] load_byte_info,
     input  DATA                  [`NUM_FU_LOAD-1:0] value,
     input  logic                 [`NUM_FU_LOAD-1:0] fwd_valid,
+    input  logic                 [`NUM_FU_LOAD-1:0][3:0] forwarded,
     // Dcache
     input  DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet,
     input  logic            [`NUM_LU_DCACHE-1:0] load_req_accept,
@@ -99,7 +100,7 @@ module load_queue (
             if (load_rs_avail[i]) begin
                 next_lu_reg[i].valid      = rs_lq_packet[i].valid;
                 next_lu_reg[i].sign_size  = rs_lq_packet[i].sign_size;
-                next_lu_reg[i].addr       = rs_lq_packet[i].base + {20'h0, rs_lq_packet[i].offset};
+                next_lu_reg[i].addr       = rs_lq_packet[i].base + 32'(signed'(rs_lq_packet[i].offset));
                 next_lu_reg[i].prn        = rs_lq_packet[i].prn;
                 next_lu_reg[i].robn       = rs_lq_packet[i].robn;
                 next_lu_reg[i].tail_store = rs_lq_packet[i].tail_store;
@@ -115,6 +116,7 @@ module load_queue (
             store_range[i] = lu_reg[i].tail_store;
             load_byte_info[i] = lu_reg[i].sign_size;
             next_lu_fwd_reg[i].valid      = lu_reg[i].valid;
+            next_lu_fwd_reg[i].forwarded  = forwarded[i];
             next_lu_fwd_reg[i].sign_size  = lu_reg[i].sign_size;
             next_lu_fwd_reg[i].addr       = lu_reg[i].addr;
             next_lu_fwd_reg[i].prn        = lu_reg[i].prn;
@@ -162,6 +164,7 @@ module load_queue (
                 next_entries[i] = '{
                     `TRUE,
                     // lu_fwd_reg[inst_cnt].signext,
+                    lu_fwd_reg[i].forwarded,
                     lu_fwd_reg[i].sign_size,
                     lu_fwd_reg[i].addr,
                     lu_fwd_reg[i].value,
@@ -204,7 +207,22 @@ module load_queue (
         for (int i = 0; i < `NUM_LU_DCACHE; i++) begin
             if (load_req_accept[i] && load_req_data_valid[i]) begin
                 next_entries[lq_dcache_packet[i].lq_idx].load_state = KNOWN;
-                next_entries[lq_dcache_packet[i].lq_idx].data = load_req_data[i];
+                next_entries[lq_dcache_packet[i].lq_idx].data[31:24] = 
+                    entries[lq_dcache_packet[i].lq_idx].forwarded[3] 
+                        ? entries[lq_dcache_packet[i].lq_idx].data[31:24]
+                        : load_req_data[i][31:24];
+                next_entries[lq_dcache_packet[i].lq_idx].data[23:16] = 
+                    entries[lq_dcache_packet[i].lq_idx].forwarded[2] 
+                        ? entries[lq_dcache_packet[i].lq_idx].data[23:16]
+                        : load_req_data[i][23:16];
+                next_entries[lq_dcache_packet[i].lq_idx].data[15:8] = 
+                    entries[lq_dcache_packet[i].lq_idx].forwarded[1] 
+                        ? entries[lq_dcache_packet[i].lq_idx].data[15:8]
+                        : load_req_data[i][15:8];
+                next_entries[lq_dcache_packet[i].lq_idx].data[7:0] = 
+                    entries[lq_dcache_packet[i].lq_idx].forwarded[0] 
+                        ? entries[lq_dcache_packet[i].lq_idx].data[7:0]
+                        : load_req_data[i][7:0];
             end else if (load_req_accept[i]) begin
                 next_entries[lq_dcache_packet[i].lq_idx].load_state = ASKED;
             end
@@ -213,7 +231,22 @@ module load_queue (
         for (int i = 0; i < `N; i++) begin
             if (dcache_lq_packet[i].valid) begin
                 next_entries[dcache_lq_packet[i].lq_idx].load_state = KNOWN;
-                next_entries[dcache_lq_packet[i].lq_idx].data = dcache_lq_packet[i].data;
+                next_entries[dcache_lq_packet[i].lq_idx].data[31:24] = 
+                    entries[dcache_lq_packet[i].lq_idx].forwarded[3] 
+                        ? entries[dcache_lq_packet[i].lq_idx].data[31:24]
+                        : dcache_lq_packet[i].data[31:24];
+                next_entries[dcache_lq_packet[i].lq_idx].data[23:16] = 
+                    entries[dcache_lq_packet[i].lq_idx].forwarded[2] 
+                        ? entries[dcache_lq_packet[i].lq_idx].data[23:16]
+                        : dcache_lq_packet[i].data[23:16];
+                next_entries[dcache_lq_packet[i].lq_idx].data[15:8] = 
+                    entries[dcache_lq_packet[i].lq_idx].forwarded[1] 
+                        ? entries[dcache_lq_packet[i].lq_idx].data[15:8]
+                        : dcache_lq_packet[i].data[15:8];
+                next_entries[dcache_lq_packet[i].lq_idx].data[7:0] = 
+                    entries[dcache_lq_packet[i].lq_idx].forwarded[0] 
+                        ? entries[dcache_lq_packet[i].lq_idx].data[7:0]
+                        : dcache_lq_packet[i].data[7:0];
             end
         end
     end

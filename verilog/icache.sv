@@ -17,9 +17,9 @@ module imshr (
     input MEM_TAG   Imem2proc_transaction_tag,
     input MEM_TAG   Imem2proc_data_tag,
     // From icache
-    input logic [`N-1:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes,
-    input logic [`N-1:0][12-`CACHE_LINE_BITS:0] miss_cache_tags,
-    input logic [`N-1:0]                        miss_cache_valid,
+    input logic [`N:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes,
+    input logic [`N:0][12-`CACHE_LINE_BITS:0] miss_cache_tags,
+    input logic [`N:0]                        miss_cache_valid,
 
     // Output to memory via cache
     output ADDR        proc2Imem_addr,
@@ -33,21 +33,21 @@ module imshr (
 `endif
 );
 
-    IMSHR_ENTRY [`N-1:0] imshr_entries, next_imshr_entries;
+    IMSHR_ENTRY [`N:0] imshr_entries, next_imshr_entries;
 
-    wire        [`N-1:0] entries_free;
-    wire        [`N-1:0] entries_pending;
-    wor         [`N-1:0] imshr_hit;
+    wire        [`N:0] entries_free;
+    wire        [`N:0] entries_pending;
+    wor         [`N:0] imshr_hit;
 
-    wire [`N-1:0][`N-1:0] entries_free_gnt_bus;
-    wire [`N-1:0]         entries_pending_gnt_bus;
+    wire [`N:0][`N:0] entries_free_gnt_bus;
+    wire [`N:0]       entries_pending_gnt_bus;
 
     // logic outstanding_request_valid, next_outstanding_request_valid;
     // logic [`N_CNT_WIDTH-1:0] outstanding_request_index, next_outstanding_request_index;
 
     genvar i;
     generate
-        for (i = 0; i < `N; ++i) begin
+        for (i = 0; i <= `N; ++i) begin
             assign entries_free[i] = imshr_entries[i].state == IMSHR_INVALID;
             // assign entries_pending[i] = imshr_entries[i].state == IMSHR_PENDING;
             assign entries_pending[i] = imshr_entries[i].state == IMSHR_WAIT_TAG;
@@ -56,13 +56,13 @@ module imshr (
 
     genvar j;
     generate
-        for (i = 0; i < `N; ++i) begin
+        for (i = 0; i <= `N; ++i) begin
             for (j = 0; j < i; ++j) begin
                 assign imshr_hit[i] = miss_cache_valid[i] && miss_cache_valid[j]
                                  && miss_cache_indexes[i] == miss_cache_indexes[j]
                                  && miss_cache_tags[i]    == miss_cache_tags[j];
             end
-            for (j = 0; j < `N; ++j) begin
+            for (j = 0; j <= `N; ++j) begin
                 assign imshr_hit[i] = imshr_entries[j].index == miss_cache_indexes[i]
                                    && imshr_entries[j].tag   == miss_cache_tags[i]
                                    && imshr_entries[j].state != IMSHR_INVALID;
@@ -75,8 +75,8 @@ module imshr (
 `endif
 
     psel_gen #(
-      .WIDTH(`N),
-      .REQS(`N)
+      .WIDTH(`N+1),
+      .REQS(`N+1)
     ) free_entry_selector (
       .req(entries_free),
       .gnt(),
@@ -85,7 +85,7 @@ module imshr (
     );
 
     psel_gen #(
-      .WIDTH(`N),
+      .WIDTH(`N+1),
       .REQS(1)
     ) request_selector (
       .req(entries_pending),
@@ -103,7 +103,7 @@ module imshr (
         cache_index = 0;
         cache_tag   = 0;
         ready       = `FALSE;
-        for (int i = 0; i < `N; ++i) begin
+        for (int i = 0; i <= `N; ++i) begin
             if (imshr_entries[i].state == IMSHR_WAIT_DATA
              && imshr_entries[i].transaction_tag == Imem2proc_data_tag) begin
                 cache_index                 = imshr_entries[i].index;
@@ -114,9 +114,9 @@ module imshr (
         end
 
         // Allocate new entries for cache miss
-        for (int i = 0; i < `N; ++i) begin
+        for (int i = 0; i <= `N; ++i) begin
             if (miss_cache_valid[i] && ~imshr_hit[i]) begin
-                for (int j = 0; j < `N; ++j) begin
+                for (int j = 0; j <= `N; ++j) begin
                     if (entries_free_gnt_bus[i][j]) begin
                         // next_imshr_entries[j].state = IMSHR_PENDING;
                         next_imshr_entries[j].state = IMSHR_WAIT_TAG;
@@ -130,7 +130,7 @@ module imshr (
         proc2Imem_addr    = 0;
         proc2Imem_command = MEM_NONE;
         if (~dcache_request) begin
-            for (int i = 0; i < `N; ++i) begin
+            for (int i = 0; i <= `N; ++i) begin
                 if (entries_pending_gnt_bus[i]) begin
                     proc2Imem_addr = {
                         16'b0,
@@ -182,12 +182,17 @@ module icache (
     input logic [`N-1:0] valid,
     // From Dcache
     input logic  dcache_request,
+    // From prefetcher
+    input ADDR  pref2Icache_addr,
+    input logic pref2Icache_valid,
     // To memory
     output MEM_COMMAND proc2Imem_command,
     output ADDR        proc2Imem_addr,
     // To fetch
     output MEM_BLOCK [`N-1:0] Icache_data_out,
-    output logic     [`N-1:0] Icache_valid_out
+    output logic     [`N-1:0] Icache_valid_out,
+    // To prefetcher
+    output logic pref_hit_valid_line
 `ifdef CPU_DEBUG_OUT
     , output IMSHR_ENTRY [`N-1:0] imshr_entries_debug
 `endif
@@ -195,9 +200,9 @@ module icache (
 
     ICACHE_ENTRY [`CACHE_LINES-1:0] icache_data, next_icache_data;
 
-    logic [`N-1:0][12-`CACHE_LINE_BITS:0] miss_cache_tags;
-    logic [`N-1:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes;
-    logic [`N-1:0]                        miss_cache_valid;
+    logic [`N:0][12-`CACHE_LINE_BITS:0] miss_cache_tags;
+    logic [`N:0][`CACHE_LINE_BITS-1:0]  miss_cache_indexes;
+    logic [`N:0]                        miss_cache_valid;
 
     logic [`CACHE_LINE_BITS-1:0]  cache_index;
     logic [12-`CACHE_LINE_BITS:0] cache_tag;
@@ -242,6 +247,20 @@ module icache (
                 end
             end
         end
+        // prefetch
+        miss_cache_valid[`N] = `FALSE;
+        {miss_cache_tags[`N], miss_cache_indexes[`N]} = pref2Icache_addr[15:3];
+        pref_hit_valid_line = `FALSE;
+
+        if (pref2Icache_valid) begin
+            if (icache_data[miss_cache_indexes[`N]].tags == miss_cache_tags[`N]
+                && icache_data[miss_cache_indexes[`N]].valid) begin
+                    pref_hit_valid_line = `TRUE;
+            end else begin
+                miss_cache_valid[`N] = `TRUE;
+            end
+        end
+
         // Update cache
         if (ready) begin
             next_icache_data[cache_index].valid = `TRUE;

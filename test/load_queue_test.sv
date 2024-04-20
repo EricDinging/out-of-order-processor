@@ -14,6 +14,7 @@ module testbench;
     MEM_FUNC              [`NUM_FU_LOAD-1:0] load_byte_inf;
     DATA                  [`NUM_FU_LOAD-1:0] value;
     logic                 [`NUM_FU_LOAD-1:0] fwd_valid;
+    logic                 [`NUM_FU_LOAD-1:0][3:0] forwarded;
     
     DCACHE_LQ_PACKET [`N-1:0]             dcache_lq_packet;
     logic            [`NUM_LU_DCACHE-1:0] load_req_accept;
@@ -27,7 +28,7 @@ module testbench;
         .reset(reset),
         .rs_lq_packet(rs_lq_packet),
         .load_rs_avail(load_rs_avail),
-        .load_selected(load_selected),
+        .load_avail(load_selected),
         .load_prepared(load_prepared),
         .load_packet(load_packet),
         .sq_addr(sq_add),
@@ -35,6 +36,7 @@ module testbench;
         .load_byte_info(load_byte_inf),
         .value(value),
         .fwd_valid(fwd_valid),
+        .forwarded(forwarded),
         .dcache_lq_packet(dcache_lq_packet),
         .load_req_accept(load_req_accept),
         .load_req_data(load_req_data),
@@ -149,10 +151,17 @@ module testbench;
         @(negedge clock);
         rs_lq_packet = 0;
         value[0] = 32'hfaceface;
-        fwd_valid[0] = 1;
+        fwd_valid[0] = 0;
+        forwarded = 4'b0100;
         @(negedge clock);
         @(negedge clock);
         print; // load_state[0] should be known
+        dcache_lq_packet[0].valid = `TRUE;
+        dcache_lq_packet[0].lq_idx = 0;
+        dcache_lq_packet[0].data = 32'hdeadbeef;
+        @(negedge clock);
+        @(negedge clock);
+        print;
     endtask
 
     task get_dcache;
@@ -222,21 +231,21 @@ module testbench;
     task print;
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
             $display(
-                "ld[%2d].valid = %b, addr = %h, data = %h, tail_store = %d, load_state = %d",
+                "ld[%2d].valid = %b, addr = %h, data = %h, tail_store = %d, load_state = %d, forwarded = %b",
                 i, entries_out[i].valid, entries_out[i].addr, entries_out[i].data,
-                entries_out[i].tail_store, entries_out[i].load_state
+                entries_out[i].tail_store, entries_out[i].load_state, entries_out[i].forwarded
             );
         end
     endtask
 
     initial begin
         clock = 0;
-        init; 
-        entering;
-        get_dcache;
+        // init; 
+        // entering;
+        // get_dcache;
 
-        init;
-        to_cdb;
+        // init;
+        // to_cdb;
 
         init;
         forward;

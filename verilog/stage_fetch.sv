@@ -43,6 +43,11 @@ module stage_fetch (
 
     logic has_invalid_icache_out;
 
+    // prefetch
+    logic pref_hit_valid_line;
+    logic pref2Icache_valid;
+    ADDR pref2Icache_addr;
+
     local_predictor bp (
         .clock(clock),
         .reset(reset),
@@ -67,13 +72,26 @@ module stage_fetch (
         .proc2Icache_addr(proc2Icache_addr),
         .valid(proc2Icache_valid),
         .dcache_request(dcache_request),
+        .pref2Icache_addr(pref2Icache_addr),
+        .pref2Icache_valid(pref2Icache_valid),
         .proc2Imem_command(proc2Imem_command),
         .proc2Imem_addr(proc2Imem_addr),
         .Icache_data_out(Icache_data_out),
-        .Icache_valid_out(Icache_valid_out)
+        .Icache_valid_out(Icache_valid_out),
+        .pref_hit_valid_line(pref_hit_valid_line)
     `ifdef CPU_DEBUG_OUT
         , .imshr_entries_debug(imshr_entries_debug)
     `endif
+    );
+
+    prefetcher pref (
+        .clock(clock),
+        .reset(reset || squash),
+        .next_pc_start(next_pc_start),
+        .hit_valid_line(pref_hit_valid_line),
+        //output
+        .pref2Icache_addr(pref2Icache_addr),
+        .pref2Icache_valid(pref2Icache_valid)
     );
 
     always_comb begin

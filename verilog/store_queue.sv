@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-
+`define CPU_DEBUG_OUT
 /*
 typedef struct packed {
     logic valid;
@@ -54,7 +54,8 @@ module store_queue (
     input  SQ_IDX   [`NUM_FU_LOAD-1:0] tail_store,     // TODO connect
     input  MEM_FUNC [`NUM_FU_LOAD-1:0] load_byte_info, // TODO connect
     output DATA     [`NUM_FU_LOAD-1:0] value,          // TODO connect
-    output logic    [`NUM_FU_LOAD-1:0] fwd_valid       // TODO connect
+    output logic    [`NUM_FU_LOAD-1:0] fwd_valid,       // TODO connect
+    output logic    [`NUM_FU_LOAD-1:0][3:0] forwarded
 `ifdef CPU_DEBUG_OUT
     , output SQ_ENTRY[(`SQ_LEN+1)-1:0] entries_out
 `endif
@@ -98,6 +99,8 @@ module store_queue (
     SQ_IDX size, next_size, next_head, next_tail;
     SQ_REG [`NUM_FU_STORE-1:0] sq_reg, next_sq_reg;
 
+    DATA [`SQ_LEN-1:0] realigned_data;
+
     assign almost_full = size > `SQ_LEN - `N;
 
     SQ_IDX try_to_sent_insns;
@@ -106,7 +109,7 @@ module store_queue (
         next_sq_reg = sq_reg;
         foreach (next_sq_reg[i]) begin
             next_sq_reg[i].valid  = rs_sq_packet[i].valid;
-            next_sq_reg[i].addr   = rs_sq_packet[i].base + {20'h0, rs_sq_packet[i].offset};
+            next_sq_reg[i].addr   = rs_sq_packet[i].base + 32'(signed'(rs_sq_packet[i].offset));
             next_sq_reg[i].data   = rs_sq_packet[i].data;
             next_sq_reg[i].sq_idx = rs_sq_packet[i].sq_idx;
         end
@@ -206,37 +209,92 @@ module store_queue (
     // LQ fwd
     SQ_IDX idx_fwd;
     logic flag_break;
-    logic match, match_byte, match_half, match_word, match_dble;
+    logic match, match_byte, match_half, match_word;
     always_comb begin
-        flag_break = `FALSE;
         value = 0;
         fwd_valid = 0;
         idx_fwd = 0;
+        forwarded = 0;
         for (int i = 0; i < `NUM_FU_LOAD; i++) begin
+            flag_break = `FALSE;
             for (int j = 0; j < `SQ_LEN; j++) begin
                 idx_fwd = (head + j) % (`SQ_LEN + 1);
+                realigned_data[j] = re_align(entries[idx_fwd].data, entries[idx_fwd].addr, entries[idx_fwd].byte_info);
 
                 match_byte = entries[idx_fwd].addr[31:0] == addr[i][31:0];
                 match_half = entries[idx_fwd].addr[31:1] == addr[i][31:1];
                 match_word = entries[idx_fwd].addr[31:2] == addr[i][31:2];
-                match_dble = entries[idx_fwd].addr[31:3] == addr[i][31:3];
 
                 case (entries[idx_fwd].byte_info)
                     MEM_BYTE:  match = match_byte && load_byte_info[i][1:0] == BYTE;
                     MEM_BYTEU: match = match_byte && load_byte_info[i][1:0] == BYTE;
                     MEM_HALF:  match = match_half && load_byte_info[i][1:0] != WORD;
                     MEM_HALFU: match = match_half && load_byte_info[i][1:0] != WORD;
-                    MEM_WORD:  match = match_word;
+                    default:  match = match_word; // MEM_WORD
                 endcase
 
                 flag_break |= idx_fwd == tail_store[i];
-                if (~flag_break && match) begin
-                    value[i] = re_align(entries[idx_fwd].data, entries[idx_fwd].addr, entries[idx_fwd].byte_info);
-                    fwd_valid[i] = entries[idx_fwd].valid && entries[idx_fwd].ready;
+                if (!flag_break && match_word && entries[idx_fwd].valid && entries[idx_fwd].ready) begin
+                    case (entries[idx_fwd].byte_info[1:0])
+                        BYTE: begin
+                            if (entries[idx_fwd].addr[1:0] == 3) begin
+                                forwarded[i][3] = `TRUE;
+                                value[i][31:24] = realigned_data[j][31:24];
+                            end else if (entries[idx_fwd].addr[1:0] == 2) begin
+                                forwarded[i][2] = `TRUE;
+                                value[i][23:16] = realigned_data[j][23:16];
+
+                            end else if (entries[idx_fwd].addr[1:0] == 1) begin
+                                forwarded[i][1] = `TRUE;
+                                value[i][15:8] = realigned_data[j][15:8];
+                            end else begin
+                                forwarded[i][0] = `TRUE;
+                                value[i][7:0] = realigned_data[j][7:0];
+                            end
+                        end
+                        HALF: begin
+                            if (entries[idx_fwd].addr[1]) begin
+                                forwarded[i][3:2] = 2'b11;
+                                value[i][31:16] = realigned_data[j][31:16];
+                            end else begin
+                                forwarded[i][1:0] = 2'b11;
+                                value[i][15:0] = realigned_data[j][15:0];
+                            end
+                        end
+                        default: begin // WORD
+                            forwarded[i] = 4'b1111;
+                            value[i] = realigned_data[j];
+                        end
+                    endcase
                 end
+                // if (!flag_break && match) begin
+                //     // value[i] = re_align(entries[idx_fwd].data, entries[idx_fwd].addr, entries[idx_fwd].byte_info);
+                //     fwd_valid[i] = entries[idx_fwd].valid && entries[idx_fwd].ready;
+                // end
             end
+            case (load_byte_info[i][1:0])
+                BYTE: begin
+                    case (entries[idx_fwd].addr[1:0])
+                        3: fwd_valid[i] = forwarded[i][3];
+                        2: fwd_valid[i] = forwarded[i][2];
+                        1: fwd_valid[i] = forwarded[i][1];
+                        0: fwd_valid[i] = forwarded[i][0];
+                    endcase
+                end
+                HALF: begin
+                    case (entries[idx_fwd].addr[1])
+                        1: fwd_valid[i] = forwarded[i][3] && forwarded[i][2];
+                        0: fwd_valid[i] = forwarded[i][1] && forwarded[i][0];
+                    endcase
+                end
+                default: begin // WORD
+                    fwd_valid[i] = &forwarded[i];
+                end
+            endcase
         end
     end
+
+
 
     always_ff @(posedge clock) begin
         if (reset) begin

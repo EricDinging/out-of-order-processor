@@ -14,6 +14,7 @@ module onehotdec #(
 
     always_comb begin
         count = 0;
+        out   = 0;
         for (int i = 0; i < WIDTH; ++i) begin
             if (in[i]) begin
                 out = i;

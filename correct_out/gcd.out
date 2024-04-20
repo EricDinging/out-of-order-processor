@@ -1,0 +1,54 @@
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version R-2020.12-SP2-1_Full64; Runtime version R-2020.12-SP2-1_Full64;  Apr 19 17:36 2024
+
+---- Starting CPU Testbench ----
+
+Using memory file  : programs/gcd.mem
+Using output files : output/gcd.{cpi, wb, ppln}
+
+                 0 : Asserting Reset
+               450 : Loading Unified Memory
+              1060 : Deasserting Reset
+              1060 : Running Processor
+             41720 : Processor Finished
+
+Final memory state and exit status:
+
+@@@ Unified Memory contents hex on left, decimal on right: 
+@@@
+@@@ mem[    0] = 0e01011300000117 : 1009088972623708439
+@@@ mem[    8] = 03c0051300010413 : 270221556804813843
+@@@ mem[   16] = 0000009701800593 : 648565228947
+@@@ mem[   24] = 00050293024080e7 : 1410205304783079
+@@@ mem[   32] = 00b5486310500073 : 51026561097269363
+@@@ mem[   40] = 0000031740b50533 : 3398404736307
+@@@ mem[   48] = 00008067ff830067 : 141184156762215
+@@@ mem[   56] = 0011202304058663 : 4820409367496291
+@@@ mem[   64] = 00a1282300812423 : 45361602047845411
+@@@ mem[   72] = 0001041300b12c23 : 285954639211555
+@@@ mem[   80] = 0000009702010113 : 648573681939
+@@@ mem[   88] = 00050293fd0080e7 : 1410209511669991
+@@@ mem[   96] = 0001208300040113 : 317221989777683
+@@@ mem[  104] = 0101250300812403 : 72379763838231555
+@@@ mem[  112] = 0005851301812583 : 1553691559667075
+@@@ mem[  120] = 0000031700028593 : 3397319296403
+@@@ mem[  128] = 00008067fbc30067 : 141184093847655
+@@@
+@@@ mem[  224] = 000000000000001c : 28
+@@@ mem[  232] = 00000000000000e0 : 224
+@@@ mem[  240] = 0000000000000018 : 24
+@@@ mem[  248] = 000000000000000c : 12
+@@@
+@@@
+@@@ System halted on WFI instruction
+@@@
+
+---- Finished CPU Testbench ----
+
+$finish called from file "test/cpu_test.sv", line 297.
+$finish at simulation time                42720
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 4272000 ps
+CPU Time:      0.260 seconds;       Data structure size:   0.1Mb
+Fri Apr 19 17:36:28 2024
