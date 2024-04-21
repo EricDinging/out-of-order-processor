@@ -140,7 +140,7 @@ module local_predictor (
         next_branch_history_table  = branch_history_table;
         next_pattern_history_table = pattern_history_table;
         target_pc = 0;
-
+        correct = 0;
         // prediction taken + target
         for (int i = 0; i < `N; ++i) begin
             case (pattern_history_table[branch_history_table[pc_bht_index[i]]])

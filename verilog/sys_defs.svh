@@ -28,7 +28,7 @@
 `define FU_ROB_PACKET_SZ `NUM_FU_ALU + `N
 
 // sizes
-`define ROB_SZ 24
+`define ROB_SZ 32
 `define RS_SZ 16
 `define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
@@ -100,7 +100,7 @@
 `define GSHARE_PHT_SIZE 2 ** `GSHARE_PC_WIDTH
 
 // BTB
-`define BTB_SIZE 64
+`define BTB_SIZE 32
 `define BTB_INDEX_BITS $clog2(`BTB_SIZE)
 `define BTB_TAG_BITS 32-2-`BTB_INDEX_BITS
 
