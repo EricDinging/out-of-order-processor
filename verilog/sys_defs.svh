@@ -28,7 +28,7 @@
 `define FU_ROB_PACKET_SZ `NUM_FU_ALU + `N
 
 // sizes
-`define ROB_SZ 32
+`define ROB_SZ 16
 `define RS_SZ 16
 `define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
@@ -67,6 +67,7 @@
 `define ICACHE_TAG_BITS 32-`ICACHE_BLOCK_OFFSET_BITS-`ICACHE_INDEX_BITS
 
 // `define CACHE_LINE_BITS $clog2(`CACHE_LINES)
+
 `define MAX_PREFETCH_LINE 4
 
 // lsq
@@ -80,6 +81,7 @@
 // dcache
 `define DCACHE_LINES 8 // pw of 2
 `define DCACHE_SETS 4   // pw of 2
+
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
 
@@ -92,8 +94,13 @@
 `define BHT_WIDTH 8
 `define BHT_SIZE  16
 `define BHT_IDX_WIDTH $clog2(`BHT_SIZE)
+
+`define GSHARE_PC_WIDTH 5
+`define GSHARE_HS_WIDTH 4
+`define GSHARE_PHT_SIZE 2 ** `GSHARE_PC_WIDTH
+
 // BTB
-`define BTB_SIZE 32
+`define BTB_SIZE 64
 `define BTB_INDEX_BITS $clog2(`BTB_SIZE)
 `define BTB_TAG_BITS 32-2-`BTB_INDEX_BITS
 
@@ -714,6 +721,7 @@ typedef struct packed {
     logic resolve_taken;
     ADDR  resolve_target;
     ADDR  PC;
+    logic is_branch;
 } ROB_IF_ENTRY;
 
 typedef struct packed {

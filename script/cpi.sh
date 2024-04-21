@@ -33,9 +33,11 @@ file_list=(
     "gcd_strict" \
     "graph" \
     "haha" \
+    "halt" \
     "hw_test_ipc" \
     "insertion" \
     "insertionsort" \
+    "j" \
     "load_simple" \
     "load_store_simple" \
     "loop_big" \
@@ -69,7 +71,7 @@ total_instrs=0
 working_path=$(pwd)
 # Iterate over the list of filenames
 for filename in "${file_list[@]}"; do
-    make "$filename.out"
+    make "$filename.out" -j
     # Extract cycles, instructions, and CPI from the file
     if [ -e "$working_path/output/$filename.cpi" ]; then
 
@@ -79,6 +81,13 @@ for filename in "${file_list[@]}"; do
         echo "@@@  $cycles cycles / $instrs instrs = $cpi CPI"
         total_cycles=$((total_cycles + cycles))
         total_instrs=$((total_instrs + instrs))
+
+        correct=$(grep -oP 'predictor hit rate: \K[0-9]+(?= correct)' "$working_path/output/$filename.cpi")
+        branches=$(grep -oP 'predictor hit rate: [0-9]+ correct / \K[0-9]+(?= branches)' "$working_path/output/$filename.cpi")
+        hit=$(calculate_cpi "$correct" "$branches")
+        echo "@@@  $correct correct / $branches branches = $hit hit"
+        total_correct=$((total_correct + correct))
+        total_branches=$((total_branches + branches))
     else
         echo "File not found: output/$filename.cpi"
     fi
@@ -86,6 +95,9 @@ done
 
 # Calculate the average CPI
 average_cpi=$(calculate_cpi "$total_cycles" "$total_instrs")
+average_hit=$(calculate_cpi "$total_correct" "$total_branches")
 
 # Print the average CPI
 echo "Average CPI: $average_cpi"
+echo "Average hit: $average_hit"
+

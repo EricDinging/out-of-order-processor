@@ -80,9 +80,9 @@ module store_queue (
                 end
 
                 HALF: begin
-                    case (addr[0])
+                    case (addr[1])
                         1: re_align[31:16] = data[15:0];
-                        2: re_align[15:0] = data[15:0];
+                        0: re_align[15:0] = data[15:0];
                     endcase
                 end
                 default: begin

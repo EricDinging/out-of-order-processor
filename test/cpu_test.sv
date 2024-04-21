@@ -139,6 +139,9 @@ module testbench;
     // memory
     logic [63:0] target_mem_block_debug;
 
+    // branch predictor test
+    DATA branches, correct_branch;
+
 `endif
 
     // memory output
@@ -712,6 +715,8 @@ module testbench;
                       num_cycles, instr_count + pipeline_completed_insts - 1, cpi);
             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
                       num_cycles * `CLOCK_PERIOD);
+            $fdisplay(cpi_fileno, "predictor hit rate: %0d correct / %0d branches = %d", correct_branch, branches, correct_branch * 100 / branches);
+
             $fclose(cpi_fileno);
         end
     endtask // task output_cpi_file
@@ -810,6 +815,8 @@ module testbench;
 
     initial begin
         $display("\n---- Starting CPU Testbench ----\n");
+        branches = 0;
+        correct_branch = 0;
 
         // set paramterized strings, see comment at start of module
         if ($value$plusargs("MEMORY=%s", program_memory_file)) begin
@@ -866,16 +873,16 @@ module testbench;
 `ifdef CPU_DEBUG_OUT
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
             $fdisplay(ppln_fileno, "instr_count: %d", instr_count);
-            // print_if_id_reg();
-            // print_id_ooo_reg();
+            print_if_id_reg();
+            print_id_ooo_reg();
             // print_rob_if_debug();
             // print_target_memory_block();
             // print_mem_cache();
             // print_rs_lq_packet();
-            // print_load_queue();
-            // print_sq();
-            // print_lq_dcache_packet();
-            // print_sq_dcache_packet();
+            print_load_queue();
+            print_sq();
+            print_lq_dcache_packet();
+            print_sq_dcache_packet();
             // print_dcache();
             // print_dcache_lq_packet();
             // // print_fu_state_packet();
@@ -883,8 +890,8 @@ module testbench;
             // // print_cdb_state();
             // print_fu_rob_packet();
             // print_select();
-            // print_rs();
-            // print_rob();
+            print_rs();
+            print_rob();
 
 
             // print_imshr_entries_debug();
@@ -894,7 +901,18 @@ module testbench;
             // print_prf();
             // print_branch_predictor();
             $fdisplay(ppln_fileno, "=========");
+
+            for (int i = 0; i < `N; i++) begin
+                if (rob_if_packet_debug.entries[i].valid && rob_if_packet_debug.entries[i].is_branch) begin
+                    branches += 1;
+                    if (rob_if_packet_debug.entries[i].predict_taken == rob_if_packet_debug.entries[i].resolve_taken) begin
+                        correct_branch += 1;
+                    end
+                end
+            end
+
 `endif
+
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count);
@@ -921,7 +939,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000 ) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status
@@ -929,8 +947,10 @@ module testbench;
                     // output the final CPI
                     output_cpi_file();
                     // close the writeback and pipeline output files
+
                     $fclose(ppln_fileno);
                     $fclose(wb_fileno);
+
 
                     $display("\n---- Finished CPU Testbench ----\n");
 

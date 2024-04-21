@@ -2,8 +2,8 @@
 
 echo "Comparing ground truth outputs to new processor"
 
-original_output_dir="/home/sylei/eecs470/proj/p4_cache/correct_out"
-impl_output_dir="/home/sylei/eecs470/proj/p4_cache/output"
+original_output_dir="/home/weixinyu/eecs470/p4-w24.group9/correct_out"
+impl_output_dir="/home/weixinyu/eecs470/p4-w24.group9/output"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
