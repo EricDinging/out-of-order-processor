@@ -355,8 +355,8 @@ module tournament_predictor (
         .correct       (gp_correct)
     `ifdef CPU_DEBUG_OUT
         , .btb_entries_debug           (gp_btb_entries_debug)
-        , .branch_history_reg_debug    (gp_branch_history_reg_debug)
-        , .pattern_history_table_debug (gp_pattern_history_table_debug)
+        // , .branch_history_reg_debug    (gp_branch_history_reg_debug)
+        // , .pattern_history_table_debug (gp_pattern_history_table_debug)
     `endif
     );
 
