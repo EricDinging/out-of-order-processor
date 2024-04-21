@@ -873,16 +873,16 @@ module testbench;
 `ifdef CPU_DEBUG_OUT
             $fdisplay(ppln_fileno, "============= Cycle %d", clock_count);
             $fdisplay(ppln_fileno, "instr_count: %d", instr_count);
-            // print_if_id_reg();
-            // print_id_ooo_reg();
+            print_if_id_reg();
+            print_id_ooo_reg();
             // print_rob_if_debug();
             // print_target_memory_block();
             // print_mem_cache();
             // print_rs_lq_packet();
-            // print_load_queue();
-            // print_sq();
-            // print_lq_dcache_packet();
-            // print_sq_dcache_packet();
+            print_load_queue();
+            print_sq();
+            print_lq_dcache_packet();
+            print_sq_dcache_packet();
             // print_dcache();
             // print_dcache_lq_packet();
             // // print_fu_state_packet();
@@ -890,8 +890,8 @@ module testbench;
             // // print_cdb_state();
             // print_fu_rob_packet();
             // print_select();
-            // print_rs();
-            // print_rob();
+            print_rs();
+            print_rob();
 
 
             // print_imshr_entries_debug();
@@ -939,7 +939,7 @@ module testbench;
 
             // stop the processor
             for (int i = 0; i < `N; ++i) begin
-                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000 ) begin
+                if (pipeline_error_status[i] != NO_ERROR || clock_count > 5000000) begin
                     $display("  %16t : Processor Finished", $realtime);
 
                     // display the final memory and status

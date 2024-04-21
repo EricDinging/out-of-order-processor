@@ -28,7 +28,7 @@
 `define FU_ROB_PACKET_SZ `NUM_FU_ALU + `N
 
 // sizes
-`define ROB_SZ 32
+`define ROB_SZ 16
 `define RS_SZ 16
 `define RS_CNT_WIDTH $clog2(`RS_SZ + 1)
 `define PHYS_REG_SZ_P6 32
