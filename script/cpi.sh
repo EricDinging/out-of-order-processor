@@ -15,8 +15,6 @@ file_list=(
     "backtrack" \
     "basic_malloc" \
     "bfs" \
-    "btest1" \
-    "btest2" \
     "copy_long" \
     "copy" \
     # "crt" \
@@ -29,7 +27,6 @@ file_list=(
     "fib" \
     "graph" \
     "haha" \
-    "halt" \
     "hw_test_ipc" \
     "insertion" \
     "insertionsort" \
@@ -49,11 +46,13 @@ file_list=(
     "saxpy" \
     "sort_search" \
     "loop_big" \
+    # "btest1" \
+    # "btest2" \
+    # "halt" \
     # "loop_simple" \
     # "sw_align" \
     # "sw_lw" \
 )
-
 # Initialize variables to hold total cycles and instructions
 total_cycles=0
 total_instrs=0

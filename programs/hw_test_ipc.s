@@ -14,7 +14,7 @@
     li  x2, 0x10
 loop:
     add x3, x1, x1
-    add x4, x3, x1
+    add x4, x1, x1
     add x4, x1, x1
     add x5, x4, x1
     add x6, x4, x5

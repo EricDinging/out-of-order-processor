@@ -58,8 +58,9 @@
 `define MULT_STAGES 4
 
 // cache
-`define ICACHE_LINES 4
-`define ICACHE_SETS 2
+`define ICACHE_LINES 32
+`define ICACHE_SETS 8
+
 `define ICACHE_WAYS `ICACHE_LINES / `ICACHE_SETS
 `define ILRU_WIDTH $clog2(`ICACHE_WAYS)
 `define ICACHE_INDEX_BITS $clog2(`ICACHE_SETS)
@@ -79,8 +80,8 @@
 `define LU_IDX_BITS $clog2(`NUM_FU_LOAD + 1)
 
 // dcache
-`define DCACHE_LINES 8 // pw of 2
-`define DCACHE_SETS 4   // pw of 2
+`define DCACHE_LINES 64 // pw of 2
+`define DCACHE_SETS 4  // pw of 2
 
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
