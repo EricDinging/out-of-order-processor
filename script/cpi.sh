@@ -12,16 +12,14 @@ calculate_cpi() {
 # List of filenames in an array
 file_list=(
     "alexnet" \
-    "alu_add" \
     "backtrack" \
-    "basic_malloc"
-    "bfs"
-    "branch"
+    "basic_malloc" \
+    "bfs" \
     "btest1" \
     "btest2" \
     "copy_long" \
     "copy" \
-    "countdown" \
+    "crt" \
     "dft" \
     "evens_long" \
     "evens" \
@@ -29,26 +27,18 @@ file_list=(
     "fib_long" \
     "fib_rec" \
     "fib" \
-    "gcd" \
-    "gcd_strict" \
     "graph" \
     "haha" \
     "halt" \
     "hw_test_ipc" \
     "insertion" \
     "insertionsort" \
-    "j" \
     "load_simple" \
     "load_store_simple" \
-    "loop_big" \
-    "loop_simple" \
     "matrix_mult_rec" \
-    "mem_evict" \
     "mergesort" \
     "mult_no_lsq" \
     "mult_orig" \
-    "mult_simple" \
-    "mult_test" \
     "no_hazard" \
     "omegalul" \
     "outer_product" \
@@ -58,10 +48,10 @@ file_list=(
     "sampler" \
     "saxpy" \
     "sort_search" \
-    "store_simple" \
-    "sw_align" \
-    "sw_lw" \
-    "write_evict_load" \
+    "loop_big" \
+    # "loop_simple" \
+    # "sw_align" \
+    # "sw_lw" \
 )
 
 # Initialize variables to hold total cycles and instructions
