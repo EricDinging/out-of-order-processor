@@ -19,7 +19,7 @@ file_list=(
     "btest2" \
     "copy_long" \
     "copy" \
-    "crt" \
+    # "crt" \
     "dft" \
     "evens_long" \
     "evens" \
