@@ -55,11 +55,11 @@
 // `define STORE_Q_INDEX_WIDTH $clog2(`NUM_FU_STORE)
 
 // number of mult stages (2, 4) (you likely don't need 8)
-`define MULT_STAGES 4
+`define MULT_STAGES 2
 
 // cache
 `define ICACHE_LINES 32
-`define ICACHE_SETS 8
+`define ICACHE_SETS 2
 
 `define ICACHE_WAYS `ICACHE_LINES / `ICACHE_SETS
 `define ILRU_WIDTH $clog2(`ICACHE_WAYS)
@@ -81,7 +81,7 @@
 
 // dcache
 `define DCACHE_LINES 64 // pw of 2
-`define DCACHE_SETS 4  // pw of 2
+`define DCACHE_SETS 16  // pw of 2
 
 `define DCACHE_WAYS  `DCACHE_LINES / `DCACHE_SETS
 `define LRU_WIDTH $clog2(`DCACHE_WAYS)
