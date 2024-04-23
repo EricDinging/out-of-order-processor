@@ -59,7 +59,7 @@
 
 // cache
 `define ICACHE_LINES 32
-`define ICACHE_SETS 2
+`define ICACHE_SETS 4
 
 `define ICACHE_WAYS `ICACHE_LINES / `ICACHE_SETS
 `define ILRU_WIDTH $clog2(`ICACHE_WAYS)
